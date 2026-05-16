@@ -24,6 +24,11 @@ class InfrastructureFactory:
             settings: The application settings object.
         """
         profile = getattr(settings, "RAE_PROFILE", "standard")
+        if profile == "lite":
+            app.state.pool = None
+            app.state.redis_client = None
+            app.state.qdrant_client = None
+            return
         logger.info("initializing_infrastructure", profile=profile)
 
         # 1. Postgres Initialization
