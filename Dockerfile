@@ -23,22 +23,22 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install local RAE packages FIRST
 # (Order matters for dependency resolution)
-COPY packages/rae-agentic-memory/sdk/python/rae_memory_sdk /app/sdk/python/rae_memory_sdk
+COPY sdk/python/rae_memory_sdk /app/sdk/python/rae_memory_sdk
 RUN pip install --no-cache-dir /app/sdk/python/rae_memory_sdk
 
-COPY packages/rae-agentic-memory/rae-core /app/rae-core
+COPY rae-core /app/rae-core
 RUN pip install --no-cache-dir /app/rae-core
 
-COPY packages/rae-agentic-memory/rae_adapters /app/rae_adapters
+COPY rae_adapters /app/rae_adapters
 RUN pip install --no-cache-dir /app/rae_adapters
 
 # Install application requirements
-COPY packages/rae-agentic-memory/apps/memory_api/requirements-base.txt /app/requirements-base.txt
+COPY apps/memory_api/requirements-base.txt /app/requirements-base.txt
 RUN pip install --no-cache-dir -r /app/requirements-base.txt
 
 # Optional: Full ML features (if GPU build is requested, you might want these)
 ARG INSTALL_ML=false
-COPY packages/rae-agentic-memory/apps/memory_api/requirements-ml.txt /app/requirements-ml.txt
+COPY apps/memory_api/requirements-ml.txt /app/requirements-ml.txt
 RUN if [ "$INSTALL_ML" = "true" ] ; then pip install --no-cache-dir -r /app/requirements-ml.txt ; fi
 
 # FINAL STAGE
@@ -57,10 +57,10 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
-COPY packages/rae-agentic-memory/alembic.ini /app/alembic.ini
-COPY packages/rae-agentic-memory/alembic /app/alembic
-COPY packages/rae-agentic-memory/apps /app/apps
-COPY packages/rae-agentic-memory/models /app/models
+COPY alembic.ini /app/alembic.ini
+COPY alembic /app/alembic
+COPY apps /app/apps
+COPY models /app/models
 
 # Setup user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
