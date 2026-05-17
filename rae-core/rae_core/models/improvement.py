@@ -39,6 +39,8 @@ class ExperimentRun(BaseModel):
     proposal_id: str
     mode: str  # shadow | canary | offline
     result: str  # pass | fail
+    role: Optional[str] = None  # e.g., L1_writer, L2_auditor
+    model_ref: Optional[str] = None  # e.g., ollama/qwen3.5:9b
 
 class PromotionDecision(BaseModel):
     proposal_id: str

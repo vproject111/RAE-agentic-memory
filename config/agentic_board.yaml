@@ -1,17 +1,25 @@
-# RAE AGENTIC BOARD CONFIGURATION v2.0
-# Tiered Consensus Protocol
+# RAE AGENTIC BOARD CONFIGURATION v3.0
+# Role-First Abstraction Layer (Reflective Pivot)
 
 tiers:
   economy:
-    models: ['qwen2.5:14b', 'deepseek-coder-v2:16b', 'llama3.1:8b']
-    description: 'Local models only - no cost'
+    roles:
+      writer: "ollama/qwen3.5:9b"
+      auditor: "ollama/deepseek-r1:8b"
+    description: "Zero-cost local execution on RTX 4080"
   
   standard:
-    models: ['gemini-1.5-pro', 'deepseek-coder-v2:16b', 'qwen2.5:14b']
-    description: 'Hybrid: Leader (Gemini) + Local experts'
+    roles:
+      leader: "google/gemini-1.5-pro"
+      expert: "ollama/deepseek-r1:14b"
+      validator: "ollama/qwen3.5:9b"
+    description: "Hybrid: Global context (Gemini) + Local technical experts"
   
   oracle:
-    models: ['gemini-1.5-pro', 'claude-opus-4-5', 'gpt-4o']
-    description: 'The Agentic Board: Best cloud models only'
+    roles:
+      consensus_a: "anthropic/claude-3-5-sonnet-latest"
+      consensus_b: "openai/gpt-4o"
+      consensus_c: "google/gemini-1.5-pro"
+    description: "The Multi-Layer Tribunal: Best available cloud intelligence"
 
 operational_mode: HARD_FRAMES
