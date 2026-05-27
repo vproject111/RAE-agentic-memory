@@ -94,9 +94,13 @@ class RAECoreService:
 
         self.reflection_engine = ReflectionEngineV2(self)
         self.reflection_coordinator = ReflectionCoordinator(
-            mode=settings.RAE_PROFILE if settings.RAE_PROFILE in ["standard", "advanced"] else "standard",
+            mode=(
+                settings.RAE_PROFILE
+                if settings.RAE_PROFILE in ["standard", "advanced"]
+                else "standard"
+            ),
             enforce_hard_frames=True,
-            storage=self.postgres_adapter
+            storage=self.postgres_adapter,
         )
 
         # New: RAERuntime for RAE-First flow (Use Engine for implicit capture policy enforcement)
@@ -132,8 +136,13 @@ class RAECoreService:
             self.embedding_provider.register_provider("api", api_provider)
             self.embedding_provider._default_provider = api_provider
             # Important: set default_model_name to the actual model for proper vector space targeting
-            self.embedding_provider.default_model_name = settings.RAE_EMBEDDING_MODEL or "api"
-            logger.info("registered_api_embedding_provider", model=self.embedding_provider.default_model_name)
+            self.embedding_provider.default_model_name = (
+                settings.RAE_EMBEDDING_MODEL or "api"
+            )
+            logger.info(
+                "registered_api_embedding_provider",
+                model=self.embedding_provider.default_model_name,
+            )
 
         # Register MCP
         if settings.RAE_EMBEDDING_BACKEND == "mcp":
@@ -230,10 +239,14 @@ class RAECoreService:
         # Vector
         if qdrant_client and not ignore_db:
             dim = self.embedding_provider.get_dimension()
-            
+
             # Calibration: Use 'nomic' vector space for nomic models, 'dense' for others
-            v_name = "nomic" if "nomic" in (self.embedding_provider.default_model_name or "").lower() else "dense"
-            
+            v_name = (
+                "nomic"
+                if "nomic" in (self.embedding_provider.default_model_name or "").lower()
+                else "dense"
+            )
+
             self.qdrant_adapter = QdrantVectorStore(
                 client=cast(Any, qdrant_client),
                 embedding_dim=dim,
@@ -448,7 +461,9 @@ class RAECoreService:
                     logger.warning("llm_call_failed", error=str(e))
                     # Fallback to direct context or raw answer
                     if search_results:
-                        llm_result = "" + str(search_results[0].get("content", ""))[:500]
+                        llm_result = (
+                            "" + str(search_results[0].get("content", ""))[:500]
+                        )
                     else:
                         llm_result = f"I encountered an issue connecting to the model: {str(e)}. Please check system logs."
                 if not llm_result:
@@ -625,6 +640,92 @@ class RAECoreService:
 
         return tags
 
+    async def _handle_hard_frames(
+        self,
+        tenant_id: str,
+        content: str,
+        tags: list[str],
+        layer: Optional[str],
+        session_id: Optional[str],
+        human_label: Optional[str],
+        agent_id: Optional[str],
+        source: str,
+        metadata: Optional[dict],
+    ) -> Optional[dict]:
+        """SYSTEM 93.1: Hard Frames 2.0 Contract Enforcement helper."""
+        import json
+        import uuid
+
+        from rae_core.exceptions.base import ContractViolationError
+
+        name = human_label or agent_id or source or "Unknown Agent"
+        mid = (metadata or {}).get("target_id") or str(uuid.uuid4())
+
+        payload = {}
+        if content.strip().startswith("{") and content.strip().endswith("}"):
+            try:
+                payload = json.loads(content)
+            except Exception:
+                payload = {"analysis": content}
+        else:
+            payload = {"analysis": content}
+
+        # SYSTEM 93.3: Hallucination Prevention Context
+        # Inject actual source content for L1 Grounding verification
+        source_memories = await self.engine.search_memories(
+            query=content, tenant_id=tenant_id, top_k=5
+        )
+        payload["retrieved_sources_content"] = [m["content"] for m in source_memories]
+
+        payload.update(
+            {
+                "retrieved_sources": [str(m["id"]) for m in source_memories],
+                "decision": (metadata or {}).get("decision", "proceed"),
+                "confidence": (metadata or {}).get("confidence", 0.5),
+                "metadata": {
+                    **(metadata or {}),
+                    "trace_id": str(session_id or "audit-000"),
+                },
+            }
+        )
+
+        # SYSTEM 93.4: Full Decision Provenance
+        # We link the decision to the specific memories that influenced it
+        validation_results = await self.reflection_coordinator.run_reflections(payload)
+
+        # PERMANENT AUDIT TRAIL
+        audit_content = (
+            f"DECISION AUDIT: {name}\n"
+            f"Decision: {payload['decision']}\n"
+            f"Confidence: {payload['confidence']}\n"
+            f"Reasoning: {payload['analysis'][:500]}\n"
+            f"Evidence IDs: {payload['retrieved_sources']}\n"
+            f"Validation: {validation_results['final_decision']}"
+        )
+
+        await self.engine.store_memory(
+            tenant_id=tenant_id,
+            agent_id="oracle_auditor",
+            content=audit_content,
+            layer="reflective",
+            tags=["decision_provenance", "audit_log"],
+            metadata={
+                "target_id": mid,
+                "evidence_ids": payload["retrieved_sources"],
+                "validation_full": validation_results,
+            },
+        )
+
+        if validation_results.get("final_decision") == "blocked":
+            raise ContractViolationError(
+                f"Decision Blocked by Oracle: {validation_results['block_reasons']}"
+            )
+
+        updated_metadata = (metadata or {}).copy()
+        updated_metadata["audit_verified"] = True
+        updated_metadata["provenance_link"] = payload["retrieved_sources"]
+        return updated_metadata
+
     def _resolve_project_context(self, project: Optional[str]) -> str:
         """
         Intelligently resolve project name from context.
@@ -675,62 +776,21 @@ class RAECoreService:
         # SYSTEM 93.1: Hard Frames 2.0 Contract Enforcement
         if "agent_decision" in tags or "operation_result" in tags or layer == "working":
             try:
-                import json
-                payload = {}
-                if content.strip().startswith("{") and content.strip().endswith("}"):
-                    try: payload = json.loads(content)
-                    except: payload = {"analysis": content}
-                else: payload = {"analysis": content}
-                
-                # SYSTEM 93.3: Hallucination Prevention Context
-                # Inject actual source content for L1 Grounding verification
-                source_memories = await self.engine.search_memories(
-                    query=content, tenant_id=tenant_id, top_k=5
-                )
-                payload["retrieved_sources_content"] = [m["content"] for m in source_memories]
-
-                payload.update({
-                    "retrieved_sources": [str(m["id"]) for m in source_memories],
-                    "decision": metadata.get("decision", "proceed"),
-                    "confidence": metadata.get("confidence", 0.5),
-                    "metadata": {**metadata, "trace_id": str(session_id or "audit-000")}
-                })
-
-                # SYSTEM 93.4: Full Decision Provenance
-                # We link the decision to the specific memories that influenced it
-                validation_results = await self.reflection_coordinator.run_reflections(payload)
-                
-                # PERMANENT AUDIT TRAIL
-                audit_content = (
-                    f"DECISION AUDIT: {name}\n"
-                    f"Decision: {payload['decision']}\n"
-                    f"Confidence: {payload['confidence']}\n"
-                    f"Reasoning: {payload['analysis'][:500]}\n"
-                    f"Evidence IDs: {payload['retrieved_sources']}\n"
-                    f"Validation: {validation_results['final_decision']}"
-                )
-                
-                await self.engine.store_memory(
+                metadata = await self._handle_hard_frames(
                     tenant_id=tenant_id,
-                    agent_id="oracle_auditor",
-                    content=audit_content,
-                    layer="reflective",
-                    tags=["decision_provenance", "audit_log"],
-                    metadata={
-                        "target_id": mid,
-                        "evidence_ids": payload["retrieved_sources"],
-                        "validation_full": validation_results
-                    }
+                    content=content,
+                    tags=tags,
+                    layer=layer,
+                    session_id=session_id,
+                    human_label=human_label,
+                    agent_id=agent_id,
+                    source=source,
+                    metadata=metadata,
                 )
-
-                if validation_results.get("final_decision") == "blocked":
-                    from rae_core.exceptions.base import ContractViolationError
-                    raise ContractViolationError(f"Decision Blocked by Oracle: {validation_results['block_reasons']}")
-                
-                metadata["audit_verified"] = True
-                metadata["provenance_link"] = payload["retrieved_sources"]
-            except SecurityPolicyViolationError: raise
-            except Exception as e: logger.warning("audit_failed", error=str(e))
+            except SecurityPolicyViolationError:
+                raise
+            except Exception as e:
+                logger.warning("audit_failed", error=str(e))
 
         # 3. Context Resolution (Best Practice: Avoid 'default' pollution)
         project_canonical = self._resolve_project_context(project)
@@ -1331,4 +1391,3 @@ class RAECoreService:
 async def get_rae_core_service(request: Request) -> RAECoreService:
     """Dependency for getting RAECoreService from app state."""
     return request.app.state.rae_core_service
-

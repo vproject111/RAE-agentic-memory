@@ -7,7 +7,8 @@ import pytest
 from rae_core.ingestion.segmenter import IngestSegmenter
 from rae_core.ingestion.interfaces import ContentSignature
 
-def test_truejet_feature_extraction():
+@pytest.mark.asyncio
+async def test_truejet_feature_extraction():
     config = {
         "ingest_params": {
             "target_chunk_size": 1000,
@@ -43,7 +44,7 @@ def test_truejet_feature_extraction():
     )
     
     sig = ContentSignature(struct={"mode": "LINEAR_LOG_LIKE"}, dist={}, stab={})
-    chunks, audit = segmenter.segment(text, "POLICY_LOG_STREAM", sig)
+    chunks, audit = await segmenter.segment(text, "POLICY_LOG_STREAM", sig)
     
     assert len(chunks) == 1
     extracted = chunks[0].metadata.get("extracted_features", {})

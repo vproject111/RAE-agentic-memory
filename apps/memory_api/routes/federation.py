@@ -32,12 +32,12 @@ async def federation_query(
     """
     with tracer.start_as_current_span("rae.api.federation.query") as span:
         span.set_attribute("rae.tenant_id", request.tenant_id)
-        span.set_attribute("rae.project", request.project)
+        span.set_attribute("rae.project", request.project_id)
 
         logger.info(
             "federation_query_received",
             tenant_id=request.tenant_id,
-            query=request.query,
+            query=request.query_text,
         )
 
         try:
@@ -54,8 +54,8 @@ async def federation_query(
             # Federation usually requires low latency, so we skip heavy reranking
             results = await service.search(
                 tenant_id=request.tenant_id,
-                project=request.project,
-                query=request.query,
+                project=request.project_id,
+                query=request.query_text,
                 k=request.limit,
                 enable_reranking=False,
                 enable_graph=False,
