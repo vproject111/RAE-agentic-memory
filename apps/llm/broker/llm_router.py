@@ -13,6 +13,8 @@ from typing import Any, Dict, Optional, cast
 import yaml
 
 from ..models import (
+    EmbeddingRequest,
+    EmbeddingResponse,
     LLMAuthError,
     LLMChunk,
     LLMRateLimitError,
@@ -81,6 +83,7 @@ class LLMRouter:
         """Initialize all configured providers."""
         provider_classes = {
             "openai": OpenAIProvider,
+            "openrouter": OpenAIProvider,
             "anthropic": AnthropicProvider,
             "gemini": GeminiProvider,
             "ollama": OllamaProvider,
@@ -123,7 +126,7 @@ class LLMRouter:
 
                 if provider_name == "ollama":
                     self.providers[provider_name] = provider_class(api_url=endpoint)
-                elif provider_name in ["openai", "deepseek", "grok"]:
+                elif provider_name in ["openai", "deepseek", "grok", "openrouter"]:
                     self.providers[provider_name] = provider_class(
                         api_key=api_key, api_base=endpoint
                     )
@@ -138,23 +141,13 @@ class LLMRouter:
     def _get_provider_for_model(self, model: str) -> Optional[LLMProvider]:
         """
         Determine which provider to use for a given model.
-
-        This uses simple heuristics based on model name prefixes.
-        In production, this should be driven by configuration.
         """
         model_lower = model.lower()
 
         # Mapping of model prefixes to providers
-        if "gpt" in model_lower or "o1" in model_lower:
-            return self.providers.get("openai")
-    def _get_provider_for_model(self, model: str) -> Optional[LLMProvider]:
-        """
-        Determine which provider to use for a given model.
-        """
-        model_lower = model.lower()
-
-        # Mapping of model prefixes to providers
-        if "gpt" in model_lower or "o1" in model_lower:
+        if model_lower.startswith("openrouter/") or "openrouter" in model_lower:
+            return self.providers.get("openrouter")
+        elif "gpt" in model_lower or "o1" in model_lower:
             return self.providers.get("openai")
         elif "claude" in model_lower:
             return self.providers.get("anthropic")
@@ -164,10 +157,9 @@ class LLMRouter:
             return self.providers.get("deepseek")
         elif "grok" in model_lower:
             return self.providers.get("grok")
-        
+
         # All other models (qwen, llama, mistral, phi, local_*) use Ollama
         return self.providers.get("ollama")
-        return None
 
     async def complete(self, request: LLMRequest, fallback: bool = True) -> LLMResponse:
         """
@@ -306,4 +298,3 @@ class LLMRouter:
         except Exception as e:
             logger.error(f"llm.embed_batch.error - provider={provider.name} error={e}")
             raise
-

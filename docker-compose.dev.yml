@@ -28,6 +28,7 @@ services:
         condition: service_healthy
     networks:
       - rae-dev-network
+      - rae-internal
 
   rae-am-postgres:
     image: ankane/pgvector:latest
@@ -72,3 +73,6 @@ services:
 networks:
   rae-dev-network:
     name: rae-internal-dev
+  rae-internal:
+    external: true
+    name: rae-internal
