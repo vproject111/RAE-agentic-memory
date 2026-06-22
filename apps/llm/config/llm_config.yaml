@@ -26,6 +26,24 @@ models:
     enabled: true
     roles: [evaluator, advanced_reasoning]
 
+  - id: openrouter_gemini_flash
+    provider: openrouter
+    model_name: google/gemini-2.5-flash
+    enabled: true
+    roles: [general, fast]
+
+  - id: openrouter_qwen_coder
+    provider: openrouter
+    model_name: qwen/qwen-2.5-coder-32b-instruct
+    enabled: true
+    roles: [code_generation, analytics]
+
+  - id: openrouter_deepseek_r1
+    provider: openrouter
+    model_name: deepseek/deepseek-r1
+    enabled: true
+    roles: [evaluator, advanced_reasoning]
+
 strategies:
   default:
     mode: single
@@ -37,8 +55,8 @@ strategies:
 
   council_l2:
     mode: consensus
-    models: [local_qwen_optimized, local_qwen, local_phi]
+    models: [local_qwen_optimized, openrouter_gemini_flash, openrouter_qwen_coder]
 
   council_l3:
     mode: consensus
-    models: [premium_openai, local_qwen_optimized, local_phi] # W produkcji tu byłyby Gemini i Claude
+    models: [openrouter_deepseek_r1, openrouter_qwen_coder]
