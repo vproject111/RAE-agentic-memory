@@ -302,82 +302,92 @@ class ContextBuilder:
         """
         Retrieve relevant Long-Term Memories.
 
-        Uses enhanced scoring if enabled.
+        Uses full search logic if available, with a fallback.
         """
-        # Get query embedding (will be used for vector search in production)
-        # query_embedding = await get_embedding(query)
-
-        # Retrieve episodic and semantic memories
-        episodic = await self.rae_service.list_memories(
-            tenant_id=str(tenant_id), project=project, layer="episodic", limit=50
-        )
-        semantic = await self.rae_service.list_memories(
-            tenant_id=str(tenant_id), project=project, layer="semantic"
-        )
-
-        all_memories = episodic + semantic
-
-        if not all_memories:
-            return []
-
-        # TODO: In production, use vector search to get similarity scores
-        # For now, use placeholder similarity
-        similarity_scores = [0.8] * len(all_memories)
-
-        # Phase 3: Selection and Ranking
+        use_fallback = True
         top_memories: List[Dict[str, Any]] = []
 
-        if self.config.enable_scoring_v3:
-            # Use Iteration 3 Scoring (Formal RAE Objective)
-            score_results_v3 = compute_batch_scores_v3(
-                memories=all_memories,
-                similarity_scores=similarity_scores,
-                weights=ScoringWeightsV3(
-                    w1_relevance=settings.MATH_V3_W1_RELEVANCE,
-                    w2_importance=settings.MATH_V3_W2_IMPORTANCE,
-                    w3_recency=settings.MATH_V3_W3_RECENCY,
-                    w4_centrality=settings.MATH_V3_W4_CENTRALITY,
-                    w5_diversity=settings.MATH_V3_W5_DIVERSITY,
-                    w6_density=settings.MATH_V3_W6_DENSITY,
-                ),
-            )
-            # Use Any cast to avoid V3 vs V2 type mismatch
-            ranked_v3 = rank_memories_by_score(
-                all_memories, cast(Any, score_results_v3)
-            )
-
-            # --- Iteration 2: Smart Re-Ranker ---
-            if settings.ENABLE_SMART_RERANKER:
-                # Take a larger pool for re-ranking (e.g. top 50)
-                candidates = ranked_v3[: settings.RERANKER_TOP_K_CANDIDATES]
-                # Apply re-ranking
-                ranked_v3 = await self.reranker.rerank(
-                    candidates, query, limit=settings.RERANKER_FINAL_K
+        if hasattr(self.rae_service, "search_memories"):
+            try:
+                res = await self.rae_service.search_memories(
+                    query=query,
+                    tenant_id=str(tenant_id),
+                    project=project,
+                    limit=self.config.max_ltm_items,
+                    enable_reranking=settings.ENABLE_SMART_RERANKER,
                 )
-                # Use this new list as top_memories (it's already limited)
-                top_memories = ranked_v3
-            else:
-                top_memories = ranked_v3[: self.config.max_ltm_items]
+                if isinstance(res, list):
+                    top_memories = res
+                    use_fallback = False
+            except Exception as e:
+                logger.error("rae_search_memories_failed", error=str(e))
 
-        elif self.config.enable_enhanced_scoring:
-            # Use enhanced scoring
-            score_results_v2 = compute_batch_scores(
-                memories=all_memories,
-                similarity_scores=similarity_scores,
-                weights=self.config.scoring_weights,
+        if use_fallback:
+            # Fallback to list_memories and manual scoring (legacy/mock context)
+            episodic = await self.rae_service.list_memories(
+                tenant_id=str(tenant_id), project=project, layer="episodic", limit=50
             )
-            ranked_v2 = rank_memories_by_score(
-                all_memories, cast(Any, score_results_v2)
+            semantic = await self.rae_service.list_memories(
+                tenant_id=str(tenant_id), project=project, layer="semantic"
             )
-            top_memories = ranked_v2[: self.config.max_ltm_items]
-        else:
-            # Basic ranking by similarity
-            ranked_basic = sorted(
-                zip(all_memories, similarity_scores),
-                key=lambda x: x[1],
-                reverse=True,
-            )
-            top_memories = [m[0] for m in ranked_basic[: self.config.max_ltm_items]]
+
+            all_memories = episodic + semantic
+
+            if not all_memories:
+                return []
+
+            similarity_scores = [0.8] * len(all_memories)
+
+            if self.config.enable_scoring_v3:
+                # Use Iteration 3 Scoring (Formal RAE Objective)
+                score_results_v3 = compute_batch_scores_v3(
+                    memories=all_memories,
+                    similarity_scores=similarity_scores,
+                    weights=ScoringWeightsV3(
+                        w1_relevance=settings.MATH_V3_W1_RELEVANCE,
+                        w2_importance=settings.MATH_V3_W2_IMPORTANCE,
+                        w3_recency=settings.MATH_V3_W3_RECENCY,
+                        w4_centrality=settings.MATH_V3_W4_CENTRALITY,
+                        w5_diversity=settings.MATH_V3_W5_DIVERSITY,
+                        w6_density=settings.MATH_V3_W6_DENSITY,
+                    ),
+                )
+                # Use Any cast to avoid V3 vs V2 type mismatch
+                ranked_v3 = rank_memories_by_score(
+                    all_memories, cast(Any, score_results_v3)
+                )
+
+                # --- Iteration 2: Smart Re-Ranker ---
+                if settings.ENABLE_SMART_RERANKER:
+                    # Take a larger pool for re-ranking (e.g. top 50)
+                    candidates = ranked_v3[: settings.RERANKER_TOP_K_CANDIDATES]
+                    # Apply re-ranking
+                    ranked_v3 = await self.reranker.rerank(
+                        candidates, query, limit=settings.RERANKER_FINAL_K
+                    )
+                    top_memories = ranked_v3
+                else:
+                    top_memories = ranked_v3[: self.config.max_ltm_items]
+
+            elif self.config.enable_enhanced_scoring:
+                # Use enhanced scoring
+                score_results_v2 = compute_batch_scores(
+                    memories=all_memories,
+                    similarity_scores=similarity_scores,
+                    weights=self.config.scoring_weights,
+                )
+                ranked_v2 = rank_memories_by_score(
+                    all_memories, cast(Any, score_results_v2)
+                )
+                top_memories = ranked_v2[: self.config.max_ltm_items]
+            else:
+                # Basic ranking by similarity
+                ranked_basic = sorted(
+                    zip(all_memories, similarity_scores),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+                top_memories = [m[0] for m in ranked_basic[: self.config.max_ltm_items]]
 
         # Convert to components
         components = []
