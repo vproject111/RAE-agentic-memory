@@ -3,8 +3,8 @@
   "inputs": {
     "memory": {
       "importance": 0.8,
-      "last_accessed_at": "2026-02-25T15:06:14.488010+00:00",
-      "created_at": "2026-02-25T15:06:14.488010+00:00",
+      "last_accessed_at": "2026-06-15T02:47:35.589228+00:00",
+      "created_at": "2026-06-15T02:47:35.589228+00:00",
       "access_count": 5
     },
     "query_similarity": 0.9

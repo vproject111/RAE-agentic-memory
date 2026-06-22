@@ -140,7 +140,16 @@ async def test_validation_success():
                 "data_type": "USER-DEFINED",
                 "udt_name": "vector",
             },
+            {"column_name": "ttl", "data_type": "integer", "udt_name": "int4"},
+            {"column_name": "expires_at", "data_type": "timestamp without time zone", "udt_name": "timestamp"},
+            {"column_name": "agent_id", "data_type": "text", "udt_name": "text"},
+            {"column_name": "info_class", "data_type": "text", "udt_name": "text"},
+            {"column_name": "governance", "data_type": "jsonb", "udt_name": "jsonb"},
+            {"column_name": "content_hash", "data_type": "text", "udt_name": "text"},
+            {"column_name": "human_label", "data_type": "text", "udt_name": "text"},
         ],
+        # 3. get_foreign_keys -> []
+        [],
     ]
 
     validator = PostgresAdapter(pool)
@@ -190,6 +199,7 @@ async def test_validation_fail_type_mismatch():
             # id is integer instead of uuid
             {"column_name": "id", "data_type": "integer", "udt_name": "int4"},
         ],
+        [], # 3. get_foreign_keys
     ]
 
     validator = PostgresAdapter(pool)
@@ -204,3 +214,96 @@ async def test_validation_fail_type_mismatch():
     assert "id" in type_mismatches[0].details
     assert "UUID" in type_mismatches[0].details
     assert "int4" in type_mismatches[0].details
+
+
+@pytest.mark.asyncio
+async def test_validation_fail_dead_column():
+    pool = MagicMock()
+    conn = AsyncMock()
+    acquire_ctx = AsyncMock()
+    acquire_ctx.__aenter__.return_value = conn
+    acquire_ctx.__aexit__.return_value = None
+    pool.acquire.return_value = acquire_ctx
+
+    # Return valid columns + one extra dead column "obsolete_col"
+    conn.fetch.side_effect = [
+        [{"table_name": "memories"}],
+        [
+            {"column_name": "id", "data_type": "uuid", "udt_name": "uuid"},
+            {"column_name": "tenant_id", "data_type": "uuid", "udt_name": "uuid"},
+            {"column_name": "content", "data_type": "text", "udt_name": "text"},
+            {"column_name": "source", "data_type": "text", "udt_name": "text"},
+            {"column_name": "importance", "data_type": "double precision", "udt_name": "float8"},
+            {"column_name": "layer", "data_type": "text", "udt_name": "text"},
+            {"column_name": "tags", "data_type": "ARRAY", "udt_name": "_text"},
+            {"column_name": "timestamp", "data_type": "timestamp without time zone", "udt_name": "timestamp"},
+            {"column_name": "project", "data_type": "text", "udt_name": "text"},
+            {"column_name": "memory_type", "data_type": "text", "udt_name": "text"},
+            {"column_name": "session_id", "data_type": "text", "udt_name": "text"},
+            {"column_name": "metadata", "data_type": "jsonb", "udt_name": "jsonb"},
+            {"column_name": "created_at", "data_type": "timestamp without time zone", "udt_name": "timestamp"},
+            {"column_name": "last_accessed_at", "data_type": "timestamp without time zone", "udt_name": "timestamp"},
+            {"column_name": "usage_count", "data_type": "integer", "udt_name": "int4"},
+            {"column_name": "strength", "data_type": "double precision", "udt_name": "float8"},
+            {"column_name": "embedding", "data_type": "USER-DEFINED", "udt_name": "vector"},
+            {"column_name": "ttl", "data_type": "integer", "udt_name": "int4"},
+            {"column_name": "expires_at", "data_type": "timestamp without time zone", "udt_name": "timestamp"},
+            {"column_name": "agent_id", "data_type": "text", "udt_name": "text"},
+            {"column_name": "info_class", "data_type": "text", "udt_name": "text"},
+            {"column_name": "governance", "data_type": "jsonb", "udt_name": "jsonb"},
+            {"column_name": "content_hash", "data_type": "text", "udt_name": "text"},
+            {"column_name": "human_label", "data_type": "text", "udt_name": "text"},
+            {"column_name": "obsolete_col", "data_type": "text", "udt_name": "text"},  # DEAD
+        ],
+        [],
+    ]
+
+    validator = PostgresAdapter(pool)
+    result = await validator.validate(RAE_MEMORY_CONTRACT_V1)
+
+    assert result.valid is False
+    dead_cols = [v for v in result.violations if v.issue_type == "DEAD_COLUMN"]
+    assert len(dead_cols) == 1
+    assert "obsolete_col" in dead_cols[0].details
+
+
+@pytest.mark.asyncio
+async def test_validation_fail_missing_foreign_key():
+    pool = MagicMock()
+    conn = AsyncMock()
+    acquire_ctx = AsyncMock()
+    acquire_ctx.__aenter__.return_value = conn
+    acquire_ctx.__aexit__.return_value = None
+    pool.acquire.return_value = acquire_ctx
+
+    # Setup contract with a foreign key column
+    from apps.memory_api.core.contract import MemoryContract, EntityContract, FieldContract, DataType
+    custom_contract = MemoryContract(
+        version="1.0.0",
+        entities=[
+            EntityContract(
+                name="memories",
+                fields=[
+                    FieldContract(name="id", data_type=DataType.UUID, is_primary_key=True),
+                    FieldContract(name="tenant_id", data_type=DataType.UUID, is_foreign_key=True), # EXPECTS FK
+                ]
+            )
+        ]
+    )
+
+    conn.fetch.side_effect = [
+        [{"table_name": "memories"}],
+        [
+            {"column_name": "id", "data_type": "uuid", "udt_name": "uuid"},
+            {"column_name": "tenant_id", "data_type": "uuid", "udt_name": "uuid"},
+        ],
+        [], # No foreign keys returned -> missing!
+    ]
+
+    validator = PostgresAdapter(pool)
+    result = await validator.validate(custom_contract)
+
+    assert result.valid is False
+    missing_fks = [v for v in result.violations if v.issue_type == "MISSING_FOREIGN_KEY"]
+    assert len(missing_fks) == 1
+    assert "tenant_id" in missing_fks[0].details

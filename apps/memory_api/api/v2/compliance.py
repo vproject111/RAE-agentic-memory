@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
 from apps.memory_api.dependencies import get_db_pool
@@ -62,10 +62,11 @@ class ApprovalResponseV2(BaseModel):
 @router.post("/approvals", response_model=ApprovalResponseV2)
 async def request_approval(
     request: ApprovalRequestV2,
+    req: Request,
     pool=Depends(get_db_pool),
-    tenant_access: bool = Depends(verify_tenant_access),
 ):
     with tracer.start_as_current_span("rae.api.v2.compliance.request_approval"):
+        await auth.check_tenant_access(req, request.tenant_id)
         service = HumanApprovalService(pool)
         result = await service.request_approval(
             tenant_id=str(request.tenant_id),

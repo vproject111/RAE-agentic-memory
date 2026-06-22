@@ -1,0 +1,64 @@
+# RAE Hard Frames Lite + PG (Silicon Oracle v3.4)
+# Explicitly disabling optional dependencies for Lite profile
+
+services:
+  rae-am-lite:
+    pull_policy: build
+    build:
+      context: .
+      args:
+        - BASE_IMAGE=python:3.14-slim
+        - INSTALL_ML=false
+    container_name: rae-am-lite
+    restart: always
+    ports:
+      - "8010:8000"
+    environment:
+      - RAE_PROFILE=lite
+      - RAE_DB_MODE=migrate
+      - POSTGRES_HOST=rae-am-postgres-lite
+      - POSTGRES_USER=rae
+      - POSTGRES_PASSWORD=rae_password
+      - POSTGRES_DB=rae
+      # SYSTEM 98.2: Strict Disable for optional infra
+      - QDRANT_HOST=disabled
+      - REDIS_URL=none
+      - CELERY_BROKER_URL=memory://
+      - CELERY_RESULT_BACKEND=rpc://
+      - OTEL_TRACES_ENABLED=false
+    depends_on:
+      rae-am-postgres-lite:
+        condition: service_healthy
+    networks:
+      rae-lite-internal:
+        ipv4_address: 172.21.0.10
+    dns:
+      - 127.0.0.1
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  rae-am-postgres-lite:
+    image: ankane/pgvector:latest
+    container_name: rae-am-postgres-lite
+    environment:
+      - POSTGRES_DB=rae
+      - POSTGRES_USER=rae
+      - POSTGRES_PASSWORD=rae_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rae -d rae"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      rae-lite-internal:
+        ipv4_address: 172.21.0.20
+
+networks:
+  rae-lite-internal:
+    name: rae-lite-internal
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

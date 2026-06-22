@@ -41,6 +41,23 @@ RAE_MEMORY_CONTRACT_V1 = MemoryContract(
                     dimension=384,
                     nullable=True,
                 ),
+                FieldContract(name="ttl", data_type=DataType.INTEGER, nullable=True),
+                FieldContract(
+                    name="expires_at", data_type=DataType.TIMESTAMP, nullable=True
+                ),
+                FieldContract(name="agent_id", data_type=DataType.TEXT, nullable=False),
+                FieldContract(
+                    name="info_class", data_type=DataType.TEXT, nullable=False
+                ),
+                FieldContract(
+                    name="governance", data_type=DataType.JSONB, nullable=False
+                ),
+                FieldContract(
+                    name="content_hash", data_type=DataType.TEXT, nullable=True
+                ),
+                FieldContract(
+                    name="human_label", data_type=DataType.TEXT, nullable=True
+                ),
             ],
         )
     ],
