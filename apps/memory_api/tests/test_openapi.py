@@ -9,7 +9,7 @@ def test_openapi_schema():
     response = client.get("/openapi.json")
     assert response.status_code == 200
     schema = response.json()
-    assert schema["info"]["title"] == "RAE Memory API"
+    assert schema["info"]["title"] == "RAE: Reflective Agentic Engine"
     # OpenAPI spec doesn't require top-level tags to list all tags used in paths
     # We verify the path exists and has the correct tag in operation
     assert "/v2/memories/" in schema["paths"]

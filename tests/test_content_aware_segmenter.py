@@ -7,7 +7,8 @@ import pytest
 from rae_core.ingestion.segmenter import IngestSegmenter
 from rae_core.ingestion.interfaces import ContentSignature
 
-def test_atomic_log_segmentation_stays_together():
+@pytest.mark.asyncio
+async def test_atomic_log_segmentation_stays_together():
     # Setup config with VERY SMALL soft limit to force pressure
     config = {
         "ingest_params": {
@@ -31,7 +32,7 @@ def test_atomic_log_segmentation_stays_together():
     )
     
     sig = ContentSignature(struct={"mode": "LINEAR_LOG_LIKE"}, dist={}, stab={})
-    chunks, _ = segmenter.segment(text, "POLICY_LOG_STREAM", sig)
+    chunks, _ = await segmenter.segment(text, "POLICY_LOG_STREAM", sig)
     
     # Validation
     # We expect Entry 2 to be in its own chunk, and NOT split, 
@@ -45,7 +46,8 @@ def test_atomic_log_segmentation_stays_together():
     assert "[10:10]" not in entry_2_chunk.content # Entry 3 is in the NEXT chunk
     assert len(chunks) == 3
 
-def test_procedural_steps_stay_atomic():
+@pytest.mark.asyncio
+async def test_procedural_steps_stay_atomic():
     config = {
         "ingest_params": {
             "target_chunk_size": 10, # Aggressive pressure
@@ -64,7 +66,7 @@ def test_procedural_steps_stay_atomic():
     )
     
     sig = ContentSignature(struct={"mode": "LIST_PROCEDURE_LIKE"}, dist={}, stab={})
-    chunks, _ = segmenter.segment(text, "POLICY_PROCEDURE_DOC", sig)
+    chunks, _ = await segmenter.segment(text, "POLICY_PROCEDURE_DOC", sig)
     
     # Each step should be its own chunk because each step > 10 chars
     # and we don't split atoms.

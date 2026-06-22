@@ -2,11 +2,12 @@ import subprocess
 import sys
 import time
 
-HOST = "100.78.171.96"
-USER = "vaio"
+HOST = "100.117.242.21"
+USER = "root"
 PASS = "mwzmjsunp"
-CMD_START = "lumina_grzegorz"
-CMD_STOP = "lumina_stop"
+CMD_START = "/root/Skrypty/lumina_grzegorz"
+CMD_STOP = "/root/Skrypty/lumina_stop"
+
 
 
 def run_ssh_cmd(cmd, timeout=None):

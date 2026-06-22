@@ -76,6 +76,18 @@ class PostgresAdapter(MemoryAdapter):
                     entity_violations = self._validate_columns(entity, columns)
                     violations.extend(entity_violations)
 
+                    # Validate Foreign Keys
+                    fk_columns = await self._get_foreign_keys(conn, entity.name)
+                    for field in entity.fields:
+                        if field.is_foreign_key and field.name not in fk_columns:
+                            violations.append(
+                                ValidationViolation(
+                                    entity=entity.name,
+                                    issue_type="MISSING_FOREIGN_KEY",
+                                    details=f"Foreign key constraint on column '{field.name}' in table '{entity.name}' is missing.",
+                                )
+                            )
+
             return ValidationResult(valid=len(violations) == 0, violations=violations)
         except Exception as e:
             logger.error(f"Postgres validation failed with exception: {e}")
@@ -89,6 +101,22 @@ class PostgresAdapter(MemoryAdapter):
                     )
                 ],
             )
+
+    async def _get_foreign_keys(
+        self, conn: asyncpg.Connection, table_name: str
+    ) -> Set[str]:
+        query = """
+            SELECT kcu.column_name
+            FROM information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND tc.table_schema = 'public'
+              AND tc.table_name = $1
+        """
+        rows = await conn.fetch(query, table_name)
+        return {row["column_name"] for row in rows}
 
     async def _get_tables(self, conn: asyncpg.Connection) -> Set[str]:
         query = """
@@ -138,6 +166,18 @@ class PostgresAdapter(MemoryAdapter):
                         entity=entity.name,
                         issue_type="TYPE_MISMATCH",
                         details=f"Column '{field.name}' expected {field.data_type.value}, found '{actual_type}'.",
+                    )
+                )
+
+        # Check for dead (obsolete) columns
+        contract_field_names = {field.name for field in entity.fields}
+        for col_name in existing_columns:
+            if col_name not in contract_field_names:
+                violations.append(
+                    ValidationViolation(
+                        entity=entity.name,
+                        issue_type="DEAD_COLUMN",
+                        details=f"Column '{col_name}' in table '{entity.name}' is dead/unwanted (not defined in contract).",
                     )
                 )
 

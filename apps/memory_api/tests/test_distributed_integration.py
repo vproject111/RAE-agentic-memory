@@ -48,7 +48,9 @@ async def test_embedding_service_local_fallback():
     """Test that EmbeddingService falls back to local when not in distributed mode."""
     # Setup
     original_profile = settings.RAE_PROFILE
+    original_ml_url = settings.ML_SERVICE_URL
     settings.RAE_PROFILE = "standard"
+    settings.ML_SERVICE_URL = "http://localhost:8001"
 
     # Mock SentenceTransformer to avoid torch/cuda warnings during initialization
     with patch("apps.memory_api.services.embedding.EmbeddingService._initialize_model"):
@@ -58,9 +60,14 @@ async def test_embedding_service_local_fallback():
         with patch.object(
             service, "generate_embeddings", return_value=[[0.4, 0.5, 0.6]]
         ):
-            # Mock litellm.aembedding to avoid real API calls
-            with patch("litellm.aembedding") as mock_litellm:
-                mock_litellm.return_value = {"data": [{"embedding": [0.4, 0.5, 0.6]}]}
+            # Mock LLMRouter.embed_batch to avoid real API calls
+            with patch.object(service.router, "embed_batch", new_callable=AsyncMock) as mock_embed_batch:
+                from apps.llm.models import EmbeddingResponse
+                mock_embed_batch.return_value = EmbeddingResponse(
+                    model="text-embedding-3-small",
+                    embeddings=[[0.4, 0.5, 0.6]],
+                    usage=None
+                )
 
                 # Execute
                 texts = ["local"]
@@ -70,9 +77,8 @@ async def test_embedding_service_local_fallback():
                 assert isinstance(result, list)
                 assert len(result) == 1
                 assert result[0] == [0.4, 0.5, 0.6]
-                # mock_sync is NOT called by generate_embeddings_async,
-                # it calls litellm.aembedding directly.
-                mock_litellm.assert_called_once()
+                mock_embed_batch.assert_called_once()
 
     # Cleanup
     settings.RAE_PROFILE = original_profile
+    settings.ML_SERVICE_URL = original_ml_url

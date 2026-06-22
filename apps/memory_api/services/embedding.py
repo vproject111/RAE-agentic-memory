@@ -117,6 +117,8 @@ class EmbeddingService:
             try:
                 result = await client.generate_embeddings(texts)
                 return cast(List[List[float]], result.get("embeddings", []))
+            except Exception as ml_err:
+                print(f"⚠️ [EmbeddingService] Remote ML service call failed: {ml_err}. Falling back to local/native embedder.")
             finally:
                 await client.close()
 

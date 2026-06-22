@@ -57,9 +57,9 @@ def test_federation_query_unauthorized(client_with_mocks):
         response = client_with_mocks.post(
             "/v2/federation/query",
             json={
-                "query": "test",
+                "query_text": "test",
                 "tenant_id": "test-tenant",
-                "project": "test-project",
+                "project_id": "test-project",
                 "limit": 5,
             },
         )
@@ -118,9 +118,9 @@ async def test_federation_query_success(client_with_mocks, mock_hybrid_search):
         response = client_with_mocks.post(
             "/v2/federation/query",
             json={
-                "query": "test query",
+                "query_text": "test query",
                 "tenant_id": "t-1",
-                "project": "p-1",
+                "project_id": "p-1",
                 "limit": 10,
             },
         )

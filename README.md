@@ -102,7 +102,7 @@ Get RAE up and running in 2 simple steps:
 
 1.  **Clone & Initialize**:
     ```bash
-    git clone https://github.com/dreamsoft-pro/RAE-agentic-memory.git
+    git clone https://github.com/vproject111/RAE-agentic-memory.git
     cd RAE-agentic-memory
     chmod +x init.sh
     ./init.sh  # Automatically creates .env and workspaces
@@ -121,6 +121,37 @@ Get RAE up and running in 2 simple steps:
     ```
 
 *API available at http://localhost:8001 (Standard/Dev) or http://localhost:8010 (Lite).*
+
+---
+
+## 🔌 Model Context Protocol (MCP) Integration
+
+RAE includes a built-in MCP server enabling agents (like Cursor, Claude Desktop, etc.) to query and save memories seamlessly. 
+
+Add the following to your MCP settings file (e.g., `claude_desktop_config.json` or Cursor's MCP configuration):
+
+```json
+{
+  "mcpServers": {
+    "rae-memory": {
+      "command": "python",
+      "args": ["-m", "rae_mcp"],
+      "cwd": "/path/to/cloned/RAE-agentic-memory/integrations/mcp/src",
+      "env": {
+        "RAE_API_URL": "http://localhost:8001",
+        "RAE_API_KEY": "dev-key",
+        "RAE_PROJECT_ID": "default",
+        "RAE_TENANT_ID": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}
+```
+
+Make sure the virtual environment or your python environment has the required dependencies (`httpx`, `mcp`, `structlog`, `opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-instrumentation-httpx`, `prometheus_client`). You can install them by running:
+```bash
+pip install -r integrations/mcp/requirements.txt
+```
 
 ---
 

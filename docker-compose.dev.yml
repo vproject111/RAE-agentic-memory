@@ -10,6 +10,7 @@ services:
         - BASE_IMAGE=python:3.14-slim
         - INSTALL_ML=false
     container_name: rae-api-dev
+    restart: unless-stopped
     ports:
       - "8001:8000"
     volumes:
@@ -31,6 +32,7 @@ services:
   rae-am-postgres:
     image: ankane/pgvector:latest
     container_name: rae-am-postgres-dev
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=rae
       - POSTGRES_USER=rae
@@ -50,6 +52,7 @@ services:
   rae-qdrant:
     image: qdrant/qdrant:latest
     container_name: rae-qdrant-dev
+    restart: unless-stopped
     ports:
       - "6333:6333"
     volumes:
@@ -60,6 +63,7 @@ services:
   rae-am-redis:
     image: redis:7-alpine
     container_name: rae-am-redis-dev
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
