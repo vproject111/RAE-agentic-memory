@@ -26,3 +26,7 @@ class Hypothesis(BaseModel):
     statement: str
     motivation: str
     target_metric: str
+
+class InsightPack(BaseModel):
+    insights: List[Any] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
