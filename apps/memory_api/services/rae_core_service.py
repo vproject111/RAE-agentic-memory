@@ -1118,6 +1118,43 @@ class RAECoreService:
 
         return response
 
+    async def search_memories(
+        self,
+        query: str,
+        tenant_id: str,
+        project: Optional[str] = None,
+        layer: Optional[str] = None,
+        limit: int = 10,
+        enable_reranking: bool = False,
+        filters: Optional[dict] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Search memories across layers using RAE Core Engine.
+        """
+        weights = None
+        if self.tuning_service:
+            try:
+                weights = await self.tuning_service.get_current_weights(str(tenant_id))
+            except Exception as e:
+                logger.warning("failed_to_get_tuning_weights", error=str(e))
+
+        if self.szubar_mode:
+            from rae_core.math.structure import ScoringWeights
+
+            weights = ScoringWeights.szubar_profile()
+
+        return await self.engine.search_memories(
+            query=query,
+            tenant_id=str(tenant_id),
+            agent_id="default",
+            project=project,
+            layer=layer,
+            top_k=limit,
+            filters=filters,
+            custom_weights=weights,
+            enable_reranking=enable_reranking,
+        )
+
     async def consolidate_memories(
         self,
         tenant_id: str,

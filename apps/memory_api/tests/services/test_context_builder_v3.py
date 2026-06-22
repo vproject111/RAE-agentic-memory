@@ -99,3 +99,45 @@ async def test_context_builder_v3_integration_mock(mock_rae_service):
         )
 
         mock_v3.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_context_builder_uses_search_memories(mock_rae_service):
+    """Verify that ContextBuilder calls search_memories when available"""
+    reflection_engine = MagicMock()
+    reflection_engine.query_reflections = AsyncMock(return_value=[])
+
+    # Setup mock_rae_service to return a list of memories for search_memories
+    mock_rae_service.search_memories = AsyncMock(
+        return_value=[
+            {
+                "id": "1",
+                "content": "test memory via search",
+                "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+                "layer": "episodic",
+                "importance": 0.9,
+            }
+        ]
+    )
+
+    builder = ContextBuilder(
+        mock_rae_service,
+        reflection_engine,
+        config=ContextConfig(),
+    )
+
+    # Act
+    ctx = await builder.build_context(
+        tenant_id=UUID("00000000-0000-0000-0000-000000000001"),
+        project="p1",
+        query="test query",
+    )
+
+    # Assert
+    mock_rae_service.search_memories.assert_called_once()
+    args, kwargs = mock_rae_service.search_memories.call_args
+    assert kwargs["query"] == "test query"
+    assert kwargs["tenant_id"] == "00000000-0000-0000-0000-000000000001"
+    assert kwargs["project"] == "p1"
+    assert len(ctx.ltm_items) == 1
+    assert ctx.ltm_items[0].content == "test memory via search"
