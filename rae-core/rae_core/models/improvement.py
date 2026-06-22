@@ -20,3 +20,9 @@ class ExperimentRun(BaseModel):
     proposal_id: str
     mode: str
     result: str
+
+class Hypothesis(BaseModel):
+    hypothesis_id: str = Field(default_factory=lambda: str(uuid4()))
+    statement: str
+    motivation: str
+    target_metric: str
