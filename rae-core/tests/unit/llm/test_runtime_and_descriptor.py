@@ -79,6 +79,17 @@ async def test_resolve_llm_runtime_local_fallback(monkeypatch):
     assert isinstance(runtime, SmallLocalLLMProvider)
 
 @pytest.mark.asyncio
+async def test_resolve_llm_runtime_with_requirements(monkeypatch):
+    monkeypatch.setenv("RAE_LLM_MODE", "local")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-deepseek-key")
+    
+    runtime = await resolve_llm_runtime(requirements={"requires_reasoning": True})
+    assert isinstance(runtime, LightweightOpenAIProvider)
+    assert runtime.model == "deepseek-reasoner"
+    assert runtime.api_key == "test-deepseek-key"
+
+@pytest.mark.asyncio
 @patch("httpx.AsyncClient.get")
 async def test_resolve_llm_runtime_remote_success(mock_get, monkeypatch):
     monkeypatch.setenv("RAE_LLM_MODE", "remote")
