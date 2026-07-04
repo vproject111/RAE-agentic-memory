@@ -247,7 +247,7 @@ async def rae_exception_handler(request: Request, exc: RAEError):
             tags=["incident", "error_audit", type(exc).__name__.lower()],
             metadata={"error_type": type(exc).__name__, "path": request.url.path}
         )
-    except: pass # Prevent infinite loop if RAE is down
+    except Exception: pass # Prevent infinite loop if RAE is down
 
     status_code = 400
     if isinstance(exc, ContractViolationError): status_code = 422

@@ -54,7 +54,8 @@ async def test_szubar_failure_injection(mocker):
     await service.execute_action(
         tenant_id=tenant_id,
         agent_id=agent_id,
-        prompt="How to install libraries?"
+        prompt="How to install libraries?",
+        project=agent_id
     )
     
     # Inspect calls to generate_text

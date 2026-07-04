@@ -409,7 +409,7 @@ async def delete_memory(
         deleted = await rae_service.delete_memory(memory_id, str(tenant_id))
         if not deleted:
             raise HTTPException(status_code=404, detail="Memory not found")
-        return {"message": "Memory deleted successfully"}
+        return {"memory_id": memory_id, "message": "Memory deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:

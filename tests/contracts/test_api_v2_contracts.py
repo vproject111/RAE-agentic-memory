@@ -82,15 +82,20 @@ class TestMemoryQueryContractV2:
 
     def test_query_memory_v2_response_schema(self, client_with_overrides, mock_rae_service):
         """Ensure V2 query memory returns correct schema"""
-        # Configure mock to return valid search response
-        mock_result = MagicMock()
-        mock_result.id = "test-1"
-        mock_result.content = "found content"
-        mock_result.score = 0.95
-        mock_result.layer = "working"
-        mock_result.importance = 0.8
-        mock_result.tags = ["tag1"]
-        mock_result.metadata = {"key": "val"}
+        class MockResult:
+            def __init__(self):
+                self.id = "test-1"
+                self.memory_id = "test-1"
+                self.content = "found content"
+                self.score = 0.95
+                self.layer = "working"
+                self.importance = 0.8
+                self.tags = ["tag1"]
+                self.metadata = {"key": "val"}
+                self.timestamp = "2026-07-04T07:57:00Z"
+                self.human_label = None
+
+        mock_result = MockResult()
 
         mock_query_response = MagicMock()
         mock_query_response.results = [mock_result]
@@ -192,14 +197,15 @@ class TestMemoryReflectionsContractV2:
 
     def test_generate_reflections_response_schema(self, client_with_overrides, mock_rae_service):
         """Ensure reflections generation returns correct schema"""
-        # Mock return list of objects with id, content, etc.
-        MockReflection = MagicMock()
-        MockReflection.id = "ref-1"
-        MockReflection.content = "Insight"
-        MockReflection.importance = 0.8
-        MockReflection.tags = ["tag"]
-        
-        mock_rae_service.generate_reflections.return_value = [MockReflection]
+        class MockReflection:
+            def __init__(self):
+                self.id = "ref-1"
+                self.content = "Insight"
+                self.importance = 0.8
+                self.tags = ["tag"]
+
+        mock_reflection = MockReflection()
+        mock_rae_service.generate_reflections.return_value = [mock_reflection]
 
         response = client_with_overrides.post(
             "/v2/memories/reflections?project=test-project",

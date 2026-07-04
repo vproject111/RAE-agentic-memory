@@ -196,6 +196,22 @@ class SQLiteStorage(IMemoryStorage):
     async def close(self) -> None:
         pass
 
+    async def search_full_text(
+        self,
+        query: str,
+        tenant_id: str,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        await self.initialize()
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT *, 1.0 as score FROM memories WHERE tenant_id = ? AND content LIKE ? LIMIT ?",
+                (tenant_id, f"%{query}%", limit),
+            ) as cursor:
+                rows = await cursor.fetchall()
+                return [self._row_to_dict(row) for row in rows]
+
     def _row_to_dict(self, row: aiosqlite.Row) -> dict[str, Any]:
         d = dict(row)
         d["id"] = UUID(d["id"])
