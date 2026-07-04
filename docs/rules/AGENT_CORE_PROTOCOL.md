@@ -3,6 +3,30 @@
 > **SINGLE SOURCE OF TRUTH** for all AI Agents (Gemini, Claude, etc.) working on RAE.
 > **MANDATORY**: Read this before every session.
 
+## 0. CRITICAL MANDATES (RAE-FIRST v2.1) - READ FIRST
+**These rules are NON-NEGOTIABLE. Violation = Session Termination.**
+
+### 🚫 1. Zero Side-Channels (Communication Contract)
+- **RAE is the Only Broker**: You share state ONLY via RAE. Do not "hold" information in this chat.
+- **Action**: Every significant discovery, decision, or state change MUST be saved to RAE immediately (`save_memory`).
+- **Context**: Before acting, query RAE. Do not guess. Do not assume.
+
+### 🐳 2. Container-First (Infrastructure Contract)
+- **No Host Execution**: NEVER run tests/benchmarks on the host if a container exists.
+- **Command**: Use `docker compose exec rae-api pytest ...` instead of local `pytest`.
+- **Reason**: Reproducibility. Your local environment is irrelevant.
+
+### 🧠 3. RAE-SZUBAR MODE (Cognitive Contract)
+- **Think > Generate**: Do not spam code. Plan first.
+- **Failure-First Memory**: Check RAE for past failures before trying a "new" fix.
+- **Pressure Regulation**: If you are confused, STOP. Query RAE. Do not hallucinate.
+
+### 🔒 4. ISO Security (Data Contract)
+- **Classification**: `RESTRICTED` data NEVER leaves the Working Memory layer without encryption.
+- **Reflective Extraction**: Use the Reflective Layer to extract *patterns* from private data, never the raw data itself.
+
+---
+
 ## 1. CORE MANDATES
 
 - **Async-First**: **ALWAYS** use asynchronous connections and operations wherever possible to ensure high performance and non-blocking I/O.
@@ -46,6 +70,7 @@ Different branches = Different testing levels.
 ### Phase 1: Feature Branch (`feature/*`)
 - **Goal**: Speed & Focus.
 - **Command**: `pytest --no-cov path/to/new_test.py`
+- **Fast Loop**: Use `make test-fast` to stop on first error, then `make test-fix` to verify only the fixed tests.
 - **Rule**: Test **ONLY** your new code. Do NOT run full suite.
 
 ### Phase 2: Develop Branch (`develop`)

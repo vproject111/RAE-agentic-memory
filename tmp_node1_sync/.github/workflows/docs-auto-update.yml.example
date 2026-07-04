@@ -1,0 +1,237 @@
+name: Auto-Update Documentation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+
+  schedule:
+    # Daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: write  # Need write to commit updated docs
+
+jobs:
+  update-status-docs:
+    name: Update Status Documents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-base.txt
+          pip install -r requirements-test.txt
+          pip install gitpython
+
+      - name: Run tests for metrics
+        run: |
+          pytest --tb=short --cov=apps/memory_api --cov-report=json --json-report --json-report-file=test-report.json
+        continue-on-error: true  # Don't fail if tests fail
+
+      - name: Generate STATUS.md
+        run: |
+          python scripts/generate_status.py \
+            --output docs/.auto-generated/status/STATUS.md \
+            --branch ${{ github.ref_name }} \
+            --commit ${{ github.sha }}
+
+      - name: Generate TESTING_STATUS.md
+        run: |
+          python scripts/generate_testing_status.py \
+            --output docs/.auto-generated/status/TESTING_STATUS.md \
+            --test-report test-report.json \
+            --coverage-report coverage.json
+
+      - name: Generate CI_STATUS.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/generate_ci_status.py \
+            --output docs/.auto-generated/status/CI_STATUS.md \
+            --repo ${{ github.repository }}
+
+      - name: Commit status updates
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/.auto-generated/status/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "docs: Auto-update status and metrics [skip ci]"
+          git push
+
+  update-reports:
+    name: Update Reports
+    runs-on: ubuntu-latest
+    if: github.event.schedule != ''  # Only on scheduled runs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install git-changelog
+        run: pip install git-changelog
+
+      - name: Generate CHANGELOG.md
+        run: |
+          git-changelog \
+            --output docs/.auto-generated/reports/CHANGELOG.md \
+            --template keepachangelog \
+            --sections feat,fix,docs,test,refactor,perf,chore,ci \
+            --bump-latest
+
+      - name: Install code metrics tools
+        run: pip install radon lizard
+
+      - name: Generate CODE_METRICS.md
+        run: |
+          python scripts/generate_code_metrics.py \
+            --output docs/.auto-generated/reports/CODE_METRICS.md \
+            --path apps/memory_api
+
+      - name: Commit reports
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/.auto-generated/reports/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "docs: Auto-update reports [skip ci]"
+          git push
+
+  update-api-docs:
+    name: Update API Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements-base.txt
+
+      - name: Export OpenAPI spec
+        run: |
+          python scripts/export_openapi.py \
+            --output docs/.auto-generated/api/openapi.json
+
+      - name: Generate API endpoints list
+        run: |
+          python scripts/generate_api_endpoints.py \
+            --openapi docs/.auto-generated/api/openapi.json \
+            --output docs/.auto-generated/api/api_endpoints.md
+
+      - name: Commit API docs
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/.auto-generated/api/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "docs: Auto-update API documentation [skip ci]"
+          git push
+
+  update-compliance-reports:
+    name: Update Compliance Reports
+    runs-on: ubuntu-latest
+    if: github.event.schedule != '' && github.event.schedule == '0 0 1 * *'  # Monthly
+
+    services:
+      postgres:
+        image: ankane/pgvector
+        env:
+          POSTGRES_PASSWORD: memory
+          POSTGRES_USER: memory
+          POSTGRES_DB: memory
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-base.txt
+          pip install -r requirements-test.txt
+
+      - name: Run ISO 42001 compliance tests
+        run: |
+          pytest -m iso42001 --json-report --json-report-file=iso42001-report.json
+        continue-on-error: true
+
+      - name: Generate ISO 42001 status report
+        run: |
+          python scripts/generate_compliance_report.py \
+            --standard iso42001 \
+            --test-report iso42001-report.json \
+            --output docs/.auto-generated/compliance/iso42001-status.md
+
+      - name: Run NIST AI RMF tests
+        run: |
+          pytest -m nist --json-report --json-report-file=nist-report.json
+        continue-on-error: true
+
+      - name: Generate NIST coverage report
+        run: |
+          python scripts/generate_compliance_report.py \
+            --standard nist \
+            --test-report nist-report.json \
+            --output docs/.auto-generated/compliance/nist-coverage.md
+
+      - name: Generate audit summary
+        env:
+          DATABASE_URL: postgresql://memory:memory@localhost:5432/memory
+        run: |
+          python scripts/generate_audit_summary.py \
+            --output docs/.auto-generated/compliance/audit-summary.md
+
+      - name: Commit compliance reports
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/.auto-generated/compliance/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "docs: Auto-update compliance reports [skip ci]"
+          git push

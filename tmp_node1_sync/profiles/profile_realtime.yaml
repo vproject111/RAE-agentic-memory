@@ -1,0 +1,33 @@
+# Profile: Real-time Performance
+# Use case: Live chat, real-time assistants, interactive applications
+# Priority: Ultra-low latency (<100ms)
+
+name: "Real-time Performance"
+config_id: "cfg_realtime"
+description: "Optimized for ultra-low latency in real-time applications"
+
+parameters:
+  math_level: 1  # Minimal reasoning for speed
+  batch_size: 5  # Small batches for quick turnaround
+  cache_enabled: true  # Cache hot paths
+
+memory_config:
+  context_window: 2000  # Compact context
+  layers: ["episodic", "working"]  # Skip slower layers
+  vector_similarity_threshold: 0.80  # Fast approximate matching
+
+reasoning:
+  depth: 3  # Shallow reasoning only
+  timeout_ms: 100  # Hard timeout
+  strategy: "fast"
+
+tradeoffs:
+  latency: "minimal"  # <100ms target
+  quality: "acceptable"  # 85-90% accuracy ok
+  cost: "moderate"  # Some overhead for caching
+
+use_cases:
+  - "Live chat assistants"
+  - "Real-time Q&A"
+  - "Interactive demos"
+  - "Low-latency APIs"

@@ -1,0 +1,189 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rae.fullname" . }}
+  labels:
+    {{- include "rae.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rae.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "rae.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "rae.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            # Environment
+            - name: ENVIRONMENT
+              value: {{ .Values.config.environment | quote }}
+
+            # PostgreSQL
+            - name: POSTGRES_HOST
+              value: {{ .Values.postgresql.host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.postgresql.port | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.user | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.existingSecret | default (include "rae.fullname" .) }}
+                  key: {{ .Values.postgresql.existingSecretPasswordKey | default "postgres-password" }}
+
+            # Redis
+            - name: REDIS_HOST
+              value: {{ .Values.redis.host | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_DB
+              value: {{ .Values.redis.database | quote }}
+            {{- if .Values.redis.existingSecret }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: {{ .Values.redis.existingSecretPasswordKey }}
+            {{- end }}
+
+            # Qdrant
+            - name: QDRANT_HOST
+              value: {{ .Values.qdrant.host | quote }}
+            - name: QDRANT_PORT
+              value: {{ .Values.qdrant.port | quote }}
+            - name: QDRANT_COLLECTION_NAME
+              value: {{ .Values.qdrant.collectionName | quote }}
+            {{- if .Values.qdrant.existingSecret }}
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.qdrant.existingSecret }}
+                  key: {{ .Values.qdrant.existingSecretApiKeyKey }}
+            {{- end }}
+
+            # Security
+            - name: ENABLE_API_KEY_AUTH
+              value: {{ .Values.config.enableApiKeyAuth | quote }}
+            - name: ENABLE_JWT_AUTH
+              value: {{ .Values.config.enableJwtAuth | quote }}
+            - name: ENABLE_RATE_LIMITING
+              value: {{ .Values.config.enableRateLimiting | quote }}
+            - name: RATE_LIMIT_REQUESTS
+              value: {{ .Values.config.rateLimitRequests | quote }}
+            - name: RATE_LIMIT_WINDOW
+              value: {{ .Values.config.rateLimitWindow | quote }}
+            - name: ALLOWED_ORIGINS
+              value: {{ .Values.config.allowedOrigins | quote }}
+            {{- if .Values.config.enableJwtAuth }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "rae.fullname" . }}
+                  key: jwt-secret
+            {{- end }}
+            {{- if .Values.config.enableApiKeyAuth }}
+            - name: VALID_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "rae.fullname" . }}
+                  key: api-keys
+            {{- end }}
+
+            # OpenTelemetry
+            - name: OTEL_TRACES_ENABLED
+              value: {{ .Values.config.otelTracesEnabled | quote }}
+            - name: OTEL_EXPORTER_TYPE
+              value: {{ .Values.config.otelExporterType | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.config.otelExporterEndpoint | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.config.otelServiceName | quote }}
+            - name: OTEL_SERVICE_VERSION
+              value: {{ .Chart.AppVersion | quote }}
+
+            # Logging
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.config.logFormat | quote }}
+
+            # Cost Tracking
+            - name: ENABLE_COST_TRACKING
+              value: {{ .Values.config.enableCostTracking | quote }}
+            - name: COST_TRACKING_INTERVAL
+              value: {{ .Values.config.costTrackingInterval | quote }}
+
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+        {{- with .Values.sidecars }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

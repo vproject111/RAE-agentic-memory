@@ -1,0 +1,21 @@
+# RAE-Windows Configuration
+# This file can be managed by IT/GPO.
+
+system:
+  app_name: "RAE-Lite Enterprise"
+  version: "1.0.0"
+
+storage:
+  data_dir: "rae_data"
+
+observer:
+  enabled: true  # <--- FORCE ENABLED FOR ENTERPRISE
+  targets: 
+    - "ChatGPT"
+    - "Claude"
+    - "Gemini"
+    - "DeepSeek"
+  capture_interval_sec: 5
+
+privacy:
+  local_only_processing: true # Ensure captured logs never leave device raw

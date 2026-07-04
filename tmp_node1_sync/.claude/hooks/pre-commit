@@ -1,0 +1,53 @@
+#!/bin/bash
+
+echo ""
+echo "🔍 Sprawdzanie GitHub Actions przed commitem..."
+echo ""
+
+# Sprawdź Actions
+if [ -f .claude/scripts/check-actions.sh ]; then
+    bash .claude/scripts/check-actions.sh
+    ACTIONS_STATUS=$?
+    
+    if [ $ACTIONS_STATUS -eq 1 ]; then
+        echo ""
+        echo "⚠️  UWAGA: Ostatni GitHub Actions FAILED!"
+        echo "Czy na pewno chcesz commitować? (y/n)"
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo "❌ Commit anulowany"
+            exit 1
+        fi
+    fi
+fi
+
+# Lint check
+echo ""
+echo "🔍 Uruchamiam linter..."
+if [ -f Makefile ]; then
+    make lint || { echo "❌ Linter failed"; exit 1; }
+else
+    echo "⚠️  Makefile not found, skipping lint."
+fi
+
+# Security check (optional, don't fail commit on security warnings unless critical)
+echo ""
+echo "🔒 Uruchamiam skan bezpieczeństwa..."
+if [ -f Makefile ]; then
+    make security || echo "⚠️  Security scan had findings (check logs)"
+else
+    echo "⚠️  Makefile not found, skipping security scan."
+fi
+
+# Test check
+echo ""
+echo "🧪 Uruchamiam testy..."
+if [ -f Makefile ]; then
+    make test-unit || { echo "❌ Tests failed"; exit 1; }
+else
+    echo "⚠️  Makefile not found, skipping tests."
+fi
+
+echo ""
+echo "✅ Pre-commit checks zakończone!"
+echo ""

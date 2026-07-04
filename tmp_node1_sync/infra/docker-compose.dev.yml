@@ -1,0 +1,32 @@
+
+
+services:
+  memory-api:
+    build:
+      context: .
+      dockerfile: ./apps/memory_api/Dockerfile
+    command: uvicorn apps.memory_api.main:app --reload --host 0.0.0.0 --port 8000
+    volumes:
+      - ./apps/memory_api:/app
+      - ./sdk/python/rae_memory_sdk:/app/sdk/python/rae_memory_sdk
+    # Healthcheck is removed in dev mode as the reload server can be slow to start
+    healthcheck:
+      disable: true
+
+  memory-api-worker:
+    build:
+      context: .
+      dockerfile: ./apps/memory_api/Dockerfile
+    volumes:
+      - ./apps/memory_api:/app
+      - ./sdk/python/rae_memory_sdk:/app/sdk/python/rae_memory_sdk
+
+  reranker:
+    build:
+      context: .
+      dockerfile: ./apps/reranker_service/Dockerfile
+    command: uvicorn main:app --reload --host 0.0.0.0 --port 8001
+    volumes:
+      - ./apps/reranker_service:/app
+    healthcheck:
+      disable: true

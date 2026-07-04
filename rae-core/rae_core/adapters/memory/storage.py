@@ -65,6 +65,9 @@ class InMemoryStorage(IMemoryStorage, IVectorStore):
         # Used to validate vector sizes and calculate stride.
         self._vector_dims: dict[str, int] = {}
 
+        # Multi-model embeddings storage: {memory_id: {model_name: {embedding: ..., metadata: ...}}}
+        self._embeddings: dict[UUID, dict[str, dict[str, Any]]] = defaultdict(dict)
+
         # Thread safety
         self._lock = asyncio.Lock()
 
@@ -414,6 +417,18 @@ class InMemoryStorage(IMemoryStorage, IVectorStore):
             expires_at = kwargs.get("expires_at")
             memory_type = kwargs.get("memory_type", "text")
             strength = kwargs.get("strength", 1.0)
+
+            # Store additional fields in metadata if not explicit columns in this simple adapter
+            meta = metadata or {}
+            if project:
+                meta["project"] = project
+            if session_id:
+                meta["session_id"] = session_id
+            if source:
+                meta["source"] = source
+            meta["info_class"] = info_class
+            if governance:
+                meta["governance"] = governance
 
             memory = {
                 "id": memory_id,

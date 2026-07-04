@@ -1,0 +1,36 @@
+2026-01-12 22:33:08 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:09.064823Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:09.065066Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:09.065236Z"}
+2026-01-12 22:33:17 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:18.060663Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:18.060960Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:18.061159Z"}
+2026-01-12 22:33:26 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:27.201664Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:27.201932Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:27.202106Z"}
+2026-01-12 22:33:36 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:36.494372Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:36.494599Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:36.494794Z"}
+2026-01-12 22:33:46 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:46.339979Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:46.340207Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:46.340400Z"}
+2026-01-12 22:33:57 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:33:57.863584Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:57.863871Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:33:57.864058Z"}
+2026-01-12 22:34:10 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:34:10.406092Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:10.406356Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:10.406540Z"}
+2026-01-12 22:34:25 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:34:25.649694Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:25.649967Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:25.650146Z"}
+2026-01-12 22:34:47 [info     ] opentelemetry_disabled         reason='OTEL_TRACES_ENABLED=false'
+{"external_log_level": "WARNING", "app_log_level": "INFO", "event": "logging_configured", "level": "info", "logger": "apps.memory_api.logging_config", "timestamp": "2026-01-12T22:34:47.484309Z"}
+{"profile": "lite", "event": "Starting up RAE Memory API...", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:47.484545Z"}
+{"api_key_auth": false, "jwt_auth": false, "rate_limiting": false, "event": "security_settings", "level": "info", "logger": "apps.memory_api.main", "timestamp": "2026-01-12T22:34:47.484723Z"}

@@ -1,0 +1,188 @@
+███████████████████████████████████████████████████████████████████████
+██                                                                   ██
+██   RAE - Reflective Agentic Memory Engine                         ██
+██   Version: {{ .Chart.AppVersion }}                                          ██
+██                                                                   ██
+███████████████████████████████████████████████████████████████████████
+
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+  $ helm get all {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 ACCESSING THE API
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+
+  The API is available at:
+
+  {{- if $.Values.ingress.tls }}
+  🌐 https://{{ $host.host }}{{ .path }}
+  {{- else }}
+  🌐 http://{{ $host.host }}{{ .path }}
+  {{- end }}
+
+  API Documentation (Swagger UI):
+  📚 https://{{ $host.host }}/docs
+
+  Alternative Documentation (ReDoc):
+  📖 https://{{ $host.host }}/redoc
+
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "rae.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+
+  🌐 http://$NODE_IP:$NODE_PORT
+  📚 http://$NODE_IP:$NODE_PORT/docs
+  📖 http://$NODE_IP:$NODE_PORT/redoc
+
+{{- else if contains "LoadBalancer" .Values.service.type }}
+
+  It may take a few minutes for the LoadBalancer IP to be available.
+  You can watch the status by running:
+
+  $ kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "rae.fullname" . }}
+
+  Once available:
+
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "rae.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+
+  🌐 http://$SERVICE_IP:{{ .Values.service.port }}
+  📚 http://$SERVICE_IP:{{ .Values.service.port }}/docs
+  📖 http://$SERVICE_IP:{{ .Values.service.port }}/redoc
+
+{{- else if contains "ClusterIP" .Values.service.type }}
+
+  The API is available within the cluster at:
+
+  🌐 http://{{ include "rae.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+  To access from outside the cluster, use port-forwarding:
+
+  $ kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "rae.fullname" . }} 8080:{{ .Values.service.port }}
+
+  Then access:
+  🌐 http://localhost:8080
+  📚 http://localhost:8080/docs
+  📖 http://localhost:8080/redoc
+
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 AUTHENTICATION
+
+{{- if .Values.config.enableApiKeyAuth }}
+
+API Key Authentication is ENABLED.
+
+Add the X-API-Key header to your requests:
+
+  curl -H "X-API-Key: your-api-key" http://localhost:8080/v1/memories/create
+
+{{- else if .Values.config.enableJwtAuth }}
+
+JWT Authentication is ENABLED.
+
+Add the Authorization header to your requests:
+
+  curl -H "Authorization: Bearer your-jwt-token" http://localhost:8080/v1/memories/create
+
+{{- else }}
+
+⚠️  WARNING: Authentication is DISABLED!
+This is not recommended for production environments.
+
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 MONITORING
+
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+
+✅ Prometheus ServiceMonitor is enabled.
+
+Metrics are available at:
+  📈 http://{{ include "rae.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/metrics
+
+{{- else }}
+
+Prometheus monitoring is disabled.
+
+To enable, set:
+  monitoring.serviceMonitor.enabled: true
+
+{{- end }}
+
+{{- if .Values.config.otelTracesEnabled }}
+
+✅ OpenTelemetry tracing is enabled.
+
+Traces are exported to:
+  🔍 {{ .Values.config.otelExporterEndpoint }}
+
+{{- else }}
+
+OpenTelemetry tracing is disabled.
+
+To enable, set:
+  config.otelTracesEnabled: true
+
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️  CONFIGURATION
+
+Environment: {{ .Values.config.environment }}
+Replicas: {{ .Values.replicaCount }}{{ if .Values.autoscaling.enabled }} (autoscaling: {{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }}){{ end }}
+Rate Limiting: {{ if .Values.config.enableRateLimiting }}✅ Enabled ({{ .Values.config.rateLimitRequests }}/{{ .Values.config.rateLimitWindow }}s){{ else }}❌ Disabled{{ end }}
+Cost Tracking: {{ if .Values.config.enableCostTracking }}✅ Enabled{{ else }}❌ Disabled{{ end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 RESOURCES
+
+• Documentation: https://github.com/dreamsoft-pro/RAE-agentic-memory/tree/main/docs
+• Python SDK: https://github.com/dreamsoft-pro/RAE-agentic-memory/tree/main/sdk/python
+• MCP Integration: https://github.com/dreamsoft-pro/RAE-agentic-memory/tree/main/integrations/mcp-server
+• Examples: https://github.com/dreamsoft-pro/RAE-agentic-memory/tree/main/examples
+• Issues: https://github.com/dreamsoft-pro/RAE-agentic-memory/issues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 NEXT STEPS
+
+1. Test the health endpoint:
+   curl http://localhost:8080/health
+
+2. Create your first memory:
+   curl -X POST http://localhost:8080/v1/memories/create \
+     -H "Content-Type: application/json" \
+     -H "X-Tenant-ID: your-tenant" \
+     -d '{"content": "Hello from RAE!", "layer": "semantic"}'
+
+3. Search memories:
+   curl -X POST http://localhost:8080/v1/search/hybrid \
+     -H "Content-Type: application/json" \
+     -H "X-Tenant-ID: your-tenant" \
+     -d '{"query": "Hello", "top_k": 5}'
+
+4. View governance dashboard:
+   curl http://localhost:8080/v1/governance/overview
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Happy building with RAE! 🚀🧠

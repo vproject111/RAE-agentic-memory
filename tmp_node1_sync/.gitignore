@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+junit.xml # Added to ignore generated JUnit XML reports
+.hypothesis/
+# Node
+node_modules/
+# OS
+.DS_Store
+Thumbs.db
+# Docker
+*.log
+
+# Benchmarking
+benchmarking/results/
+benchmarking/session_*.log
+
+# Load Testing
+stress_test_report.html
+stress_test_stats_exceptions.csv
+stress_test_stats_failures.csv
+stress_test_stats_stats.csv
+stress_test_stats_stats_history.csv
+soak_test_report.html
+soak_test_stats_exceptions.csv
+soak_test_stats_failures.csv
+soak_test_stats_stats.csv
+soak_test_stats_stats_history.csv
+*.log # Catching stress_test.log and soak_test.log
+
+
+# venv/IDE
+.env
+.env.docker
+.mcp-test.env
+.vscode/
+.idea/
+.venv/
+.local/
+rae_tests*.zip
+project_dump.txt
+.clauderc
+logs_*/
+docker-logs-*.txt
+low-memory.txt
+Polecenie-Startowe-dla-Nowego-Agent.md
+RAE-math-improvments.txt
+zapetlenie-1.txt
+# Agent session logs (personal notes)
+docs/first-start-gemini-with-RAE.md
+docs/*-gemini-*.md
+docs/*-claude-*.md
+.mypy_cache/
+.claude/settings.local.json
+junit.xml
+junit.xml
+docs/infra/kubus.md
+
+# RAE Cluster Configuration (Private)
+config/cluster.yaml
+config/cluster.local.yaml
+**/*.pem
+**/*.key
+pass_*.tmp
+
+# Temporary and log files from agent sessions
+*co-zrobiono.txt
+*.txt#
+.env.benchmark

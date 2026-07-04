@@ -1,0 +1,79 @@
+memories:
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: semantic
+    content: "Row-Level Security (RLS) in PostgreSQL allows to control which rows a user can access in a table. It's crucial for multi-tenant applications."
+    source_id: doc_rls_pg
+    tags: ["postgres", "rls", "security"]
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: semantic
+    content: "Qdrant is a vector database for similarity search, used for the retrieve step in our RAG pipeline. It supports dense and sparse vectors."
+    source_id: doc_qdrant
+    tags: ["qdrant", "vector-db", "rag"]
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: episodic
+    content: "The user previously asked about the implementation details of the RAG pipeline, specifically how to integrate the reranker service."
+    source_id: chat_history_1
+    tags: ["rag", "user-question", "reranker"]
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: procedural
+    content: "To deploy the system, you need to run 'docker compose up -d --build'. Ensure all environment variables are set."
+    source_id: doc_deployment
+    tags: ["docker", "deployment"]
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: semantic
+    content: "The RAE project aims to provide a robust agentic memory system with cost-aware LLM selection and PII scrubbing."
+    source_id: doc_rae_overview
+    tags: ["rae", "overview", "cost-aware", "pii"]
+  - tenant_id: eval-tenant
+    agent_id: eval-agent
+    memory_type: semantic
+    content: "Cost Controller module in RAE dynamically selects LLM models (local-first) and estimates costs to stay within budget."
+    source_id: doc_cost_controller
+    tags: ["rae", "cost-controller", "llm", "budget"]
+
+queries:
+  - id: q1
+    query: "How to implement Row-Level Security in Postgres for multi-tenant apps?"
+    expected_results:
+      - source_id: "doc_rls_pg"
+        relevance: 3
+      - source_id: "doc_rae_overview"
+        relevance: 1
+  - id: q2
+    query: "Explain Qdrant's role in the RAG pipeline, including vector types."
+    expected_results:
+      - source_id: "doc_qdrant"
+        relevance: 3
+      - source_id: "chat_history_1"
+        relevance: 1
+  - id: q3
+    query: "What was the user's previous question about RAG and reranking?"
+    expected_results:
+      - source_id: "chat_history_1"
+        relevance: 3
+  - id: q4
+    query: "What are the steps to deploy the RAE system using Docker Compose?"
+    expected_results:
+      - source_id: "doc_deployment"
+        relevance: 3
+  - id: q5
+    query: "Give an overview of the RAE project's goals, including cost management and data privacy."
+    expected_results:
+      - source_id: "doc_rae_overview"
+        relevance: 3
+      - source_id: "doc_cost_controller"
+        relevance: 2
+      - source_id: "doc_rls_pg"
+        relevance: 1
+  - id: q6
+    query: "How does the Cost Controller work in RAE, especially regarding model selection and budget?"
+    expected_results:
+      - source_id: "doc_cost_controller"
+        relevance: 3
+      - source_id: "doc_rae_overview"
+        relevance: 1

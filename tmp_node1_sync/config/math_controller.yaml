@@ -1,0 +1,244 @@
+# Math Layer Controller Configuration
+# ===================================
+#
+# This file configures how the MathLayerController selects
+# mathematical levels for memory operations.
+#
+# Profiles:
+#   - research: Full features, logging enabled, exploration allowed
+#   - production: Stable defaults, minimal exploration
+#   - cheap: Always prefer L1, minimize cost
+
+# Active profile
+profile: "cheap"
+
+# Policy version (1 = rule-based, 2 = weighted scoring + reward)
+policy_version: 2
+
+# Enable Multi-Armed Bandit online learning (requires policy_version >= 2)
+bandit_enabled: false
+
+# Default level when no rules match
+default_level: "deterministic_heuristic"  # L1
+
+# Allowed levels (can disable L2/L3 for certain deployments)
+allowed_levels:
+  - "deterministic_heuristic"  # L1
+  - "information_theoretic"    # L2
+  - "adaptive_hybrid"          # L3
+
+# Level selection thresholds
+thresholds:
+  # Structure thresholds (from MathematicalDecisionEngine)
+  gcs_low: 1.0
+  gcs_target: 1.5
+  gcs_high: 3.0
+  scs_low: 0.6
+  scs_target: 0.75
+
+  # Dynamics thresholds
+  mdi_moderate: 0.3
+  mdi_critical: 0.5
+
+  # Policy thresholds
+  orr_poor: 0.5
+  orr_good: 0.7
+
+  # Level selection thresholds
+  l2_memory_threshold: 50    # Min memories for L2
+  l2_entropy_threshold: 0.7  # Min entropy for L2
+  l3_memory_threshold: 500   # Min memories for L3
+  l3_session_threshold: 10   # Min session length for L3
+
+  # Importance scoring
+  importance_threshold: 0.3
+
+# Available strategies per level
+strategies:
+  deterministic_heuristic:
+    - "default"
+    - "relevance_scoring"
+    - "importance_scoring"
+  information_theoretic:
+    - "default"
+    - "entropy_minimization"
+    - "information_bottleneck"
+    - "mutual_information"
+  adaptive_hybrid:
+    - "hybrid_default"
+    - "weighted_combination"
+
+# Strategy-specific parameters
+strategy_params:
+  relevance_scoring:
+    recency_decay_days: 7
+    semantic_weight: 0.6
+    recency_weight: 0.3
+    importance_weight: 0.1
+
+  importance_scoring:
+    base_importance: 0.5
+    boost_for_entities: 0.2
+    decay_rate: 0.01
+
+  entropy_minimization:
+    target_entropy: 0.5
+    max_iterations: 100
+    convergence_threshold: 0.001
+
+  information_bottleneck:
+    beta: 1.0
+    max_iterations: 50
+    context_budget: 4096  # tokens
+
+  mutual_information:
+    sample_size: 100
+    estimation_method: "ksg"  # Kraskov-Stogbauer-Grassberger
+
+  hybrid_default:
+    l1_weight: 0.5
+    l2_weight: 0.5
+    exploration_rate: 0.1
+
+# Logging configuration
+logging:
+  # Enable decision logging
+  enabled: true
+
+  # Log file path (JSON Lines format)
+  file_path: "eval/math_policy_logs/decisions.jsonl"
+
+  # Log level for decision details
+  level: "INFO"
+
+  # Save outcomes for learning
+  save_outcomes: true
+  outcome_file_path: "eval/math_policy_logs/outcomes.jsonl"
+
+  # Include features in logs
+  include_features: true
+
+  # Maximum log retention (days)
+  retention_days: 90
+
+# Multi-Armed Bandit configuration (Iteration 3)
+bandit:
+  # UCB exploration parameter (higher = more exploration)
+  c: 1.0
+
+  # Bonus for context match
+  context_bonus: 0.1
+
+  # Exploration rate (probability of random exploration)
+  # Overridden by profile defaults if not specified
+  exploration_rate: null  # null = use profile default
+
+  # Maximum allowed exploration (safety limit)
+  max_exploration_rate: 0.2
+
+  # Degradation threshold (max acceptable reward drop before rollback)
+  degradation_threshold: 0.15
+
+  # Minimum pulls before arm is considered reliable
+  min_pulls_for_confidence: 10
+
+  # Save arm weights every N decisions
+  save_frequency: 50
+
+  # Persistence path for arm statistics
+  persistence_path: "eval/math_policy_logs/bandit_arms.json"
+
+# Safety configuration
+safety:
+  # Maximum exploration rate (for L3)
+  max_exploration_rate: 0.2
+
+  # Rollback to L1 if error rate exceeds
+  error_rate_threshold: 0.1
+
+  # Force L1 after N consecutive errors
+  consecutive_error_limit: 3
+
+  # Never use L3 in these modes
+  l3_blacklist_profiles:
+    - "production"
+    - "cheap"
+
+# Telemetry integration
+telemetry:
+  # OpenTelemetry span name
+  span_name: "math_layer_decision"
+
+  # Custom attributes to add
+  attributes:
+    service: "rae-memory"
+    component: "math_layer_controller"
+
+  # Enable detailed metrics
+  detailed_metrics: true
+
+# Profile overrides
+profiles:
+  research:
+    default_level: "information_theoretic"
+    policy_version: 2
+    bandit_enabled: false  # Enable manually for experiments
+    allowed_levels:
+      - "deterministic_heuristic"
+      - "information_theoretic"
+      - "adaptive_hybrid"
+    logging:
+      enabled: true
+      level: "DEBUG"
+      include_features: true
+    safety:
+      max_exploration_rate: 0.3
+    bandit:
+      exploration_rate: 0.2  # 20% exploration in research
+      max_exploration_rate: 0.3
+
+  lab:
+    default_level: "information_theoretic"
+    policy_version: 2
+    bandit_enabled: true  # Safe to enable in lab
+    allowed_levels:
+      - "deterministic_heuristic"
+      - "information_theoretic"
+      - "adaptive_hybrid"
+    logging:
+      enabled: true
+      level: "INFO"
+      include_features: true
+    safety:
+      max_exploration_rate: 0.1
+    bandit:
+      exploration_rate: 0.05  # 5% exploration in lab
+      max_exploration_rate: 0.1
+
+  production:
+    default_level: "deterministic_heuristic"
+    policy_version: 2
+    bandit_enabled: false  # No bandit in production yet
+    allowed_levels:
+      - "deterministic_heuristic"
+      - "information_theoretic"
+    logging:
+      enabled: true
+      level: "INFO"
+      include_features: false
+    safety:
+      max_exploration_rate: 0.0
+    bandit:
+      exploration_rate: 0.0  # No exploration in production
+      max_exploration_rate: 0.0
+
+  cheap:
+    default_level: "deterministic_heuristic"
+    policy_version: 1  # Use simple rules
+    bandit_enabled: false
+    allowed_levels:
+      - "deterministic_heuristic"
+    logging:
+      enabled: false
+    safety:
+      max_exploration_rate: 0.0

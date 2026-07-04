@@ -1,0 +1,27 @@
+[project]
+name = "rae-lite"
+version = "0.1.0"
+description = "RAE-Lite - Local-first AI Memory Desktop App"
+requires-python = ">=3.10"
+dependencies = [
+    "rae-core[sqlite]>=0.1.0",
+    "fastapi>=0.100",
+    "uvicorn>=0.23",
+    "pystray>=0.19.0",
+    "pillow>=10.0",
+    "pydantic-settings>=2.0",
+    "structlog>=23.0",
+]
+
+[project.scripts]
+rae-lite = "rae_lite.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pyinstaller>=6.0",
+    "pytest>=7.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

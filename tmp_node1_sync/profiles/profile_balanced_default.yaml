@@ -1,0 +1,39 @@
+# Profile: Balanced Default
+# Use case: General purpose, recommended starting point
+# Priority: Balanced trade-offs across all dimensions
+
+name: "Balanced Default"
+config_id: "cfg_balanced"
+description: "Recommended default configuration for most use cases"
+
+parameters:
+  math_level: 2  # Balanced reasoning
+  batch_size: 50  # Standard batch size
+  cache_enabled: true  # Cache enabled
+
+memory_config:
+  context_window: 6000  # Adequate for most queries
+  layers: ["episodic", "working", "semantic", "ltm"]  # Standard layers
+  vector_similarity_threshold: 0.87  # Balanced precision/recall
+
+reasoning:
+  depth: 8  # Standard reasoning depth
+  timeout_ms: 1000  # Standard timeout
+  strategy: "adaptive"  # Adjust based on query
+
+tradeoffs:
+  latency: "moderate"  # ~1 second
+  quality: "high"  # ~92% accuracy
+  cost: "reasonable"  # Good value
+
+use_cases:
+  - "General purpose applications"
+  - "Standard APIs"
+  - "Knowledge management"
+  - "Question answering"
+  - "Content retrieval"
+
+recommended_for:
+  - "First-time users"
+  - "Most production workloads"
+  - "When unsure which profile to use"

@@ -47,6 +47,17 @@ In long-running systems (scientific, industrial, or agent-based), context is los
 
 RAE solves this by introducing a structured memory architecture that preserves decision rationale as a first-class object.
 
+### Performance Impact
+
+| Metric | Vector DB (Raw) | Standard RAG | RAE (Industrial) |
+| :--- | :--- | :--- | :--- |
+| **Role** | Storage | Retrieval | **Reasoning Engine** |
+| **Recall (Hit Rate)** | High (No Filter) | ~70% | **90%** |
+| **Precision** | Low (Noise) | ~65% | **81%** |
+| **Reasoning Drift** | N/A | High | **< 1%** |
+
+*> See full [Benchmark Reports](benchmarking/README.md)*
+
 ---
 
 ## 🧠 Core Architecture: 6 Layers / 3 Math Planes

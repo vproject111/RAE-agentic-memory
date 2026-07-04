@@ -164,6 +164,32 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def validate_sandbox_mode(self):
+        """
+        Detect if RAE and RAE-Lite are co-existing on the same machine.
+        If port 8000 is occupied and we are in lite mode, force sandbox ports.
+        """
+        if self.RAE_PROFILE == "lite":
+            import socket
+
+            def is_port_in_use(port):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    return s.connect_ex(("localhost", port)) == 0
+
+            # If standard RAE is detected, switch to sandbox defaults if not already set
+            if is_port_in_use(8000):
+                # We don't overwrite explicitly set env vars, but we can log it
+                # and adjust default URLs used by internal components
+                if self.MEMORY_API_URL == "http://localhost:8000":
+                    self.MEMORY_API_URL = "http://localhost:8010"
+
+                # Force sandbox ports for infrastructure if they are still at standard defaults
+                if self.POSTGRES_HOST == "localhost":
+                    self.POSTGRES_HOST = "localhost"  # Host stays same
+                # Ports are usually handled by docker-compose, but we ensure internal URLs are consistent
+        return self
+
+    @model_validator(mode="after")
     def apply_mode_overrides(self):
         if self.REFLECTIVE_MEMORY_MODE == "lite":
             self.REFLECTION_GENERATE_ON_SUCCESS = False

@@ -44,6 +44,20 @@ models:
     enabled: true
     roles: [evaluator, advanced_reasoning]
 
+  - id: local_deepseek_coder
+    provider: ollama
+    model_name: deepseek-coder:1.3b
+    enabled: true
+    roles: [general, reflection, coding, low_cost]
+    cost_weight: 0.0
+
+  - id: delegated_gpu
+    provider: delegated
+    model_name: deepseek-coder:33b
+    enabled: true
+    roles: [heavy_compute, high_quality, coding]
+    cost_weight: 0.0
+
 strategies:
   default:
     mode: single

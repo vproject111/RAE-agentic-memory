@@ -1,0 +1,304 @@
+name: "stress_memory_drift"
+description: "Stress test for memory drift and stability - measures how memory system behaves under continuous updates, reflections, and semantic drift"
+version: "1.0"
+
+# Configuration for drift testing
+config:
+  top_k: 5
+  min_relevance_score: 0.3
+  enable_reranking: true
+  enable_reflection: true
+  enable_graph: true
+
+  # Drift-specific settings
+  test_memory_drift: true
+  reflection_interval: 10  # Generate reflection every 10 memories
+  measure_semantic_drift: true
+  measure_graph_stability: true
+  track_retrieval_consistency: true
+
+# Initial seed memories - base knowledge
+memories:
+  # Computer Science - Initial state
+  - id: "cs_v1_001"
+    text: "Python is a high-level programming language known for simplicity and readability"
+    tags: ["python", "programming", "v1"]
+    metadata:
+      source: "Knowledge Base v1"
+      importance: 0.8
+      version: 1
+
+  - id: "cs_v1_002"
+    text: "JavaScript runs in web browsers and enables interactive web pages"
+    tags: ["javascript", "web", "v1"]
+    metadata:
+      source: "Knowledge Base v1"
+      importance: 0.75
+      version: 1
+
+  - id: "cs_v1_003"
+    text: "Machine learning models learn patterns from data without explicit programming"
+    tags: ["machine_learning", "ai", "v1"]
+    metadata:
+      source: "Knowledge Base v1"
+      importance: 0.85
+      version: 1
+
+  # Computer Science - Evolving knowledge (semantic drift simulation)
+  - id: "cs_v2_001"
+    text: "Python 3.12 introduces improved error messages and performance optimizations"
+    tags: ["python", "programming", "v2", "evolution"]
+    metadata:
+      source: "Knowledge Base v2"
+      importance: 0.8
+      version: 2
+      supersedes: "cs_v1_001"
+
+  - id: "cs_v2_002"
+    text: "Modern JavaScript frameworks like React and Vue dominate web development"
+    tags: ["javascript", "web", "v2", "evolution"]
+    metadata:
+      source: "Knowledge Base v2"
+      importance: 0.75
+      version: 2
+      supersedes: "cs_v1_002"
+
+  - id: "cs_v2_003"
+    text: "Large Language Models like GPT revolutionize NLP and general AI capabilities"
+    tags: ["machine_learning", "ai", "llm", "v2", "evolution"]
+    metadata:
+      source: "Knowledge Base v2"
+      importance: 0.9
+      version: 2
+      supersedes: "cs_v1_003"
+
+  # Conflicting/Near-duplicate information (stress test)
+  - id: "conflict_001"
+    text: "The capital of France is Paris, located on the Seine river"
+    tags: ["geography", "france"]
+    metadata:
+      source: "Source A"
+      importance: 0.7
+
+  - id: "conflict_002"
+    text: "Paris, the capital city of France, is situated on the River Seine"
+    tags: ["geography", "france", "near_duplicate"]
+    metadata:
+      source: "Source B"
+      importance: 0.7
+
+  - id: "conflict_003"
+    text: "France's capital Paris lies along the Seine River in northern France"
+    tags: ["geography", "france", "near_duplicate"]
+    metadata:
+      source: "Source C"
+      importance: 0.7
+
+  # Time-sensitive information (drift over time)
+  - id: "time_001"
+    text: "As of 2023, the global population is approximately 8 billion people"
+    tags: ["demographics", "2023"]
+    metadata:
+      source: "Statistics 2023"
+      importance: 0.6
+      timestamp: "2023-01-01"
+
+  - id: "time_002"
+    text: "World population projections estimate 8.5 billion by 2030"
+    tags: ["demographics", "2030", "projection"]
+    metadata:
+      source: "UN Projections"
+      importance: 0.6
+      timestamp: "2023-06-01"
+
+  # Technical concepts with semantic overlap
+  - id: "tech_001"
+    text: "Neural networks consist of layers of interconnected nodes processing information"
+    tags: ["neural_networks", "ai"]
+    metadata:
+      source: "AI Textbook"
+      importance: 0.8
+
+  - id: "tech_002"
+    text: "Deep learning uses multi-layer neural networks to extract high-level features"
+    tags: ["deep_learning", "neural_networks", "ai"]
+    metadata:
+      source: "AI Textbook"
+      importance: 0.85
+
+  - id: "tech_003"
+    text: "Artificial neural networks are inspired by biological brain structure"
+    tags: ["neural_networks", "ai", "biology"]
+    metadata:
+      source: "AI Textbook"
+      importance: 0.75
+
+  # Edge cases - very short and very long
+  - id: "edge_short"
+    text: "GPU accelerates computation"
+    tags: ["gpu", "short"]
+    metadata:
+      source: "Quick Facts"
+      importance: 0.4
+
+  - id: "edge_long"
+    text: "Graphics Processing Units (GPUs) were originally designed for rendering graphics in video games, but their parallel processing architecture makes them exceptionally well-suited for machine learning workloads, particularly training deep neural networks. Modern GPUs from NVIDIA and AMD contain thousands of cores optimized for matrix operations, which are fundamental to neural network computations. The CUDA programming model allows developers to harness this power for general-purpose computing, leading to training speedups of 10-100x compared to CPUs."
+    tags: ["gpu", "long", "detailed"]
+    metadata:
+      source: "Technical Deep Dive"
+      importance: 0.85
+
+  # Noise and irrelevant information
+  - id: "noise_001"
+    text: "The weather today is sunny with temperatures around 20°C"
+    tags: ["weather", "noise"]
+    metadata:
+      source: "Weather Report"
+      importance: 0.2
+
+  - id: "noise_002"
+    text: "Coffee is one of the most popular beverages worldwide"
+    tags: ["coffee", "beverages", "noise"]
+    metadata:
+      source: "Food Facts"
+      importance: 0.2
+
+  # Multi-language content (if supported)
+  - id: "multi_001"
+    text: "Artificial intelligence - sztuczna inteligencja - intelligence artificielle"
+    tags: ["ai", "multilingual"]
+    metadata:
+      source: "Multilingual Dictionary"
+      importance: 0.5
+
+queries:
+  # Baseline queries (retrieve v1 knowledge)
+  - query: "What is Python?"
+    expected_source_ids: ["cs_v1_001", "cs_v2_001"]
+    difficulty: "medium"
+    category: "semantic_drift"
+    notes: "Should retrieve both v1 and v2, testing evolution handling"
+
+  - query: "Explain JavaScript for web development"
+    expected_source_ids: ["cs_v1_002", "cs_v2_002"]
+    difficulty: "medium"
+    category: "semantic_drift"
+
+  - query: "What is machine learning?"
+    expected_source_ids: ["cs_v1_003", "cs_v2_003"]
+    difficulty: "medium"
+    category: "semantic_drift"
+
+  # Evolution queries (test if system prefers newer info)
+  - query: "What are the latest Python features?"
+    expected_source_ids: ["cs_v2_001"]
+    difficulty: "hard"
+    category: "recency_bias"
+    notes: "Should prefer v2 over v1"
+
+  - query: "Modern JavaScript frameworks"
+    expected_source_ids: ["cs_v2_002"]
+    difficulty: "medium"
+    category: "recency_bias"
+
+  - query: "Latest advances in AI and machine learning"
+    expected_source_ids: ["cs_v2_003"]
+    difficulty: "medium"
+    category: "recency_bias"
+
+  # Near-duplicate detection
+  - query: "What is the capital of France?"
+    expected_source_ids: ["conflict_001", "conflict_002", "conflict_003"]
+    difficulty: "hard"
+    category: "deduplication"
+    notes: "All three are semantically identical - tests dedup"
+
+  # Time-sensitive queries
+  - query: "What is the current world population?"
+    expected_source_ids: ["time_001"]
+    difficulty: "medium"
+    category: "temporal"
+
+  - query: "Future population projections"
+    expected_source_ids: ["time_002"]
+    difficulty: "easy"
+    category: "temporal"
+
+  # Semantic overlap queries (precision testing)
+  - query: "How do neural networks work?"
+    expected_source_ids: ["tech_001", "tech_002", "tech_003"]
+    difficulty: "hard"
+    category: "semantic_overlap"
+    notes: "All relevant but with different focus"
+
+  - query: "What is deep learning?"
+    expected_source_ids: ["tech_002"]
+    difficulty: "medium"
+    category: "semantic_precision"
+
+  # GPU queries (short vs detailed)
+  - query: "GPU"
+    expected_source_ids: ["edge_short", "edge_long"]
+    difficulty: "medium"
+    category: "length_variance"
+
+  - query: "Explain GPU architecture and machine learning"
+    expected_source_ids: ["edge_long"]
+    difficulty: "easy"
+    category: "detail_preference"
+
+  # Noise filtering
+  - query: "Tell me about coffee and weather"
+    expected_source_ids: ["noise_001", "noise_002"]
+    difficulty: "easy"
+    category: "noise"
+    notes: "Low importance items"
+
+  - query: "What is AI in different languages?"
+    expected_source_ids: ["multi_001"]
+    difficulty: "easy"
+    category: "multilingual"
+
+  # Reflection-triggering queries (after reflection interval)
+  - query: "Summarize what we know about programming languages"
+    expected_source_ids: ["cs_v1_001", "cs_v1_002", "cs_v2_001", "cs_v2_002"]
+    difficulty: "very_hard"
+    category: "reflection_synthesis"
+    notes: "Should trigger reflection aggregation"
+
+  - query: "Compare old and new knowledge about AI"
+    expected_source_ids: ["cs_v1_003", "cs_v2_003"]
+    difficulty: "very_hard"
+    category: "reflection_comparison"
+
+# Drift measurement checkpoints
+checkpoints:
+  - step: 0
+    description: "Initial state - baseline measurements"
+
+  - step: 10
+    description: "After first reflection - measure drift"
+
+  - step: 20
+    description: "Mid-point - cumulative drift"
+
+  - step: 30
+    description: "Final state - total semantic drift"
+
+# Expected drift indicators
+expected_metrics:
+  memory_drift_score:
+    description: "Semantic distance between initial and final memory states"
+    target_range: [0.1, 0.3]
+
+  retrieval_consistency:
+    description: "Consistency of retrieval results for same queries"
+    target_range: [0.7, 0.9]
+
+  graph_stability:
+    description: "Stability of knowledge graph structure"
+    target_range: [0.6, 0.85]
+
+  reflection_improvement_delta:
+    description: "MRR improvement after reflection processing"
+    target_range: [0.05, 0.15]

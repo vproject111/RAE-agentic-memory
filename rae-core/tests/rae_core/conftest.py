@@ -1,7 +1,9 @@
 """Core testing fixtures and mocks."""
 
 import asyncio
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -42,6 +44,22 @@ class MockMemoryStorage(IMemoryStorage):
             }
             self._memories[memory_id] = memory
             return memory_id
+
+    async def decay_importance(
+        self,
+        tenant_id: str,
+        decay_rate: float,
+        consider_access_stats: bool = False,
+    ) -> int:
+        async with self._lock:
+            count = 0
+            for memory in self._memories.values():
+                if memory["tenant_id"] == tenant_id:
+                    memory["importance"] = (
+                        float(memory.get("importance", 0.5)) * decay_rate
+                    )
+                    count += 1
+            return count
 
     async def get_memory(
         self, memory_id: UUID, tenant_id: str

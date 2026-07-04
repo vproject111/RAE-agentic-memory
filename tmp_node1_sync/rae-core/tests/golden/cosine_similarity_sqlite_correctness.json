@@ -1,0 +1,24 @@
+{
+  "test_name": "cosine_similarity_sqlite_correctness",
+  "inputs": {
+    "query": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "stored": [
+      0.5,
+      0.866025,
+      0.0
+    ]
+  },
+  "output": [
+    [
+      "688d0474-b140-4ef8-ad2e-4fb85304f9c5",
+      0.5000002384185791
+    ]
+  ],
+  "metadata": {
+    "adapter": "SQLiteVectorStore"
+  }
+}

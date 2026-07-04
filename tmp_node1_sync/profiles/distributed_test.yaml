@@ -1,0 +1,36 @@
+# Profile: Distributed Test
+# Use case: Testing connectivity with Node1 (Ollama) and Anthropic Claude
+# Priority: Validation of external model integration
+
+name: "Distributed Test Profile"
+config_id: "cfg_dist_test"
+description: "Tests connectivity between local node and remote Node1/Cloud LLMs"
+
+llm:
+  default_provider: "deepseek_node1"
+  providers:
+  deepseek_node1:
+    type: "ollama"
+    model: "deepseek-coder:1.3b"
+    base_url: "http://100.66.252.117:11434"
+    options:
+      temperature: 0.1
+    claude_anthropic:
+      provider_type: "anthropic"
+      model: "claude-3-haiku-20240307" # Używamy najtańszego Claude do testów
+      max_tokens: 500
+      temperature: 0.7
+
+memory_config:
+  context_window: 4096
+  layers: ["working", "episodic"]
+  vector_similarity_threshold: 0.7
+
+parameters:
+  math_level: 2
+  cache_enabled: false
+
+tradeoffs:
+  latency: "low"
+  quality: "balanced"
+  cost: "variable"

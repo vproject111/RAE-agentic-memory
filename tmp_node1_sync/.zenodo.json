@@ -1,0 +1,15 @@
+{
+  "title": "RAE – Reflective Agentic-Memory Engine",
+  "version": "2.7.1",
+  "upload_type": "software",
+  "description": "Provider-agnostic, privacy-first external memory engine for LLM agents.",
+  "creators": [
+    {
+      "name": "Leśniowski, Grzegorz",
+      "orcid": "0009-0003-6672-671X",
+      "affiliation": "Printworks sp. z o.o."
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": ["LLM", "agents", "memory", "RAG", "MCP", "privacy-first", "local-first"]
+}

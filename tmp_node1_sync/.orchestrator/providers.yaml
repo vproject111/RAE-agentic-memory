@@ -1,0 +1,51 @@
+# Provider Configuration for Multi-Agent Orchestrator
+# Configure LLM providers, routing preferences, and cost constraints
+
+providers:
+  # Claude (Anthropic) - Advanced reasoning, code generation
+  # Using Claude because Gemini CLI has issues with orchestrator prompts
+  claude:
+    enabled: true
+    default_model: claude-sonnet-4-5-20250929
+    settings:
+      # API key from environment variable
+      api_key: ${ANTHROPIC_API_KEY}
+
+  # Gemini (Google) - Uses default model from ~/.gemini/settings.json
+  # Note: -m flag causes 404 errors, so we rely on default settings
+  gemini:
+    enabled: true
+    default_model: gemini-2.0-flash-exp
+    settings:
+      api_key: ${GEMINI_API_KEY}
+
+  # Ollama (Local) - Cost-free, privacy-focused, offline capable
+  # Ideal for: Code reviews, simple reasoning, drafting
+  ollama:
+    enabled: true
+    default_model: deepseek-coder:1.3b
+    settings:
+      api_url: ${OLLAMA_API_URL:-http://localhost:11434}
+
+routing:
+  # Strategy: 'cost', 'performance', 'manual'
+  strategy: manual
+  
+  # Default provider for tasks if not specified
+  default_provider: claude
+
+  # Task-specific routing overrides
+  overrides:
+    code_review: 
+      provider: ollama
+      model: deepseek-coder:1.3b
+    complex_reasoning:
+      provider: claude
+      model: claude-sonnet-4-5-20250929
+    creative_writing:
+      provider: gemini
+      model: gemini-2.0-flash-exp
+
+usage_limits:
+  daily_cost_limit_usd: 5.00
+  max_tokens_per_request: 8192

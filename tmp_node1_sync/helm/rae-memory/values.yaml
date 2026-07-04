@@ -1,0 +1,281 @@
+# Default values for RAE Memory Engine
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imagePullSecrets: []
+
+# Secrets management
+secrets:
+  # Standard Kubernetes secrets (used when externalSecrets.enabled = false)
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  geminiApiKey: ""
+  jwtSecret: ""
+  apiMasterKey: ""
+
+# External Secrets Operator integration
+externalSecrets:
+  enabled: false
+  refreshInterval: "1h"
+  secretStore: "aws-secrets-manager"  # or "vault", "gcpsm", etc.
+  secretStoreKind: "SecretStore"  # or "ClusterSecretStore"
+  keys:
+    databaseUrl: "rae/database-url"
+    redisUrl: "rae/redis-url"
+    openaiApiKey: "rae/openai-api-key"
+    anthropicApiKey: "rae/anthropic-api-key"
+    geminiApiKey: "rae/gemini-api-key"
+    jwtSecret: "rae/jwt-secret"
+    apiMasterKey: "rae/api-master-key"
+
+# Memory API configuration
+memoryApi:
+  replicaCount: 2
+  image:
+    repository: rae-memory-api
+    pullPolicy: IfNotPresent
+    tag: "2.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: rae-secrets
+          key: database-url
+    - name: REDIS_URL
+      valueFrom:
+        secretKeyRef:
+          name: rae-secrets
+          key: redis-url
+    - name: QDRANT_URL
+      value: "http://qdrant:6333"
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: rae-secrets
+          key: openai-api-key
+    - name: ANTHROPIC_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: rae-secrets
+          key: anthropic-api-key
+    - name: RAE_LOG_LEVEL
+      value: "INFO"
+
+# ML Service configuration
+mlService:
+  replicaCount: 2
+  image:
+    repository: rae-ml-service
+    pullPolicy: IfNotPresent
+    tag: "2.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8001
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+# Reranker Service configuration
+rerankerService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: rae-reranker-service
+    pullPolicy: IfNotPresent
+    tag: "2.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8002
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    username: rae
+    password: changeme
+    database: rae_memory
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+      requests:
+        memory: 1Gi
+        cpu: 500m
+  # pgvector extension
+  primary:
+    initdb:
+      scripts:
+        init.sql: |
+          CREATE EXTENSION IF NOT EXISTS vector;
+          CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: changeme
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+
+# Qdrant Vector DB configuration
+qdrant:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: qdrant/qdrant
+    tag: "v1.7.0"
+
+  service:
+    type: ClusterIP
+    port: 6333
+
+  persistence:
+    enabled: true
+    size: 50Gi
+
+  resources:
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+
+# Celery Worker configuration
+celeryWorker:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: rae-memory-api
+    pullPolicy: IfNotPresent
+    tag: "2.0.0"
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  # Celery worker settings
+  concurrency: 4
+  maxTasksPerChild: 1000
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 75
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: rae-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: rae-memory-api
+              port: 8000
+  tls:
+    - secretName: rae-tls
+      hosts:
+        - rae-api.example.com
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: "30s"
+    scrapeTimeout: "10s"
+    labels: {}
+    relabelings: []
+    metricRelabelings: []
+  grafanaDashboard:
+    enabled: true
+
+# Network Policies
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+
+# Pod Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true

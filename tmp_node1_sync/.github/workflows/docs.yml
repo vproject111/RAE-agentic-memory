@@ -1,0 +1,56 @@
+name: Auto-Documentation
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+
+jobs:
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0 # Need full history for changelog and git stats
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download test artifacts from CI run
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-3.11
+          path: .
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Run Docs Automator
+        run: |
+          # Ensure script is executable
+          chmod +x scripts/docs_automator.py
+          
+          # Run the automator
+          python3 scripts/docs_automator.py
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update documentation [skip ci]"
+          file_pattern: 'CHANGELOG.md STATUS.md TODO.md docs/TESTING_STATUS.md docs/.auto-generated/**'
+          branch: ${{ github.event.workflow_run.head_branch }}
+          skip_dirty_check: false
+          skip_fetch: true

@@ -19,6 +19,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from apps.memory_api.services.rae_core_service import RAECoreService
 
+from apps.memory_api.services.rae_core_service import RAECoreService
+
 logger = structlog.get_logger(__name__)
 
 

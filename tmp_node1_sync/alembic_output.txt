@@ -1,0 +1,2 @@
+%(levelname)-5.5s [%(name)s] %(message)s
+%(levelname)-5.5s [%(name)s] %(message)s

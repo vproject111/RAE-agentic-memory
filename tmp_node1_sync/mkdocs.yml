@@ -1,0 +1,67 @@
+site_name: RAE Agentic Memory
+site_url: https://your-project-url.com
+repo_url: https://github.com/your-org/rae-agentic-memory
+repo_name: rae-agentic-memory
+edit_uri: ""
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Getting Started: getting_started.md
+  - API Reference: api_reference.md
+  - Integrations:
+    - Ollama Wrapper: integrations/ollama_wrapper.md
+    - MCP Server: integrations/mcp_server.md
+  - SDKs:
+    - Python SDK: sdk/python_sdk.md
+    - Node.js SDK Design: sdk_nodejs_design.md
+    - Go SDK Design: sdk_go_design.md
+  - Examples:
+    - Simple Refactor Agent: examples/simple_refactor_agent.md
+    - Feniks Case Study: FENIKS_CASE_STUDY.md
+  - Advanced Topics:
+    - Building Reflection: advanced/reflection.md
+    - Scoring & Heuristics: advanced/scoring_heuristics.md
+    - Replay Tool Design: REPLAY_TOOL_DESIGN.md
+  - Best Practices: best_practices.md
+  - Comparison: comparison.md
+  - Contributing: contributing.md
+  - License: ../LICENSE
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.highlight
+    - toc.integrate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - awesome-pages

@@ -1,0 +1,69 @@
+# LLM Profiles Configuration
+# Defines usage profiles with model candidates and constraints
+
+llm_profiles:
+  # Fast, cheap models for bulk operations
+  cheap_bulk:
+    candidates:
+      - deepseek-lite
+      - qwen-lite
+      - llama3-8b
+    max_cost_per_1k: 0.002
+    description: "Fast and cheap models for bulk processing"
+
+  # Balanced performance and cost
+  balanced:
+    candidates:
+      - gpt-3.5-turbo
+      - claude-3-haiku
+      - gemini-1.5-flash
+    max_cost_per_1k: 0.05
+    description: "Balanced performance and cost"
+
+  # High-quality models for important tasks
+  premium:
+    candidates:
+      - gpt-4-turbo
+      - claude-3-opus
+      - gemini-1.5-pro
+    max_cost_per_1k: 0.30
+    description: "High-quality models for critical tasks"
+
+  # Code-focused models
+  code_smart:
+    candidates:
+      - deepseek-coder
+      - gpt-4-turbo
+      - claude-3.5-sonnet
+    min_context: 16000
+    description: "Models optimized for code generation and analysis"
+
+  # Reasoning-heavy tasks
+  reasoning_heavy:
+    candidates:
+      - grok-2
+      - claude-3.7-sonnet
+      - gpt-o1
+    priority:
+      - grok-2
+      - claude-3.7-sonnet
+    description: "Models with strong reasoning capabilities"
+
+  # Long context tasks
+  long_context:
+    candidates:
+      - gemini-1.5-pro
+      - claude-3-opus
+      - grok-2
+    min_context: 100000
+    description: "Models with very long context windows"
+
+  # Default profile
+  default:
+    candidates:
+      - gpt-3.5-turbo
+      - claude-3-haiku
+      - gemini-1.5-flash
+      - deepseek-lite
+    max_cost_per_1k: 0.05
+    description: "Default profile for general use"

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rae.fullname" . }}
+  labels:
+    {{- include "rae.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.config.logFormat | quote }}
+  ENABLE_API_KEY_AUTH: {{ .Values.config.enableApiKeyAuth | quote }}
+  ENABLE_JWT_AUTH: {{ .Values.config.enableJwtAuth | quote }}
+  ENABLE_RATE_LIMITING: {{ .Values.config.enableRateLimiting | quote }}
+  RATE_LIMIT_REQUESTS: {{ .Values.config.rateLimitRequests | quote }}
+  RATE_LIMIT_WINDOW: {{ .Values.config.rateLimitWindow | quote }}
+  ALLOWED_ORIGINS: {{ .Values.config.allowedOrigins | quote }}
+  OTEL_TRACES_ENABLED: {{ .Values.config.otelTracesEnabled | quote }}
+  OTEL_EXPORTER_TYPE: {{ .Values.config.otelExporterType | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.otelExporterEndpoint | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.config.otelServiceName | quote }}
+  ENABLE_COST_TRACKING: {{ .Values.config.enableCostTracking | quote }}
+  COST_TRACKING_INTERVAL: {{ .Values.config.costTrackingInterval | quote }}

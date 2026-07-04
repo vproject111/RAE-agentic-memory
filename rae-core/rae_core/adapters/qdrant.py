@@ -131,6 +131,13 @@ class QdrantVectorStore(IVectorStore):
         if vector_name in self._known_vectors:
             return
 
+        # Handle Named Vectors
+        vector_data: dict[str, list[float]] | list[float]
+        if isinstance(embedding, dict):
+            vector_data = embedding
+        else:
+            vector_data = {"dense": embedding}
+
         try:
             # check again against API to be safe (race conditions)
             collection_info = await self.client.get_collection(self.collection_name)

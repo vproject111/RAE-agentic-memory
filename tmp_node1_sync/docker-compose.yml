@@ -1,0 +1,643 @@
+services:
+  # Main RAE API Service
+  rae-api:
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["standard"]
+    volumes:
+      - ./benchmarking:/app/benchmarking
+      - ./apps:/app/apps
+      - ./rae-core:/app/rae-core
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./rae_adapters:/app/rae_adapters
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - RAE_VECTOR_BACKEND=${RAE_VECTOR_BACKEND:-qdrant}
+      - TENANCY_ENABLED=true
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*" ]}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Telemetry Layer 1 (Default): Disabled external OTel
+      - OTEL_TRACES_ENABLED=${OTEL_TRACES_ENABLED:-false}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-rae-memory-api}
+      - OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-2.9.0-enterprise}
+      - OTEL_EXPORTER_TYPE=${OTEL_EXPORTER_TYPE:-otlp}
+      - RAE_PROFILE=${RAE_PROFILE:-standard}
+      - RAE_DB_MODE=${RAE_DB_MODE:-migrate}
+      - PYTHONUNBUFFERED=1
+      - RAE_LLM_BACKEND=${RAE_LLM_BACKEND:-ollama}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
+      - RAE_SIMILARITY_THRESHOLD=${RAE_SIMILARITY_THRESHOLD:-0.3}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # RAE API - Development with Hot Reload
+  rae-api-dev:
+    profiles: ["dev"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-api-dev
+    env_file:
+      - .env.docker
+    ports:
+      - "8001:8000" # Mapped to a different port to avoid conflicts
+    volumes:
+      - ./benchmarking:/app/benchmarking
+      - ./apps:/app/apps
+      - ./rae-core:/app/rae-core
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./rae_adapters:/app/rae_adapters
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - RAE_VECTOR_BACKEND=${RAE_VECTOR_BACKEND:-qdrant}
+      - TENANCY_ENABLED=false
+      - ENABLE_API_KEY_AUTH=false
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*" ]}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - RAE_LLM_MODEL_DEFAULT=local_deepseek_coder
+      # Dev-specific settings from docker-compose.dev.yml
+      - RAE_APP_LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
+      - OTEL_TRACES_ENABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-rae-memory-api-dev}
+      - OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-2.9.0-enterprise}
+      - OTEL_EXPORTER_TYPE=${OTEL_EXPORTER_TYPE:-otlp}
+      - RAE_LLM_BACKEND=${RAE_LLM_BACKEND:-ollama}
+      - OLLAMA_API_BASE=http://ollama-dev:11434
+      - OLLAMA_API_URL=http://ollama-dev:11434
+      - RAE_SIMILARITY_THRESHOLD=${RAE_SIMILARITY_THRESHOLD:-0.3}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: ["uvicorn", "apps.memory_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/apps", "--reload-dir", "/app/sdk"] # Hot-reload enabled
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # PostgreSQL with pgvector
+  postgres:
+    profiles: ["standard", "dev"]
+    image: ankane/pgvector:latest
+    container_name: rae-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rae}
+      POSTGRES_USER: ${POSTGRES_USER:-rae}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rae_password}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/ddl:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rae"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Redis for caching
+  redis:
+    profiles: ["standard", "dev"]
+    image: redis:7-alpine
+    container_name: rae-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Qdrant vector database
+  qdrant:
+    profiles: ["standard", "dev"]
+    image: qdrant/qdrant:latest
+    container_name: rae-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # ML Service (Standard)
+  ml-service:
+    profiles: ["standard"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-ml-service
+    ports:
+      - "8002:8001"
+    volumes:
+      - ./apps/ml_service:/app/apps/ml_service
+    environment:
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # ML Service (Development with Hot Reload)
+  ml-service-dev:
+    profiles: ["dev"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-ml-service-dev
+    ports:
+      - "8003:8001" # Mapped to different port
+    volumes:
+      - ./apps/ml_service:/app/apps/ml_service
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: ["uvicorn", "apps.ml_service.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload", "--reload-dir", "/app/apps/ml_service"]
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Reranker Service (Standard)
+  reranker-service:
+    profiles: ["standard"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-reranker-service
+    ports:
+      - "8004:8001"
+    volumes:
+      - ./apps/reranker_service:/app/apps/reranker_service
+    environment:
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Celery worker for async tasks
+  celery-worker:
+    profiles: ["standard"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-celery-worker
+    command: celery -A apps.memory_api.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - ./apps:/app/apps
+      - ./rae-core:/app/rae-core
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./rae_adapters:/app/rae_adapters
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - RAE_VECTOR_BACKEND=${RAE_VECTOR_BACKEND:-qdrant}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # Telemetry Layer 1 (Default): Disabled external OTel
+      - OTEL_TRACES_ENABLED=${OTEL_TRACES_ENABLED:-false}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-rae-celery-worker}
+      - OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-2.9.0-enterprise}
+      - OTEL_EXPORTER_TYPE=${OTEL_EXPORTER_TYPE:-otlp}
+      - RAE_LLM_BACKEND=${RAE_LLM_BACKEND:-ollama}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A apps.memory_api.celery_app inspect ping -d celery@$${HOSTNAME} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Celery worker for async tasks (Development with Hot Reload)
+  celery-worker-dev:
+    profiles: ["dev"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-celery-worker-dev
+    env_file:
+      - .env
+    command: celery -A apps.memory_api.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - ./apps:/app/apps:ro
+      - ./sdk:/app/sdk:ro
+      - ./rae_adapters:/app/rae_adapters:ro
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - RAE_VECTOR_BACKEND=${RAE_VECTOR_BACKEND:-qdrant}
+      - RAE_APP_LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
+      - OTEL_TRACES_ENABLED=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+    healthcheck:
+      test: ["CMD", "true"] # Disabled HTTP healthcheck
+      interval: 30s
+      timeout: 10s
+      retries: 1
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Celery beat for scheduled tasks
+  celery-beat:
+    profiles: ["standard"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-celery-beat
+    command: celery -A apps.memory_api.celery_app beat --loglevel=info
+    volumes:
+      - ./apps:/app/apps
+      - ./rae-core:/app/rae-core
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./rae_adapters:/app/rae_adapters
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      # Telemetry Layer 1 (Default): Disabled external OTel
+      - OTEL_TRACES_ENABLED=${OTEL_TRACES_ENABLED:-false}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-rae-celery-beat}
+      - OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-2.9.0-enterprise}
+      - OTEL_EXPORTER_TYPE=${OTEL_EXPORTER_TYPE:-otlp}
+      - RAE_LLM_BACKEND=${RAE_LLM_BACKEND:-ollama}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /app/celerybeat-schedule || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Celery beat for scheduled tasks (Development with Hot Reload)
+  celery-beat-dev:
+    profiles: ["dev"]
+    image: rae-memory:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rae-celery-beat-dev
+    command: >
+      sh -c "pip install watchdog[watchmedo] &&
+             watchmedo auto-restart --directory=/app/apps --pattern='*.py' --recursive --
+             celery -A apps.memory_api.celery_app beat --loglevel=info"
+    volumes:
+      - ./apps:/app/apps:ro
+      - ./sdk:/app/sdk:ro
+      - ./rae_adapters:/app/rae_adapters:ro
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-rae}
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - RAE_APP_LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
+      - OTEL_TRACES_ENABLED=false
+      - RAE_LLM_BACKEND=${RAE_LLM_BACKEND:-ollama}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "true"] # Disabled HTTP healthcheck
+      interval: 30s
+      timeout: 10s
+      retries: 1
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Streamlit Dashboard (optional)
+  rae-dashboard:
+    profiles: ["standard"]
+    image: rae-dashboard:latest
+    build:
+      context: ./tools/memory-dashboard
+      dockerfile: Dockerfile
+    container_name: rae-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - RAE_API_URL=${RAE_API_URL:-http://rae-api:8000}
+      - RAE_TENANT_ID=${RAE_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+      - RAE_PROJECT_ID=${RAE_PROJECT_ID:-RAE-agentic-memory}
+    depends_on:
+      - rae-api
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Streamlit Dashboard (Development with Hot Reload)
+  rae-dashboard-dev:
+    profiles: ["dev"]
+    image: rae-dashboard:latest
+    build:
+      context: ./tools/memory-dashboard
+      dockerfile: Dockerfile
+    container_name: rae-dashboard-dev
+    ports:
+      - "8502:8501" # Mapped to different port
+    volumes:
+      - ./tools/memory-dashboard:/app:ro
+    environment:
+      - RAE_API_URL=${RAE_API_URL:-http://rae-api-dev:8000} # Point to dev API
+      - RAE_TENANT_ID=${RAE_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+      - RAE_PROJECT_ID=${RAE_PROJECT_ID:-RAE-agentic-memory}
+      - LOG_LEVEL=DEBUG
+    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.runOnSave=true"]
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Local LLM (Ollama) - Development
+  ollama-dev:
+    profiles: ["dev"]
+    image: ollama/ollama:latest
+    container_name: rae-ollama-dev
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - rae-network
+
+  # Adminer - Database management UI (Development)
+  adminer-dev:
+    profiles: ["dev"]
+    image: adminer:latest
+    container_name: rae-adminer-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    depends_on:
+      - postgres
+    networks:
+      - rae-network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # RAE Lite Profile Services
+  # To run, use: docker compose --profile lite up
+  # ----------------------------------------------------------------------------
+  rae-api-lite:
+    profiles: ["lite"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${RAE_LITE_PORT:-8008}:8001"
+    volumes:
+      - ./apps:/app/apps
+      - ./rae-core:/app/rae-core
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./rae_adapters:/app/rae_adapters
+    command: ["/bin/bash", "-c", "alembic upgrade head && uvicorn apps.memory_api.main:app --host 0.0.0.0 --port 8001"]
+    environment:
+      # Database - links to postgres-lite
+      - RAE_PROFILE=lite
+      - RAE_DB_MODE=migrate
+      - PYTHONUNBUFFERED=1
+      - POSTGRES_HOST=postgres-lite
+      - POSTGRES_DB=rae_lite
+      - POSTGRES_USER=${POSTGRES_USER:-rae}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rae_password}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-rae}:${POSTGRES_PASSWORD:-rae_password}@postgres-lite:5432/rae_lite
+      - REDIS_URL=redis://redis-lite:6379/0
+      - RAE_VECTOR_BACKEND=${RAE_VECTOR_BACKEND:-qdrant}
+      - QDRANT_URL=http://qdrant-lite:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ML_SERVICE_ENABLED=false
+      - RERANKER_ENABLED=false
+      - CELERY_ENABLED=false
+      - MAX_WORKERS=2
+      - EMBEDDING_CACHE_TTL=3600
+      - OLLAMA_API_BASE=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres-lite:
+        condition: service_healthy
+      redis-lite:
+        condition: service_healthy
+      qdrant-lite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8001/health\")' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - rae-lite-network
+
+  postgres-lite:
+    profiles: ["lite"]
+    image: ankane/pgvector:latest
+    container_name: rae-postgres-lite
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rae_lite}
+      POSTGRES_USER: ${POSTGRES_USER:-rae}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rae_password}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_lite_data:/var/lib/postgresql/data
+      - ./infra/postgres/ddl:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${RAE_LITE_PG_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rae}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - rae-lite-network
+
+  redis-lite:
+    profiles: ["lite"]
+    image: redis:7-alpine
+    container_name: rae-redis-lite
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${RAE_LITE_REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_lite_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rae-lite-network
+
+  qdrant-lite:
+    profiles: ["lite"]
+    image: qdrant/qdrant:latest
+    container_name: rae-qdrant-lite
+    ports:
+      - "${RAE_LITE_QDRANT_PORT:-6335}:6333"
+      - "${RAE_LITE_QDRANT_GRPC_PORT:-6336}:6334"
+    volumes:
+      - qdrant_lite_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rae-lite-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  postgres_lite_data:
+    driver: local
+  redis_lite_data:
+    driver: local
+  qdrant_lite_data:
+    driver: local
+  ollama_data:
+
+networks:
+  rae-network:
+    driver: bridge
+  rae-lite-network:
+    driver: bridge

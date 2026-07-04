@@ -1,0 +1,188 @@
+name: Auto-Healing CI
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  analyze-failure:
+    name: Analyze CI Failure
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    outputs:
+      should_fix: ${{ steps.analyze.outputs.should_fix }}
+      fix_type: ${{ steps.analyze.outputs.fix_type }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download CI artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ci-artifacts/
+
+      - name: Analyze failure
+        id: analyze
+        run: |
+          echo "🔍 Analyzing CI failure..."
+          python scripts/ci/analyze_failure.py \
+            --workflow-run-id ${{ github.event.workflow_run.id }} \
+            --artifacts-dir ci-artifacts/ \
+            --output failure_context.json
+
+          if [ -f "failure_context.json" ]; then
+            FIX_TYPE=$(python3 -c "import json; print(json.load(open('failure_context.json'))['fix_type'])")
+            CAN_FIX=$(python3 -c "import json; print(json.load(open('failure_context.json'))['can_auto_fix'])")
+
+            echo "fix_type=$FIX_TYPE" >> $GITHUB_OUTPUT
+            echo "should_fix=$CAN_FIX" >> $GITHUB_OUTPUT
+
+            echo "📊 Analysis results:"
+            echo "  Fix type: $FIX_TYPE"
+            echo "  Can auto-fix: $CAN_FIX"
+          else
+            echo "should_fix=false" >> $GITHUB_OUTPUT
+            echo "⚠️  No context file generated"
+          fi
+
+      - name: Upload context
+        if: steps.analyze.outputs.should_fix == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-context-${{ github.event.workflow_run.id }}
+          path: failure_context.json
+          retention-days: 7
+
+  generate-fix:
+    name: Generate Fix with AI
+    runs-on: ubuntu-latest
+    needs: analyze-failure
+    if: needs.analyze-failure.outputs.should_fix == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download fix context
+        uses: actions/download-artifact@v4
+        with:
+          name: fix-context-${{ github.event.workflow_run.id }}
+
+      - name: Install dependencies
+        run: pip install anthropic openai pyyaml
+
+      - name: Generate fix (dry-run first)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIX_TYPE: ${{ needs.analyze-failure.outputs.fix_type }}
+        run: |
+          echo "🤖 Generating fix (dry-run mode)..."
+          python scripts/ci/ci_fix_agent.py \
+            --context failure_context.json \
+            --fix-type $FIX_TYPE \
+            --provider anthropic \
+            --output-dir fixes/ \
+            --dry-run || echo "⚠️  Dry-run completed with warnings"
+
+      - name: Generate actual fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIX_TYPE: ${{ needs.analyze-failure.outputs.fix_type }}
+        run: |
+          echo "🤖 Generating actual fix..."
+          python scripts/ci/ci_fix_agent.py \
+            --context failure_context.json \
+            --fix-type $FIX_TYPE \
+            --provider anthropic \
+            --output-dir fixes/
+
+      - name: Create fix branch and PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="fix/auto-$(date +%Y%m%d-%H%M%S)"
+          git config user.name "RAE Auto-Heal Bot"
+          git config user.email "noreply@github.com"
+          git checkout -b $BRANCH_NAME
+
+          # Apply fixes
+          if [ -d "fixes" ]; then
+            for file in fixes/*.py; do
+              if [ -f "$file" ]; then
+                TARGET=$(grep "# TARGET:" "$file" | cut -d: -f2 | xargs)
+                if [ -n "$TARGET" ] && [ -f "$TARGET" ]; then
+                  echo "📝 Applying fix to: $TARGET"
+                  cp "$file" "$TARGET"
+                  git add "$TARGET"
+                fi
+              fi
+            done
+          fi
+
+          git commit -m "fix: auto-generated fix for ${{ needs.analyze-failure.outputs.fix_type }}
+
+          Fix type: ${{ needs.analyze-failure.outputs.fix_type }}
+          Original run: ${{ github.event.workflow_run.html_url }}
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+
+          git push origin $BRANCH_NAME
+
+          gh pr create \
+            --title "[Auto-Fix] ${{ needs.analyze-failure.outputs.fix_type }}" \
+            --body "$(cat <<'EOF'
+          ## 🤖 Auto-Generated Fix
+
+          This PR was automatically generated to fix a CI failure.
+
+          **Fix Type:** ${{ needs.analyze-failure.outputs.fix_type }}
+          **Original CI Run:** ${{ github.event.workflow_run.html_url }}
+          **Branch:** ${{ github.event.workflow_run.head_branch }}
+
+          ### Changes
+
+          See commit for details.
+
+          ### Review Checklist
+
+          - [ ] Code changes make sense
+          - [ ] No security issues introduced
+          - [ ] Tests pass locally
+          - [ ] No unintended side effects
+
+          ### Context
+
+          This fix was generated using AI based on the CI failure context.
+          Please review carefully before merging.
+
+          ---
+          *Generated by RAE Auto-Healing CI - Iteration 4*
+          EOF
+          )" \
+            --label "auto-fix,ci" \
+            --reviewer "${{ github.event.workflow_run.actor.login }}" \
+            --draft

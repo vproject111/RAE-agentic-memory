@@ -1,0 +1,493 @@
+# Academic Extended Benchmark
+# Rozszerzony zestaw testowy dla akademickiej oceny RAE
+# 50 faktów z różnych dziedzin, 20 zapytań testowych z różnym poziomem trudności
+
+name: "academic_extended"
+description: "Extended academic benchmark with semantic noise and multi-domain queries"
+version: "1.0"
+
+memories:
+  # Computer Science & AI
+  - id: "cs_1"
+    text: "Python is an interpreted, high-level programming language created by Guido van Rossum and first released in 1991."
+    tags: ["computer_science", "programming", "python"]
+    metadata:
+      source: "CS Encyclopedia"
+      importance: 0.85
+      domain: "computer_science"
+
+  - id: "cs_2"
+    text: "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed."
+    tags: ["ai", "machine_learning", "computer_science"]
+    metadata:
+      source: "AI Textbook"
+      importance: 0.9
+      domain: "computer_science"
+
+  - id: "cs_3"
+    text: "The Turing Test, proposed by Alan Turing in 1950, evaluates a machine's ability to exhibit intelligent behavior equivalent to human intelligence."
+    tags: ["ai", "turing", "computer_science"]
+    metadata:
+      source: "AI History"
+      importance: 0.92
+      domain: "computer_science"
+
+  - id: "cs_4"
+    text: "Neural networks are computing systems inspired by biological neural networks that constitute animal brains."
+    tags: ["ai", "neural_networks", "deep_learning"]
+    metadata:
+      source: "AI Research"
+      importance: 0.88
+      domain: "computer_science"
+
+  - id: "cs_5"
+    text: "Git is a distributed version control system created by Linus Torvalds in 2005 for Linux kernel development."
+    tags: ["tools", "version_control", "git"]
+    metadata:
+      source: "Software Engineering"
+      importance: 0.8
+      domain: "computer_science"
+
+  # Physics
+  - id: "phys_1"
+    text: "Albert Einstein developed the theory of general relativity in 1915, revolutionizing our understanding of gravity."
+    tags: ["physics", "einstein", "relativity"]
+    metadata:
+      source: "Physics History"
+      importance: 0.95
+      domain: "physics"
+
+  - id: "phys_2"
+    text: "The speed of light in vacuum is exactly 299,792,458 meters per second, denoted by the constant c."
+    tags: ["physics", "constants", "light"]
+    metadata:
+      source: "Physics Constants"
+      importance: 0.92
+      domain: "physics"
+
+  - id: "phys_3"
+    text: "Quantum mechanics describes the behavior of matter and energy at atomic and subatomic scales."
+    tags: ["physics", "quantum", "mechanics"]
+    metadata:
+      source: "Quantum Physics"
+      importance: 0.9
+      domain: "physics"
+
+  - id: "phys_4"
+    text: "Newton's three laws of motion form the foundation of classical mechanics and were published in 1687."
+    tags: ["physics", "newton", "mechanics"]
+    metadata:
+      source: "Classical Physics"
+      importance: 0.88
+      domain: "physics"
+
+  - id: "phys_5"
+    text: "The Large Hadron Collider at CERN is the world's largest and most powerful particle accelerator."
+    tags: ["physics", "cern", "particle_physics"]
+    metadata:
+      source: "Modern Physics"
+      importance: 0.85
+      domain: "physics"
+
+  # Biology
+  - id: "bio_1"
+    text: "DNA was discovered by Watson and Crick in 1953, revealing the double helix structure of genetic material."
+    tags: ["biology", "dna", "genetics"]
+    metadata:
+      source: "Biology History"
+      importance: 0.95
+      domain: "biology"
+
+  - id: "bio_2"
+    text: "The human brain contains approximately 86 billion neurons, forming complex neural networks."
+    tags: ["biology", "neuroscience", "brain"]
+    metadata:
+      source: "Neuroscience Journal"
+      importance: 0.9
+      domain: "biology"
+
+  - id: "bio_3"
+    text: "Mitochondria are the powerhouses of the cell, generating most of the cell's supply of ATP."
+    tags: ["biology", "cell", "mitochondria"]
+    metadata:
+      source: "Cell Biology"
+      importance: 0.82
+      domain: "biology"
+
+  - id: "bio_4"
+    text: "Charles Darwin published 'On the Origin of Species' in 1859, introducing the theory of evolution by natural selection."
+    tags: ["biology", "evolution", "darwin"]
+    metadata:
+      source: "Evolution Theory"
+      importance: 0.93
+      domain: "biology"
+
+  - id: "bio_5"
+    text: "CRISPR-Cas9 is a revolutionary gene-editing technology that allows precise modifications to DNA."
+    tags: ["biology", "genetics", "crispr"]
+    metadata:
+      source: "Genetic Engineering"
+      importance: 0.88
+      domain: "biology"
+
+  # Mathematics
+  - id: "math_1"
+    text: "Euler's identity, e^(iπ) + 1 = 0, is considered one of the most beautiful equations in mathematics."
+    tags: ["mathematics", "euler", "equations"]
+    metadata:
+      source: "Mathematical Beauty"
+      importance: 0.9
+      domain: "mathematics"
+
+  - id: "math_2"
+    text: "The Pythagorean theorem states that in a right triangle, a² + b² = c², where c is the hypotenuse."
+    tags: ["mathematics", "geometry", "pythagoras"]
+    metadata:
+      source: "Geometry Fundamentals"
+      importance: 0.85
+      domain: "mathematics"
+
+  - id: "math_3"
+    text: "Calculus was independently developed by Isaac Newton and Gottfried Leibniz in the late 17th century."
+    tags: ["mathematics", "calculus", "history"]
+    metadata:
+      source: "Math History"
+      importance: 0.87
+      domain: "mathematics"
+
+  - id: "math_4"
+    text: "Prime numbers are natural numbers greater than 1 that have no positive divisors other than 1 and themselves."
+    tags: ["mathematics", "number_theory", "primes"]
+    metadata:
+      source: "Number Theory"
+      importance: 0.8
+      domain: "mathematics"
+
+  - id: "math_5"
+    text: "The Fibonacci sequence is a series where each number is the sum of the two preceding ones: 0, 1, 1, 2, 3, 5, 8..."
+    tags: ["mathematics", "sequences", "fibonacci"]
+    metadata:
+      source: "Mathematical Sequences"
+      importance: 0.78
+      domain: "mathematics"
+
+  # Chemistry
+  - id: "chem_1"
+    text: "The periodic table organizes chemical elements by atomic number, electron configuration, and recurring properties."
+    tags: ["chemistry", "periodic_table", "elements"]
+    metadata:
+      source: "Chemistry Fundamentals"
+      importance: 0.88
+      domain: "chemistry"
+
+  - id: "chem_2"
+    text: "Marie Curie discovered radium and polonium, becoming the first woman to win a Nobel Prize in 1903."
+    tags: ["chemistry", "curie", "radioactivity"]
+    metadata:
+      source: "Chemistry History"
+      importance: 0.92
+      domain: "chemistry"
+
+  - id: "chem_3"
+    text: "Water (H2O) is a polar molecule essential for life, composed of two hydrogen atoms and one oxygen atom."
+    tags: ["chemistry", "water", "molecules"]
+    metadata:
+      source: "Chemical Compounds"
+      importance: 0.85
+      domain: "chemistry"
+
+  - id: "chem_4"
+    text: "The pH scale measures acidity and alkalinity, ranging from 0 (most acidic) to 14 (most alkaline)."
+    tags: ["chemistry", "ph", "acids"]
+    metadata:
+      source: "Chemical Properties"
+      importance: 0.8
+      domain: "chemistry"
+
+  - id: "chem_5"
+    text: "Catalysts are substances that increase the rate of chemical reactions without being consumed."
+    tags: ["chemistry", "catalysis", "reactions"]
+    metadata:
+      source: "Chemical Reactions"
+      importance: 0.82
+      domain: "chemistry"
+
+  # History
+  - id: "hist_1"
+    text: "World War II lasted from 1939 to 1945 and was the deadliest conflict in human history."
+    tags: ["history", "wwii", "war"]
+    metadata:
+      source: "World History"
+      importance: 0.9
+      domain: "history"
+
+  - id: "hist_2"
+    text: "The Renaissance was a cultural movement in Europe from the 14th to 17th century, marking the transition from medieval to modern times."
+    tags: ["history", "renaissance", "culture"]
+    metadata:
+      source: "European History"
+      importance: 0.85
+      domain: "history"
+
+  - id: "hist_3"
+    text: "The Great Wall of China was built over many dynasties, with construction beginning in the 7th century BC."
+    tags: ["history", "china", "architecture"]
+    metadata:
+      source: "Asian History"
+      importance: 0.83
+      domain: "history"
+
+  - id: "hist_4"
+    text: "The Industrial Revolution began in Britain in the late 18th century, transforming manufacturing and society."
+    tags: ["history", "industrial", "revolution"]
+    metadata:
+      source: "Economic History"
+      importance: 0.87
+      domain: "history"
+
+  - id: "hist_5"
+    text: "The Apollo 11 mission successfully landed humans on the Moon on July 20, 1969."
+    tags: ["history", "space", "apollo"]
+    metadata:
+      source: "Space History"
+      importance: 0.88
+      domain: "history"
+
+  # Geography
+  - id: "geo_1"
+    text: "The Amazon rainforest is the world's largest tropical rainforest, covering 5.5 million square kilometers."
+    tags: ["geography", "amazon", "environment"]
+    metadata:
+      source: "Environmental Geography"
+      importance: 0.87
+      domain: "geography"
+
+  - id: "geo_2"
+    text: "Mount Everest is the highest mountain on Earth, standing at 8,848.86 meters above sea level."
+    tags: ["geography", "mountains", "everest"]
+    metadata:
+      source: "Physical Geography"
+      importance: 0.85
+      domain: "geography"
+
+  - id: "geo_3"
+    text: "The Pacific Ocean is the largest and deepest ocean, covering more than 63 million square miles."
+    tags: ["geography", "oceans", "pacific"]
+    metadata:
+      source: "Oceanography"
+      importance: 0.82
+      domain: "geography"
+
+  - id: "geo_4"
+    text: "The Sahara Desert is the world's largest hot desert, spanning 9 million square kilometers across North Africa."
+    tags: ["geography", "deserts", "sahara"]
+    metadata:
+      source: "Desert Geography"
+      importance: 0.8
+      domain: "geography"
+
+  - id: "geo_5"
+    text: "The capital of France is Paris, which is also the country's largest city and cultural center."
+    tags: ["geography", "france", "europe"]
+    metadata:
+      source: "European Geography"
+      importance: 0.75
+      domain: "geography"
+
+  # Literature
+  - id: "lit_1"
+    text: "William Shakespeare wrote 37 plays and 154 sonnets, becoming the most influential writer in English literature."
+    tags: ["literature", "shakespeare", "poetry"]
+    metadata:
+      source: "Literary History"
+      importance: 0.88
+      domain: "literature"
+
+  - id: "lit_2"
+    text: "George Orwell's '1984' published in 1949, depicts a dystopian future with totalitarian government surveillance."
+    tags: ["literature", "orwell", "dystopia"]
+    metadata:
+      source: "Modern Literature"
+      importance: 0.85
+      domain: "literature"
+
+  - id: "lit_3"
+    text: "Homer's Odyssey is an ancient Greek epic poem, telling the story of Odysseus's journey home after the Trojan War."
+    tags: ["literature", "homer", "epic"]
+    metadata:
+      source: "Classical Literature"
+      importance: 0.87
+      domain: "literature"
+
+  - id: "lit_4"
+    text: "Jane Austen's 'Pride and Prejudice' published in 1813 is one of the most beloved novels in English literature."
+    tags: ["literature", "austen", "romance"]
+    metadata:
+      source: "19th Century Literature"
+      importance: 0.82
+      domain: "literature"
+
+  - id: "lit_5"
+    text: "Gabriel García Márquez pioneered magical realism, blending fantastical elements with realistic settings."
+    tags: ["literature", "marquez", "magical_realism"]
+    metadata:
+      source: "Latin American Literature"
+      importance: 0.83
+      domain: "literature"
+
+  # Economics
+  - id: "econ_1"
+    text: "Adam Smith's 'The Wealth of Nations' published in 1776 laid the foundations of classical economics."
+    tags: ["economics", "smith", "capitalism"]
+    metadata:
+      source: "Economic Theory"
+      importance: 0.88
+      domain: "economics"
+
+  - id: "econ_2"
+    text: "GDP (Gross Domestic Product) measures the total value of goods and services produced within a country."
+    tags: ["economics", "gdp", "metrics"]
+    metadata:
+      source: "Macroeconomics"
+      importance: 0.82
+      domain: "economics"
+
+  - id: "econ_3"
+    text: "The Great Depression of the 1930s was the worst economic downturn in the history of the industrialized world."
+    tags: ["economics", "depression", "history"]
+    metadata:
+      source: "Economic History"
+      importance: 0.85
+      domain: "economics"
+
+  - id: "econ_4"
+    text: "Supply and demand is the fundamental economic model describing price determination in a market economy."
+    tags: ["economics", "markets", "theory"]
+    metadata:
+      source: "Economic Fundamentals"
+      importance: 0.8
+      domain: "economics"
+
+  - id: "econ_5"
+    text: "Cryptocurrency is a digital currency that uses cryptography for security and operates independently of central banks."
+    tags: ["economics", "crypto", "technology"]
+    metadata:
+      source: "Modern Economics"
+      importance: 0.78
+      domain: "economics"
+
+queries:
+  # Easy queries - direct factual recall
+  - query: "What is the speed of light?"
+    expected_source_ids: ["phys_2"]
+    difficulty: "easy"
+    category: "factual_recall"
+
+  - query: "Who discovered DNA structure?"
+    expected_source_ids: ["bio_1"]
+    difficulty: "easy"
+    category: "factual_recall"
+
+  - query: "What is the capital of France?"
+    expected_source_ids: ["geo_5"]
+    difficulty: "easy"
+    category: "factual_recall"
+
+  # Medium queries - requires semantic understanding
+  - query: "Which programming language was created by Guido van Rossum?"
+    expected_source_ids: ["cs_1"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What is the powerhouse of the cell?"
+    expected_source_ids: ["bio_3"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "Who developed the theory of evolution?"
+    expected_source_ids: ["bio_4"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What equation is considered the most beautiful in mathematics?"
+    expected_source_ids: ["math_1"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What did Marie Curie discover?"
+    expected_source_ids: ["chem_2"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  # Hard queries - cross-domain or requires inference
+  - query: "What technology allows for precise DNA editing?"
+    expected_source_ids: ["bio_5"]
+    difficulty: "hard"
+    category: "inference"
+
+  - query: "Which test evaluates machine intelligence against human intelligence?"
+    expected_source_ids: ["cs_3"]
+    difficulty: "hard"
+    category: "inference"
+
+  - query: "What mathematical concept did Newton and Leibniz develop?"
+    expected_source_ids: ["math_3"]
+    difficulty: "hard"
+    category: "inference"
+
+  - query: "What mission landed humans on the Moon?"
+    expected_source_ids: ["hist_5"]
+    difficulty: "hard"
+    category: "inference"
+
+  # Very hard queries - semantic noise (multiple plausible answers)
+  - query: "What scientific theory revolutionized our understanding of gravity?"
+    expected_source_ids: ["phys_1"]
+    difficulty: "very_hard"
+    category: "semantic_noise"
+    notes: "Could match Newton's laws or Einstein's relativity"
+
+  - query: "What historical event marked the transition from medieval to modern times?"
+    expected_source_ids: ["hist_2"]
+    difficulty: "very_hard"
+    category: "semantic_noise"
+    notes: "Could match Renaissance or Industrial Revolution"
+
+  - query: "What computing system is inspired by the human brain?"
+    expected_source_ids: ["cs_4"]
+    difficulty: "very_hard"
+    category: "semantic_noise"
+    notes: "Could match neural networks or general AI description"
+
+  # Multi-hop queries - requires connecting multiple memories
+  - query: "Who won a Nobel Prize for discovering radioactive elements?"
+    expected_source_ids: ["chem_2"]
+    difficulty: "very_hard"
+    category: "multi_hop"
+
+  - query: "What scale measures how acidic or basic something is?"
+    expected_source_ids: ["chem_4"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What is the largest ocean on Earth?"
+    expected_source_ids: ["geo_3"]
+    difficulty: "easy"
+    category: "factual_recall"
+
+  - query: "Who wrote about a dystopian surveillance state?"
+    expected_source_ids: ["lit_2"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What economic theory was proposed by Adam Smith?"
+    expected_source_ids: ["econ_1"]
+    difficulty: "hard"
+    category: "inference"
+
+config:
+  top_k: 5
+  min_relevance_score: 0.3
+  enable_reranking: true
+  enable_reflection: true
+  test_semantic_noise: true

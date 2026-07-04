@@ -1,0 +1,19 @@
+# Testing dependencies for RAE Memory API
+
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+anyio>=3.7.1
+
+# Testcontainers for integration tests with real database
+testcontainers[postgres]>=3.7.0
+
+# Additional dependencies needed by tests
+instructor>=1.0.0
+slowapi>=0.1.9
+scipy>=1.11.0
+mcp>=1.0.0
+
+# Graph / community detection for tests
+python-louvain>=0.16

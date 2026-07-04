@@ -1,0 +1,586 @@
+"""
+Tests for Reflection Engine - Hierarchical Reflections with Clustering
+
+Tests cover:
+- Reflection generation from memories
+- HDBSCAN clustering
+- Hierarchical reflection creation
+- Meta-insight generation
+- Cycle detection in reflection relationships
+- Reflection scoring
+"""
+
+import pytest
+from datetime import datetime, timedelta
+from uuid import uuid4, UUID
+import numpy as np
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
+
+from apps.memory_api.services.reflection_pipeline import ReflectionPipeline
+from apps.memory_api.models.reflection_models import (
+    GenerateReflectionRequest,
+    ReflectionType,
+    ReflectionRelationType,
+    CreateReflectionRelationshipRequest
+)
+
+
+# ============================================================================
+# Fixtures
+# ============================================================================
+
+@pytest.fixture
+def mock_pool():
+    """Mock database connection pool"""
+    pool = AsyncMock()
+    pool.acquire = AsyncMock()
+    return pool
+
+
+@pytest.fixture
+def mock_llm_provider():
+    """Mock LLM provider"""
+    provider = AsyncMock()
+    provider.generate = AsyncMock(return_value="Generated reflection content about the memories")
+    provider.generate_structured = AsyncMock(return_value={
+        "score": 0.85,
+        "novelty_score": 0.8,
+        "importance_score": 0.9,
+        "utility_score": 0.85,
+        "confidence_score": 0.9
+    })
+    return provider
+
+
+@pytest.fixture
+def reflection_pipeline(mock_pool, mock_llm_provider):
+    """Reflection pipeline instance"""
+    pipeline = ReflectionPipeline(mock_pool)
+    pipeline.llm_provider = mock_llm_provider
+    return pipeline
+
+
+@pytest.fixture
+def reflection_repository(mock_pool):
+    """Reflection repository mock with methods from functional API"""
+    # Create a mock object with methods that match the test expectations
+    repo = Mock()
+    repo.pool = mock_pool
+    repo.detect_cycle = AsyncMock(return_value=False)
+    repo.get_reflection = AsyncMock(return_value={"id": uuid4(), "content": "test"})
+    repo.list_reflections = AsyncMock(return_value=[])
+    repo.get_reflection_hierarchy = AsyncMock(return_value=[])
+    repo.create_relation = AsyncMock(return_value=uuid4())
+    return repo
+
+
+@pytest.fixture
+def sample_memories():
+    """Sample memories for reflection generation"""
+    return [
+        {
+            "id": uuid4(),
+            "content": "Machine learning is a subset of artificial intelligence",
+            "importance": 0.8,
+            "embedding": np.random.rand(1536).tolist(),
+            "created_at": datetime.utcnow()
+        },
+        {
+            "id": uuid4(),
+            "content": "Deep learning uses neural networks with multiple layers",
+            "importance": 0.85,
+            "embedding": np.random.rand(1536).tolist(),
+            "created_at": datetime.utcnow()
+        },
+        {
+            "id": uuid4(),
+            "content": "Supervised learning requires labeled training data",
+            "importance": 0.75,
+            "embedding": np.random.rand(1536).tolist(),
+            "created_at": datetime.utcnow()
+        },
+        {
+            "id": uuid4(),
+            "content": "Reinforcement learning learns through trial and error",
+            "importance": 0.7,
+            "embedding": np.random.rand(1536).tolist(),
+            "created_at": datetime.utcnow()
+        }
+    ]
+
+
+# ============================================================================
+# Reflection Generation Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_generate_reflection_from_memories(reflection_pipeline, sample_memories, mock_pool):
+    """Test generating reflection from a set of memories"""
+    # Mock database calls
+    mock_conn = AsyncMock()
+    mock_conn.fetch = AsyncMock(return_value=[
+        {"id": m["id"], "content": m["content"], "importance": m["importance"],
+         "embedding": m["embedding"], "created_at": m["created_at"]}
+        for m in sample_memories
+    ])
+    mock_conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    mock_conn.execute = AsyncMock()
+
+    mock_pool.acquire = AsyncMock(return_value=AsyncMock(__aenter__=AsyncMock(return_value=mock_conn), __aexit__=AsyncMock()))
+
+    request = GenerateReflectionRequest(
+        tenant_id="test-tenant",
+        project="test-project",
+        reflection_type=ReflectionType.INSIGHT,
+        max_memories=10
+    )
+
+    reflections, stats = await reflection_pipeline.generate_reflections(request)
+
+    assert reflections is not None
+    assert isinstance(reflections, list)
+    assert stats is not None
+    assert "memories_processed" in stats
+
+
+@pytest.mark.asyncio
+async def test_generate_reflection_with_clustering(reflection_pipeline, sample_memories, mock_pool):
+    """Test reflection generation with automatic clustering"""
+    # Create larger dataset for clustering
+    large_dataset = sample_memories * 5  # 20 memories
+
+    mock_pool.fetch = AsyncMock(return_value=[
+        {"id": uuid4(), "content": m["content"], "importance": m["importance"],
+         "embedding": m["embedding"]}
+        for m in large_dataset
+    ])
+    mock_pool.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    mock_pool.execute = AsyncMock()
+
+    request = GenerateReflectionRequest(
+        tenant_id="test-tenant",
+        project="test-project",
+        reflection_type=ReflectionType.PATTERN,
+        min_cluster_size=3
+    )
+
+    # Mock clustering to return some clusters
+    with patch.object(reflection_pipeline, '_cluster_memories', return_value=[
+        {"cluster_id": "cluster_0", "memories": large_dataset[:10]},
+        {"cluster_id": "cluster_1", "memories": large_dataset[10:]}
+    ]):
+        result = await reflection_pipeline.generate_reflection_with_clustering(
+            tenant_id=request.tenant_id,
+            project=request.project,
+            reflection_type=request.reflection_type,
+            min_cluster_size=request.min_cluster_size
+        )
+
+    assert result is not None
+    assert "reflections_created" in result
+    assert result["reflections_created"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_clustering_hdbscan(reflection_pipeline, sample_memories):
+    """Test HDBSCAN clustering of memories"""
+    # Mock memories with embeddings
+    memories_with_embeddings = sample_memories.copy()
+
+    clusters = await reflection_pipeline._cluster_memories(
+        memories_with_embeddings,
+        min_cluster_size=2
+    )
+
+    assert clusters is not None
+    assert isinstance(clusters, list)
+    # Should have at least one cluster or noise
+    assert len(clusters) >= 1
+
+
+@pytest.mark.asyncio
+async def test_clustering_fallback_kmeans(reflection_pipeline, sample_memories):
+    """Test K-means fallback when HDBSCAN fails"""
+    # Force HDBSCAN to fail and use K-means
+    with patch('apps.memory_api.services.reflection_pipeline.HDBSCAN', side_effect=Exception("HDBSCAN failed")):
+        clusters = await reflection_pipeline._cluster_memories(
+            sample_memories,
+            min_cluster_size=2
+        )
+
+    assert clusters is not None
+    assert isinstance(clusters, list)
+
+
+# ============================================================================
+# Hierarchical Reflection Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_create_hierarchical_reflection(reflection_pipeline, mock_pool):
+    """Test creating child reflection from parent"""
+    parent_id = uuid4()
+
+    mock_pool.fetchrow = AsyncMock(return_value={
+        "id": parent_id,
+        "depth_level": 0,
+        "source_memory_ids": [uuid4(), uuid4()]
+    })
+    mock_pool.execute = AsyncMock()
+
+    result = await reflection_pipeline.create_child_reflection(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        parent_reflection_id=parent_id,
+        reflection_type=ReflectionType.META.value,
+        created_by="test-user"
+    )
+
+    assert result is not None
+    assert result["parent_reflection_id"] == parent_id
+    assert result["depth_level"] == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_meta_insight(reflection_pipeline, mock_pool):
+    """Test generating meta-insight from multiple reflections"""
+    reflection_ids = [uuid4() for _ in range(3)]
+
+    mock_pool.fetch = AsyncMock(return_value=[
+        {
+            "id": rid,
+            "content": f"Reflection content {i}",
+            "score": 0.8,
+            "embedding": np.random.rand(1536).tolist()
+        }
+        for i, rid in enumerate(reflection_ids)
+    ])
+    mock_pool.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    mock_pool.execute = AsyncMock()
+
+    result = await reflection_pipeline.generate_meta_insight(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        reflection_ids=reflection_ids,
+        created_by="test-user"
+    )
+
+    assert result is not None
+    assert result["type"] == ReflectionType.META.value
+    assert result["depth_level"] >= 1
+
+
+# ============================================================================
+# Cycle Detection Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_cycle_detection_no_cycle(reflection_repository, mock_pool):
+    """Test cycle detection when no cycle exists"""
+    source_id = uuid4()
+    target_id = uuid4()
+
+    # Mock database function to return False (no cycle)
+    mock_pool.fetchval = AsyncMock(return_value=False)
+
+    has_cycle = await reflection_repository.detect_cycle(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        source_reflection_id=source_id,
+        target_reflection_id=target_id
+    )
+
+    assert has_cycle is False
+
+
+@pytest.mark.asyncio
+async def test_cycle_detection_with_cycle(reflection_repository, mock_pool):
+    """Test cycle detection when cycle exists"""
+    source_id = uuid4()
+    target_id = uuid4()
+
+    # Mock database function to return True (cycle exists)
+    mock_pool.fetchval = AsyncMock(return_value=True)
+
+    has_cycle = await reflection_repository.detect_cycle(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        source_reflection_id=source_id,
+        target_reflection_id=target_id
+    )
+
+    assert has_cycle is True
+
+
+@pytest.mark.asyncio
+async def test_create_relation_prevents_cycle(reflection_repository, mock_pool):
+    """Test that creating relationship prevents cycles"""
+    source_id = uuid4()
+    target_id = uuid4()
+
+    # Mock cycle detection to return True
+    mock_pool.fetchval = AsyncMock(return_value=True)
+    mock_pool.execute = AsyncMock()
+
+    request = CreateReflectionRelationshipRequest(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        source_reflection_id=source_id,
+        target_reflection_id=target_id,
+        relation_type=ReflectionRelationType.BUILDS_ON,
+        created_by="test-user"
+    )
+
+    with pytest.raises(ValueError, match="would create a cycle"):
+        await reflection_repository.create_relation(
+            tenant_id=request.tenant_id,
+            project_id=request.project_id,
+            source_reflection_id=request.source_reflection_id,
+            target_reflection_id=request.target_reflection_id,
+            relation_type=request.relation_type.value,
+            created_by=request.created_by
+        )
+
+
+# ============================================================================
+# Scoring Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_reflection_scoring(reflection_pipeline, mock_llm_provider):
+    """Test reflection scoring calculation"""
+    content = "This is a test reflection about machine learning concepts"
+
+    # Mock LLM scoring
+    mock_llm_provider.generate_structured.return_value = {
+        "novelty_score": 0.8,
+        "importance_score": 0.9,
+        "utility_score": 0.85,
+        "confidence_score": 0.9
+    }
+
+    scores = await reflection_pipeline._score_reflection(content)
+
+    assert scores is not None
+    assert "score" in scores
+    assert "novelty_score" in scores
+    assert "importance_score" in scores
+    assert "utility_score" in scores
+    assert "confidence_score" in scores
+    assert 0 <= scores["score"] <= 1
+
+
+@pytest.mark.asyncio
+async def test_reflection_priority_calculation():
+    """Test reflection priority calculation based on scores"""
+    # High scores should result in high priority
+    high_scores = {
+        "importance_score": 0.9,
+        "novelty_score": 0.85,
+        "utility_score": 0.9
+    }
+
+    # Calculate priority (1-5 scale)
+    avg_score = (high_scores["importance_score"] +
+                 high_scores["novelty_score"] +
+                 high_scores["utility_score"]) / 3
+    priority = max(1, min(5, int(avg_score * 5)))
+
+    assert priority >= 4  # High scores should give high priority
+
+
+# ============================================================================
+# Repository Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_get_reflection_by_id(reflection_repository, mock_pool):
+    """Test retrieving reflection by ID"""
+    reflection_id = uuid4()
+
+    mock_pool.fetchrow = AsyncMock(return_value={
+        "id": reflection_id,
+        "tenant_id": "test-tenant",
+        "project_id": "test-project",
+        "content": "Test reflection",
+        "type": "insight",
+        "score": 0.85,
+        "depth_level": 0
+    })
+
+    result = await reflection_repository.get_reflection(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        reflection_id=reflection_id
+    )
+
+    assert result is not None
+    assert result["id"] == reflection_id
+    assert result["content"] == "Test reflection"
+
+
+@pytest.mark.asyncio
+async def test_list_reflections(reflection_repository, mock_pool):
+    """Test listing reflections"""
+    mock_pool.fetch = AsyncMock(return_value=[
+        {
+            "id": uuid4(),
+            "content": f"Reflection {i}",
+            "type": "insight",
+            "score": 0.8
+        }
+        for i in range(10)
+    ])
+
+    results = await reflection_repository.list_reflections(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        limit=10
+    )
+
+    assert len(results) == 10
+
+
+@pytest.mark.asyncio
+async def test_get_reflection_hierarchy(reflection_repository, mock_pool):
+    """Test retrieving reflection hierarchy"""
+    root_id = uuid4()
+
+    mock_pool.fetch = AsyncMock(return_value=[
+        {
+            "id": root_id,
+            "content": "Root reflection",
+            "depth_level": 0,
+            "parent_reflection_id": None
+        },
+        {
+            "id": uuid4(),
+            "content": "Child reflection",
+            "depth_level": 1,
+            "parent_reflection_id": root_id
+        }
+    ])
+
+    results = await reflection_repository.get_reflection_hierarchy(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        root_reflection_id=root_id,
+        max_depth=3
+    )
+
+    assert len(results) >= 2
+    assert any(r["depth_level"] == 0 for r in results)
+    assert any(r["depth_level"] == 1 for r in results)
+
+
+# ============================================================================
+# Edge Cases and Error Handling
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_generate_reflection_empty_memories(reflection_pipeline, mock_pool):
+    """Test generating reflection with no memories"""
+    mock_pool.fetch = AsyncMock(return_value=[])
+
+    with pytest.raises(ValueError, match="No memories found"):
+        await reflection_pipeline.generate_reflection(
+            tenant_id="test-tenant",
+            project_id="test-project",
+            memory_ids=[],
+            reflection_type="insight",
+            created_by="test-user"
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_reflection_insufficient_memories(reflection_pipeline, mock_pool):
+    """Test generating reflection with too few memories"""
+    mock_pool.fetch = AsyncMock(return_value=[
+        {
+            "id": uuid4(),
+            "content": "Single memory",
+            "importance": 0.8,
+            "embedding": np.random.rand(1536).tolist()
+        }
+    ])
+
+    with pytest.raises(ValueError, match="At least 2 memories required"):
+        await reflection_pipeline.generate_reflection(
+            tenant_id="test-tenant",
+            project_id="test-project",
+            memory_ids=[uuid4()],
+            reflection_type="insight",
+            created_by="test-user"
+        )
+
+
+@pytest.mark.asyncio
+async def test_max_reflection_depth(reflection_pipeline, mock_pool):
+    """Test that reflection depth is limited"""
+    # Mock parent at max depth
+    mock_pool.fetchrow = AsyncMock(return_value={
+        "id": uuid4(),
+        "depth_level": 5,  # Max depth
+        "source_memory_ids": [uuid4()]
+    })
+
+    with pytest.raises(ValueError, match="Maximum reflection depth"):
+        await reflection_pipeline.create_child_reflection(
+            tenant_id="test-tenant",
+            project_id="test-project",
+            parent_reflection_id=uuid4(),
+            reflection_type="meta",
+            created_by="test-user"
+        )
+
+
+# ============================================================================
+# Integration Tests
+# ============================================================================
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_full_reflection_workflow(reflection_pipeline, sample_memories, mock_pool):
+    """Test complete workflow: memories → clustering → reflections → meta-insight"""
+    # Step 1: Generate reflections from clusters
+    mock_pool.fetch = AsyncMock(return_value=[
+        {"id": m["id"], "content": m["content"], "importance": m["importance"],
+         "embedding": m["embedding"]}
+        for m in sample_memories
+    ])
+    mock_pool.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    mock_pool.execute = AsyncMock()
+
+    # Generate base reflections
+    reflection_ids = []
+    for i in range(3):
+        result = await reflection_pipeline.generate_reflection(
+            tenant_id="test-tenant",
+            project_id="test-project",
+            memory_ids=[m["id"] for m in sample_memories[:2]],
+            reflection_type="insight",
+            created_by="test-user"
+        )
+        reflection_ids.append(result["reflection_id"])
+
+    # Step 2: Generate meta-insight from reflections
+    mock_pool.fetch = AsyncMock(return_value=[
+        {
+            "id": rid,
+            "content": f"Reflection {i}",
+            "score": 0.8,
+            "embedding": np.random.rand(1536).tolist()
+        }
+        for i, rid in enumerate(reflection_ids)
+    ])
+
+    meta_result = await reflection_pipeline.generate_meta_insight(
+        tenant_id="test-tenant",
+        project_id="test-project",
+        reflection_ids=reflection_ids,
+        created_by="test-user"
+    )
+
+    assert meta_result is not None
+    assert meta_result["type"] == "meta"
+    assert meta_result["depth_level"] >= 1

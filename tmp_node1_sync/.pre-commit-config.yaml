@@ -1,0 +1,78 @@
+# .pre-commit-config.yaml
+# To use:
+# 1. pip install pre-commit
+# 2. pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: debug-statements
+
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        args: ['--line-length=100']
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ['--profile=black', '--line-length=100']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: ['--fix', '--exit-non-zero-on-fix']
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all]
+        args: ['--ignore-missing-imports', '--no-strict-optional']
+        exclude: ^(tests/|examples/)
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml', '-r', 'apps', 'sdk', 'rae-core']
+        additional_dependencies: ['bandit[toml]']
+
+  - repo: local
+    hooks:
+      - id: generate-api-docs
+        name: Generate API Documentation
+        entry: bash -c 'python scripts/generate_api_docs.py --quiet && git add docs/.auto-generated/api/ 2>/dev/null || true'
+        language: system
+        files: ^apps/memory_api/(api|routes|models)/.*\.py$
+        pass_filenames: false
+
+      - id: quick-validation
+        name: Quick Validation (imports + type check)
+        entry: bash -c 'python -c "import apps.memory_api" && echo "✅ Imports OK"'
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: run-affected-tests
+        name: Run Affected Tests (smart selection)
+        entry: bash -c 'pytest --testmon --testmon-noselect -x -q -m "not integration and not llm and not contract and not performance" || echo "⚠️  Some tests failed - full validation will run in CI"'
+        language: system
+        types: [python]
+        pass_filenames: false
+        verbose: true

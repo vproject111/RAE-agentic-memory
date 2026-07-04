@@ -1,0 +1,316 @@
+# ============================================================================
+# RAE Helm Chart Configuration
+# ============================================================================
+
+# Replica count for the API deployment
+replicaCount: 2
+
+# ============================================================================
+# Image Configuration
+# ============================================================================
+image:
+  repository: ghcr.io/dreamsoft-pro/rae-memory-api
+  pullPolicy: IfNotPresent
+  tag: "2.0.0-enterprise"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ============================================================================
+# Service Account
+# ============================================================================
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# ============================================================================
+# Pod Configuration
+# ============================================================================
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# ============================================================================
+# Service Configuration
+# ============================================================================
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  annotations: {}
+
+# ============================================================================
+# Ingress Configuration
+# ============================================================================
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: rae-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: rae-api-tls
+      hosts:
+        - rae-api.example.com
+
+# ============================================================================
+# Resource Limits
+# ============================================================================
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# ============================================================================
+# Autoscaling Configuration
+# ============================================================================
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# ============================================================================
+# Health Checks
+# ============================================================================
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# ============================================================================
+# Node Selection
+# ============================================================================
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - rae
+          topologyKey: kubernetes.io/hostname
+
+# ============================================================================
+# Application Configuration
+# ============================================================================
+config:
+  # Environment (development, staging, production)
+  environment: production
+
+  # Security
+  enableApiKeyAuth: true
+  enableJwtAuth: false
+  enableRateLimiting: true
+  rateLimitRequests: 100
+  rateLimitWindow: 60
+  allowedOrigins: "*"
+
+  # OpenTelemetry
+  otelTracesEnabled: true
+  otelExporterType: otlp
+  otelExporterEndpoint: http://tempo:4317
+  otelServiceName: rae-memory-api
+
+  # Logging
+  logLevel: INFO
+  logFormat: json
+
+  # Cost tracking
+  enableCostTracking: true
+  costTrackingInterval: 60
+
+# ============================================================================
+# External Dependencies
+# ============================================================================
+
+# PostgreSQL Configuration
+postgresql:
+  enabled: false  # Set to true to deploy PostgreSQL with the chart
+  host: postgres.default.svc.cluster.local
+  port: 5432
+  database: rae_db
+  user: rae_user
+  # Password should be provided via secret
+  existingSecret: rae-postgres-secret
+  existingSecretPasswordKey: password
+
+# Redis Configuration
+redis:
+  enabled: false  # Set to true to deploy Redis with the chart
+  host: redis.default.svc.cluster.local
+  port: 6379
+  database: 0
+  # Password should be provided via secret (optional)
+  existingSecret: ""
+  existingSecretPasswordKey: password
+
+# Qdrant Configuration
+qdrant:
+  enabled: false  # Set to true to deploy Qdrant with the chart
+  host: qdrant.default.svc.cluster.local
+  port: 6333
+  collectionName: rae_memories
+  apiKey: ""
+  # API key should be provided via secret (optional)
+  existingSecret: ""
+  existingSecretApiKeyKey: api-key
+
+# ============================================================================
+# Secrets
+# ============================================================================
+secrets:
+  # Create secrets from values (NOT recommended for production)
+  # In production, use external secret management (e.g., Sealed Secrets, External Secrets Operator)
+  createFromValues: false
+
+  # API Keys
+  apiKeys:
+    - "your-api-key-1"
+    - "your-api-key-2"
+
+  # JWT Secret
+  jwtSecret: "change-me-in-production"
+
+  # PostgreSQL password (if not using existingSecret)
+  postgresPassword: ""
+
+  # Redis password (if needed)
+  redisPassword: ""
+
+  # Qdrant API key (if needed)
+  qdrantApiKey: ""
+
+# ============================================================================
+# Monitoring
+# ============================================================================
+monitoring:
+  # Prometheus ServiceMonitor (requires prometheus-operator)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+    relabelings: []
+
+  # Grafana Dashboard ConfigMap
+  grafanaDashboard:
+    enabled: false
+    labels:
+      grafana_dashboard: "1"
+
+# ============================================================================
+# Persistence (for temporary files, logs, etc.)
+# ============================================================================
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+
+# ============================================================================
+# Network Policy
+# ============================================================================
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nginx-ingress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: qdrant
+    - to:  # Allow external API calls (OpenAI, etc.)
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+
+# ============================================================================
+# Pod Disruption Budget
+# ============================================================================
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# ============================================================================
+# Extra Configuration
+# ============================================================================
+
+# Extra environment variables
+extraEnv: []
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecars: []

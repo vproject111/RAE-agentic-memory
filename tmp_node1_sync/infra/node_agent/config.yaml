@@ -1,0 +1,7 @@
+node_id: "LOCAL_SIMULATOR"
+rae_endpoint: "http://localhost:8000"
+heartbeat_interval_sec: 5
+ollama_api_url: "http://localhost:11434"
+capabilities:
+  gpu: false
+  model_support: ["deepseek-coder:33b", "deepseek-coder:6.7b"]

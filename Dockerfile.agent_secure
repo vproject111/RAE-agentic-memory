@@ -1,0 +1,59 @@
+# RAE SECURE AGENT RUNTIME
+# "Hard Frames" Implementation - Phase 1
+# This image is designed to have NO independent capabilities.
+# No curl, no wget, no git, no pip at runtime.
+
+FROM python:3.12-slim
+
+# 1. Environment Setup
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # CRITICAL: Disable pip index to prevent accidental installs
+    PIP_NO_INDEX=1 \
+    # HARD FRAMES: Enforce secure mode
+    RAE_AGENT_MODE=secure
+
+WORKDIR /app
+
+# 2. Install ONLY minimal system dependencies (if strictly needed)
+# Then IMMEDIATELY remove package managers and download tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    # Add runtime deps here if absolutely needed (e.g. libpq)
+    ca-certificates && \
+    # CLEANUP & HARDENING
+    apt-get remove -y wget curl git && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    # BRUTAL REMOVAL of binaries
+    rm -f /usr/bin/curl /usr/bin/wget /usr/bin/nc /usr/bin/netcat /usr/bin/ssh
+
+# 3. Create non-root user
+RUN groupadd -r raeagent && useradd -r -g raeagent raeagent
+
+# 4. Install RAE SDK (Thin Client)
+# Note: We copy requirements first to leverage cache, but we assume 
+# strict requirements that do NOT include openai/anthropic/langchain
+COPY requirements-agent-secure.txt .
+
+# Temporarily enable index for build-time install, then disable again
+ENV PIP_NO_INDEX=0
+RUN pip install --no-cache-dir -r requirements-agent-secure.txt && \
+    # HARDENING: Uninstall pip to prevent runtime package changes
+    pip uninstall -y pip
+ENV PIP_NO_INDEX=1
+
+# 5. Copy Application Code
+COPY . .
+
+# 6. Lock down permissions
+RUN chown -R raeagent:raeagent /app
+
+# 7. Runtime
+USER raeagent
+
+# The only allowed entrypoint. No shells.
+CMD ["python", "-m", "rae_agent.main"]

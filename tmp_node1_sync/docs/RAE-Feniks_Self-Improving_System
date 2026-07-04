@@ -1,0 +1,381 @@
+**RAE → Feniks → Self-Improving System
+
+Pełna architektura integracji i metarefleksji**
+
+To będzie dokument poziomu “wejście do repo / docs/architecture/…”, gotowy do dalszej pracy w Claude/Gemini.
+
+🟦 RAE_Feniks_Self_Improvement_Architecture_v1.md
+
+(Poniżej cały gotowy plik — możesz go po prostu skopiować)
+
+RAE–Feniks Self-Improving Architecture
+Integrated Reflective Memory + Meta-Reasoning + System Self-Evolution
+# 1. Wprowadzenie
+
+Ten dokument opisuje pełną architekturę integracji:
+
+RAE (Reflective Agentic Engine) – warstwa pamięci, refleksji operacyjnej i trwałego kontekstu,
+
+Feniks – warstwa meta-refleksji i samoopisu kodu,
+
+AI Factory Core – środowisko operacyjne agentów (CI/CD, produkcja, asystenci, automatyzacje),
+
+w całość tworzącą:
+
+Samodoskonalący się system AI (Self-Improving AI System)
+
+System jest zbudowany w taki sposób, aby:
+
+Uczyć się na podstawie własnych doświadczeń,
+
+Analizować własny kod i zachowania,
+
+Wyciągać heurystyki i reguły poprawy,
+
+Proponować i wdrażać korekty,
+
+Stale podnosić jakość, redukować błędy i optymalizować koszty,
+
+Zachować bezpieczeństwo i kontrolę człowieka (HIL).
+
+## 2. Cele architektury
+✔ Samodoskonalenie agentów
+
+minimalizacja powtarzalnych błędów,
+
+wzrost jakości decyzji,
+
+adaptacja do nowych warunków.
+
+✔ Metarefleksja systemowa
+
+Feniks ma rozumieć:
+
+strukturę systemu,
+
+kontrakty zachowań,
+
+oczekiwane wzorce działania,
+
+odchylenia i anomalie.
+
+✔ Automatyczne generowanie ulepszeń
+
+heurystyki,
+
+pipeline’y,
+
+reguły walidacji,
+
+refaktoryzacje.
+
+✔ Stabilność i bezpieczeństwo
+
+weryfikacja zmian,
+
+testy automatyczne dla heurystyk,
+
+walidacja przez ludzi (HIL).
+
+## 3. Ogólny obraz architektury
+               ┌─────────────────────┐
+               │   Feniks (Meta)     │
+               │  - meta-refleksja   │
+               │  - analiza kodu     │
+               │  - kontrakty UI/UX  │
+               │  - system-model     │
+               └─────────┬───────────┘
+                         │
+                META-REFLECTION LAYER
+                         │
+        ┌────────────────┴──────────────────┐
+        │                                   │
+┌──────────────┐                   ┌──────────────────┐
+│    RAE        │                   │   Agents         │
+│ Reflective    │← Retrieval →←→→→→│  Tasks / Tools   │
+│  Memory       │   Reflection      │  Pipelines       │
+│  (Graph+Vec)  │→ Write →→→→→→→→→→│  Actions         │
+└──────────────┘                   └──────────────────┘
+        │
+        ▼
+  Logs / OTEL / Metrics
+
+## 4. RAE – warstwa refleksji operacyjnej
+### 4.1. Funkcje główne:
+
+Pamięć semantyczna + grafowa,
+
+Epizody operacyjne,
+
+Reflection events,
+
+Scoring i priorytetyzacja,
+
+Korelacja z wynikami i błędami,
+
+Klucz: “co system robi i dlaczego to zrobił?”
+
+### 4.2. Co zapisujemy:
+
+poprzednie decyzje,
+
+błędy i wyjątki,
+
+metryki jakości,
+
+alternatywne strategie,
+
+koszt tokenów,
+
+interwencje człowieka (HIL).
+
+### 4.3. Jak RAE wspiera samodoskonalenie:
+
+buduje historię działań,
+
+generuje heurystyki,
+
+sugeruje korekty,
+
+tworzy “wewnętrzne instrukcje”.
+
+## 5. Feniks – warstwa meta-refleksji
+
+Feniks pełni rolę meta-systemu:
+
+analizuje kod źródłowy agentów, RAE i pipeline’ów,
+
+porównuje rzeczywiste zachowania z kontraktami,
+
+wykrywa niespójności i problemy architektoniczne,
+
+generuje plan naprawczy.
+
+### 5.1. Co Feniks rozumie:
+
+strukturę projektów (drzewa plików),
+
+wzorce AngularJS → Next.js,
+
+wzorce PHP → moduły nowoczesne,
+
+UI kontrakty (HTML → JSX),
+
+typowe anty-patterny.
+
+### 5.2. Meta-pipeline Feniksa:
+1. Collect intel (snapshot projektu)
+2. Analyze structure
+3. Detect architecture patterns
+4. Compare with expected contracts
+5. Generate improvement plan
+6. Generate patches / diffs / PR
+
+## 6. Integracja RAE ↔ Feniks
+Feniks czyta pamięć refleksyjną RAE:
+
+błędy agentów,
+
+powtarzalne wątki,
+
+obszary trudności,
+
+heurystyki, które nie działają.
+
+Feniks generuje meta-wiedzę:
+
+“pattern failure”: powtarzalne błędy,
+
+“pattern success”: powtarzalne sukcesy,
+
+“heuristic candidates”: nowe reguły,
+
+“legacy behavior guard”: wykryte odstępstwa od znanych kontraktów.
+
+Feniks generuje “system patches”:
+
+poprawki kodu,
+
+aktualizacje pipeline’ów,
+
+nowe reguły refleksji,
+
+aktualizacje API.
+
+## 7. System Kontraktów (Legacy Behavior Guard)
+
+System kontraktów to:
+
+reguły działania
+
+ograniczenia
+
+oczekiwane zachowania
+
+Feniks generuje kontrakty dla:
+
+UI,
+
+API,
+
+pamięci,
+
+agentów.
+
+RAE używa tych kontraktów jako:
+
+walidacji logicznej,
+
+testów automatycznych,
+
+punktu odniesienia przy refleksji.
+
+## 8. Mechanizm Samodoskonalący
+## 8.1. Podstawowa pętla:
+[1] Agent działa
+[2] RAE zapisuje epizod
+[3] RAE ocenia jakość
+[4] RAE generuje refleksję
+[5] Feniks analizuje refleksję
+[6] Feniks generuje nowe heurystyki
+[7] Człowiek zatwierdza
+[8] Heurystyki wchodzą do RAE
+[9] Agent działa lepiej
+
+## 8.2. Język heurystyk:
+
+Każda heurystyka to:
+
+warunek,
+
+rekomendacja,
+
+poprawka,
+
+priorytet.
+
+Przykład:
+
+- condition: "lint fails with ruff F401"
+  action: "remove unused imports automatically"
+  priority: high
+
+
+RAE może to stosować automatycznie.
+
+## 9. Self-Model Systemu
+
+To jest najwyższa warstwa i duża część Feniksa:
+
+System buduje “model siebie”:
+
+co potrafi,
+
+jakie ma ograniczenia,
+
+jakie ma moduły,
+
+gdzie są braki,
+
+jakie są zależności.
+
+Self-model pozwala:
+
+przewidywać problemy,
+
+sugerować rozszerzenia,
+
+optymalizować kod,
+
+decydować, które heurystyki zastosować.
+
+## 10. Stabilizacja i Bezpieczeństwo
+
+System samodoskonalący musi być stabilny:
+
+✔ Testy heurystyk
+
+Każda nowa heurystyka:
+
+generuje test,
+
+przechodzi walidację,
+
+jest “proofed” na sandboxie.
+
+✔ Human-In-The-Loop
+
+Nic nie przechodzi do PROD automatycznie.
+
+✔ Kontrola kosztów
+
+Heurystyki, które są zbyt kosztowne → usuwane.
+
+✔ Guardrails
+
+RAE blokuje:
+
+wycieki PII,
+
+nieautoryzowane zmiany,
+
+niepoprawne heurystyki.
+
+## 11. Przykładowa architektura przepływu
+Agent → RAE (write) → Reflection → Feniks → Heuristic Generator → Validation → RAE (update) → Agent
+
+## 12. Plan wdrożenia v1.0 (10 dni)
+Dni 1–3: RAE Reflection Upgrade
+
+scoring quality
+
+flags HIL
+
+error detection
+
+improvement triggers
+
+Dni 4–6: Feniks Meta-Analyzer
+
+snapshot projektu
+
+strukturalny parser
+
+detection of patterns
+
+generator kontraktów
+
+Dni 7–8: Heuristic Engine
+
+format heurystyk
+
+warstwa wykonawcza
+
+Dni 9–10: Integracja i testy
+
+pętla samodoskonalenia
+
+testy regresji
+
+sandbox
+
+## 13. Rezultaty końcowe
+✔ Agenci, którzy uczą się z własnych błędów
+✔ System, który poprawia się sam
+✔ Feniks, który rozumie RAE i generuje poprawki
+✔ Pamięć refleksyjna, która staje się fundamentem metaintelektu
+✔ AI Factory Core, które rośnie bez przepisywania od zera
+## 14. Następne kroki (opcjonalne)
+
+Warstwa 2 meta-kontraktów (kontrakty ewolucyjne)
+
+self-tests dla heurystyk
+
+auto-PR generowane przez Feniksa
+
+rozróżnianie agentów: uczeń → journeyman → senior
+
+KONIEC PLIKU
+
+Możesz to wkleić do Claude/Gemini i powiedzieć:
+„Rozwiń i zaimplementuj v1 według tego dokumentu.”

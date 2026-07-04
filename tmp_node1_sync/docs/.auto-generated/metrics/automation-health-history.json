@@ -1,0 +1,402 @@
+[
+  {
+    "run_id": "20251215-001015",
+    "timestamp": "2025-12-15T00:10:15.806043",
+    "duration_seconds": 0.16,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251215-025240",
+    "timestamp": "2025-12-15T02:52:40.037159",
+    "duration_seconds": 0.24,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251216-195358",
+    "timestamp": "2025-12-16T19:53:58.840977",
+    "duration_seconds": 0.24,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251217-205308",
+    "timestamp": "2025-12-17T20:53:08.196889",
+    "duration_seconds": 0.23,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251217-223302",
+    "timestamp": "2025-12-17T22:33:02.462764",
+    "duration_seconds": 0.23,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251217-231023",
+    "timestamp": "2025-12-17T23:10:23.369869",
+    "duration_seconds": 0.24,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251217-233614",
+    "timestamp": "2025-12-17T23:36:14.534748",
+    "duration_seconds": 0.26,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251218-063037",
+    "timestamp": "2025-12-18T06:30:37.621634",
+    "duration_seconds": 0.24,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251218-070408",
+    "timestamp": "2025-12-18T07:04:08.635028",
+    "duration_seconds": 0.39,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251218-070346",
+    "timestamp": "2025-12-18T07:03:46.591605",
+    "duration_seconds": 0.28,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-073549",
+    "timestamp": "2025-12-22T07:35:49.621401",
+    "duration_seconds": 0.49,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-100439",
+    "timestamp": "2025-12-22T10:04:39.211230",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-105440",
+    "timestamp": "2025-12-22T10:54:40.571845",
+    "duration_seconds": 0.26,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-111427",
+    "timestamp": "2025-12-22T11:14:27.087263",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-165725",
+    "timestamp": "2025-12-22T16:57:25.970339",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251222-180324",
+    "timestamp": "2025-12-22T18:03:24.776439",
+    "duration_seconds": 0.16,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251223-070120",
+    "timestamp": "2025-12-23T07:01:20.778320",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251223-174023",
+    "timestamp": "2025-12-23T17:40:23.765907",
+    "duration_seconds": 0.18,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251223-193501",
+    "timestamp": "2025-12-23T19:35:01.578658",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251223-195718",
+    "timestamp": "2025-12-23T19:57:18.067761",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251223-203202",
+    "timestamp": "2025-12-23T20:32:02.414211",
+    "duration_seconds": 0.18,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251224-090011",
+    "timestamp": "2025-12-24T09:00:11.198579",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251224-094138",
+    "timestamp": "2025-12-24T09:41:38.643191",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251224-103201",
+    "timestamp": "2025-12-24T10:32:01.030882",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251224-204035",
+    "timestamp": "2025-12-24T20:40:35.618492",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-062723",
+    "timestamp": "2025-12-25T06:27:23.736524",
+    "duration_seconds": 0.18,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-071010",
+    "timestamp": "2025-12-25T07:10:10.662420",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-083821",
+    "timestamp": "2025-12-25T08:38:21.196648",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-113743",
+    "timestamp": "2025-12-25T11:37:43.365232",
+    "duration_seconds": 0.18,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-132317",
+    "timestamp": "2025-12-25T13:23:17.616291",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-133633",
+    "timestamp": "2025-12-25T13:36:33.755019",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-140121",
+    "timestamp": "2025-12-25T14:01:21.059157",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-173729",
+    "timestamp": "2025-12-25T17:37:29.187099",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-194859",
+    "timestamp": "2025-12-25T19:48:59.269958",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251225-205042",
+    "timestamp": "2025-12-25T20:50:42.357331",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251226-085738",
+    "timestamp": "2025-12-26T08:57:38.412496",
+    "duration_seconds": 0.2,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251226-093128",
+    "timestamp": "2025-12-26T09:31:28.109677",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251228-121543",
+    "timestamp": "2025-12-28T12:15:43.871335",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251230-231053",
+    "timestamp": "2025-12-30T23:10:53.591098",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251230-234609",
+    "timestamp": "2025-12-30T23:46:09.250281",
+    "duration_seconds": 0.17,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20251231-150925",
+    "timestamp": "2025-12-31T15:09:25.932243",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260101-030413",
+    "timestamp": "2026-01-01T03:04:13.841250",
+    "duration_seconds": 0.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260102-211811",
+    "timestamp": "2026-01-02T21:18:11.358245",
+    "duration_seconds": 0.22,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260102-213753",
+    "timestamp": "2026-01-02T21:37:53.163890",
+    "duration_seconds": 0.21,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260106-150221",
+    "timestamp": "2026-01-06T15:02:21.758832",
+    "duration_seconds": 0.36,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260106-152252",
+    "timestamp": "2026-01-06T15:22:52.878461",
+    "duration_seconds": 0.35,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260117-191411",
+    "timestamp": "2026-01-17T19:14:11.064073",
+    "duration_seconds": 1.19,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260117-183224",
+    "timestamp": "2026-01-17T18:32:24.332811",
+    "duration_seconds": 0.37,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260117-185543",
+    "timestamp": "2026-01-17T18:55:43.086072",
+    "duration_seconds": 0.41,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  },
+  {
+    "run_id": "20260117-220845",
+    "timestamp": "2026-01-17T22:08:45.966590",
+    "duration_seconds": 0.39,
+    "status": "success",
+    "files_count": 8,
+    "errors_count": 0
+  }
+]

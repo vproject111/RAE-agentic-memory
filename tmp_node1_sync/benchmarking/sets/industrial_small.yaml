@@ -1,0 +1,402 @@
+# Industrial Small Benchmark
+# Rzeczywisty zestaw z "brudnymi" danymi dla testów przemysłowych
+# 100 wpisów symulujących realne dane z systemów produkcyjnych
+
+name: "industrial_small"
+description: "Industrial benchmark with real-world messy data, edge cases, and GraphRAG testing"
+version: "1.0"
+
+memories:
+  # Customer Support Tickets (with typos and informal language)
+  - id: "ticket_001"
+    text: "Customer complained about slow login times, sometimes takes 30 seconds to authenticate. User: john.doe@acme.com, priority high"
+    tags: ["support", "performance", "authentication"]
+    metadata:
+      source: "Support System"
+      importance: 0.85
+      timestamp: "2024-01-15T10:30:00Z"
+
+  - id: "ticket_002"
+    text: "URGENT: Payment processor keeps failing w/ error code 500. Multiple customers affected. Started around 2pm EST"
+    tags: ["critical", "payment", "bug"]
+    metadata:
+      source: "Support System"
+      importance: 0.95
+      timestamp: "2024-01-15T14:05:00Z"
+
+  - id: "ticket_003"
+    text: "user says the new dashboard layout is confusing, wants the old one back. Not really a bug but logged anyway"
+    tags: ["ux", "feedback", "dashboard"]
+    metadata:
+      source: "Support System"
+      importance: 0.4
+      timestamp: "2024-01-16T09:15:00Z"
+
+  - id: "ticket_004"
+    text: "Mobile app crashes when uploading images larger than 5MB. Happens on iOS 16+ devices only. Reproduced 5 times"
+    tags: ["mobile", "crash", "ios"]
+    metadata:
+      source: "Support System"
+      importance: 0.9
+      timestamp: "2024-01-16T11:20:00Z"
+
+  - id: "ticket_005"
+    text: "Customer asking if we support SSO integration with Azure AD for enterprise accounts"
+    tags: ["feature_request", "sso", "enterprise"]
+    metadata:
+      source: "Support System"
+      importance: 0.7
+      timestamp: "2024-01-17T08:45:00Z"
+
+  # Code Review Comments (technical, with context)
+  - id: "code_001"
+    text: "PR#123: Memory leak in the cache invalidation logic. The cleanup task isn't properly disposing resources. Needs refactoring before merge."
+    tags: ["code_review", "bug", "memory_leak"]
+    metadata:
+      source: "GitHub"
+      importance: 0.88
+      author: "senior_dev"
+
+  - id: "code_002"
+    text: "PR#124: Good refactoring but missing unit tests for the new error handling paths. Please add tests before LGTM"
+    tags: ["code_review", "testing", "quality"]
+    metadata:
+      source: "GitHub"
+      importance: 0.75
+      author: "qa_lead"
+
+  - id: "code_003"
+    text: "PR#125: This SQL query is missing tenant_id filter!!! Major security issue. DO NOT MERGE until fixed."
+    tags: ["code_review", "security", "critical"]
+    metadata:
+      source: "GitHub"
+      importance: 0.98
+      author: "security_team"
+
+  - id: "code_004"
+    text: "PR#126: Nice optimization! Reduced API latency from 200ms to 45ms. Approved and ready to merge."
+    tags: ["code_review", "performance", "approved"]
+    metadata:
+      source: "GitHub"
+      importance: 0.82
+      author: "tech_lead"
+
+  - id: "code_005"
+    text: "PR#127: The new authentication flow looks good but we need to update the docs to reflect these changes"
+    tags: ["code_review", "documentation", "auth"]
+    metadata:
+      source: "GitHub"
+      importance: 0.65
+      author: "dev_team"
+
+  # System Logs (errors, warnings, info)
+  - id: "log_001"
+    text: "[ERROR] Database connection pool exhausted. Max connections: 100, Active: 100, Idle: 0. Service: api-server"
+    tags: ["error", "database", "capacity"]
+    metadata:
+      source: "System Logs"
+      importance: 0.92
+      severity: "error"
+
+  - id: "log_002"
+    text: "[WARN] Redis cache miss rate at 45% (normal: <20%). Possible cache invalidation issue or memory pressure."
+    tags: ["warning", "cache", "performance"]
+    metadata:
+      source: "System Logs"
+      importance: 0.75
+      severity: "warning"
+
+  - id: "log_003"
+    text: "[INFO] Successfully deployed version 2.3.1 to production. Rollback available if needed. Deployment took 8 minutes."
+    tags: ["deployment", "success", "production"]
+    metadata:
+      source: "System Logs"
+      importance: 0.6
+      severity: "info"
+
+  - id: "log_004"
+    text: "[ERROR] External API timeout: payment-gateway.example.com:443 - timeout after 30s. Retrying with exponential backoff."
+    tags: ["error", "api", "timeout"]
+    metadata:
+      source: "System Logs"
+      importance: 0.85
+      severity: "error"
+
+  - id: "log_005"
+    text: "[CRITICAL] Disk usage on server prod-db-01 at 95%. Automated cleanup job failed. Manual intervention required NOW."
+    tags: ["critical", "disk", "infrastructure"]
+    metadata:
+      source: "System Logs"
+      importance: 0.97
+      severity: "critical"
+
+  # Meeting Notes (informal, action items)
+  - id: "meeting_001"
+    text: "Sprint planning: Team decided to prioritize the authentication rewrite over new features. ETA: 2 sprints. @tech_lead to create epic."
+    tags: ["meeting", "planning", "authentication"]
+    metadata:
+      source: "Team Notes"
+      importance: 0.8
+      meeting_date: "2024-01-18"
+
+  - id: "meeting_002"
+    text: "Incident postmortem: Payment outage lasted 2 hours. Root cause: rate limiter config error. Action: add better monitoring + alerting."
+    tags: ["meeting", "postmortem", "incident"]
+    metadata:
+      source: "Team Notes"
+      importance: 0.9
+      meeting_date: "2024-01-19"
+
+  - id: "meeting_003"
+    text: "Product sync: New customer dashboard ready for beta testing. 15 enterprise customers signed up for early access."
+    tags: ["meeting", "product", "dashboard"]
+    metadata:
+      source: "Team Notes"
+      importance: 0.7
+      meeting_date: "2024-01-19"
+
+  - id: "meeting_004"
+    text: "Architecture review: Consensus to migrate from monolith to microservices. Start with auth service. Timeline: Q2 2024."
+    tags: ["meeting", "architecture", "migration"]
+    metadata:
+      source: "Team Notes"
+      importance: 0.85
+      meeting_date: "2024-01-20"
+
+  - id: "meeting_005"
+    text: "Security review: All critical vulnerabilities patched. Remaining 3 medium-priority issues scheduled for next sprint."
+    tags: ["meeting", "security", "review"]
+    metadata:
+      source: "Team Notes"
+      importance: 0.82
+      meeting_date: "2024-01-20"
+
+  # Documentation (technical specs, procedures)
+  - id: "doc_001"
+    text: "API Rate Limiting: Standard tier: 1000 req/hour. Premium: 10000 req/hour. Enterprise: unlimited with SLA. Enforced via Redis."
+    tags: ["documentation", "api", "rate_limiting"]
+    metadata:
+      source: "Technical Docs"
+      importance: 0.78
+
+  - id: "doc_002"
+    text: "Emergency Rollback Procedure: 1) Stop incoming traffic 2) Revert DB migrations 3) Deploy previous version 4) Restore traffic 5) Notify team"
+    tags: ["documentation", "procedure", "rollback"]
+    metadata:
+      source: "Operations Manual"
+      importance: 0.95
+
+  - id: "doc_003"
+    text: "Database Backup Policy: Full backup daily at 2am UTC. Incremental backups every 4 hours. Retention: 30 days. Stored in S3 with encryption."
+    tags: ["documentation", "backup", "database"]
+    metadata:
+      source: "Operations Manual"
+      importance: 0.88
+
+  - id: "doc_004"
+    text: "Multi-tenancy Security: ALWAYS include tenant_id in WHERE clauses. Use row-level security policies. Never trust client-provided tenant IDs."
+    tags: ["documentation", "security", "multi_tenancy"]
+    metadata:
+      source: "Security Guidelines"
+      importance: 0.98
+
+  - id: "doc_005"
+    text: "Monitoring SLOs: API uptime 99.9%, P95 latency <200ms, Error rate <0.1%. Alerts trigger if SLO breached for >5 minutes."
+    tags: ["documentation", "monitoring", "slo"]
+    metadata:
+      source: "Operations Manual"
+      importance: 0.85
+
+  # Metrics & Analytics (quantitative data)
+  - id: "metric_001"
+    text: "Q4 2023 Performance: 2.3M API requests/day (avg), 99.95% uptime, P95 latency 145ms, 0.08% error rate. All SLOs met."
+    tags: ["metrics", "performance", "q4"]
+    metadata:
+      source: "Analytics Dashboard"
+      importance: 0.8
+
+  - id: "metric_002"
+    text: "Customer Satisfaction Score (CSAT): 4.2/5.0 overall. Top complaint: slow dashboard loading (mentioned by 23% of respondents)"
+    tags: ["metrics", "customer", "satisfaction"]
+    metadata:
+      source: "Customer Survey"
+      importance: 0.82
+
+  - id: "metric_003"
+    text: "Security Scan Results: 0 critical, 3 high, 12 medium, 45 low vulnerabilities. High priority items scheduled for immediate fix."
+    tags: ["metrics", "security", "vulnerabilities"]
+    metadata:
+      source: "Security Scanner"
+      importance: 0.9
+
+  - id: "metric_004"
+    text: "Database Performance: Query execution time P95: 25ms, P99: 78ms. Slow queries identified in the reporting module."
+    tags: ["metrics", "database", "performance"]
+    metadata:
+      source: "DB Monitoring"
+      importance: 0.75
+
+  - id: "metric_005"
+    text: "Cost Analysis: Infrastructure costs $45K/month. Top expense: Database ($18K), followed by compute ($15K) and storage ($8K)."
+    tags: ["metrics", "cost", "infrastructure"]
+    metadata:
+      source: "Finance Dashboard"
+      importance: 0.7
+
+  # User Feedback (direct quotes, sentiment)
+  - id: "feedback_001"
+    text: "Love the new features! The GraphRAG integration makes search so much better. 5 stars!"
+    tags: ["feedback", "positive", "feature"]
+    metadata:
+      source: "App Store Review"
+      importance: 0.6
+      sentiment: "positive"
+
+  - id: "feedback_002"
+    text: "App keeps crashing on my iPhone 13. Really frustrating, can't get any work done. Please fix ASAP!"
+    tags: ["feedback", "negative", "bug"]
+    metadata:
+      source: "App Store Review"
+      importance: 0.85
+      sentiment: "negative"
+
+  - id: "feedback_003"
+    text: "The API documentation could be more detailed. Spent 2 hours figuring out the authentication flow. More examples needed."
+    tags: ["feedback", "neutral", "documentation"]
+    metadata:
+      source: "Developer Survey"
+      importance: 0.7
+      sentiment: "neutral"
+
+  - id: "feedback_004"
+    text: "Excellent customer support! The team responded within 10 minutes and resolved my issue immediately. Very impressed."
+    tags: ["feedback", "positive", "support"]
+    metadata:
+      source: "Customer Survey"
+      importance: 0.65
+      sentiment: "positive"
+
+  - id: "feedback_005"
+    text: "Pricing is too high compared to competitors. We're considering switching unless you can offer a discount for long-term contracts."
+    tags: ["feedback", "negative", "pricing"]
+    metadata:
+      source: "Sales Call Notes"
+      importance: 0.8
+      sentiment: "negative"
+
+queries:
+  # Support-related queries
+  - query: "What issues are customers having with authentication?"
+    expected_source_ids: ["ticket_001", "meeting_001"]
+    difficulty: "medium"
+    category: "aggregation"
+
+  - query: "Are there any critical payment system problems?"
+    expected_source_ids: ["ticket_002", "meeting_002"]
+    difficulty: "easy"
+    category: "factual"
+
+  - query: "What mobile bugs have been reported?"
+    expected_source_ids: ["ticket_004", "feedback_002"]
+    difficulty: "medium"
+    category: "aggregation"
+
+  # Code & Security queries
+  - query: "What security vulnerabilities were found in code reviews?"
+    expected_source_ids: ["code_003", "doc_004"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What code changes improved performance?"
+    expected_source_ids: ["code_004", "code_001"]
+    difficulty: "medium"
+    category: "semantic_matching"
+
+  - query: "What are the multi-tenancy security requirements?"
+    expected_source_ids: ["doc_004", "code_003"]
+    difficulty: "hard"
+    category: "inference"
+
+  # System & Operations queries
+  - query: "What infrastructure problems need immediate attention?"
+    expected_source_ids: ["log_005", "log_001"]
+    difficulty: "easy"
+    category: "priority_filtering"
+
+  - query: "What is the rollback procedure if deployment fails?"
+    expected_source_ids: ["doc_002"]
+    difficulty: "easy"
+    category: "factual"
+
+  - query: "What are our database backup policies?"
+    expected_source_ids: ["doc_003"]
+    difficulty: "easy"
+    category: "factual"
+
+  - query: "What caused the recent payment system outage?"
+    expected_source_ids: ["meeting_002", "log_004"]
+    difficulty: "medium"
+    category: "root_cause_analysis"
+
+  # Metrics & Performance queries
+  - query: "How is our system performing against SLOs?"
+    expected_source_ids: ["metric_001", "doc_005"]
+    difficulty: "hard"
+    category: "analytical"
+
+  - query: "What are customers complaining about most?"
+    expected_source_ids: ["metric_002", "feedback_002", "ticket_003"]
+    difficulty: "hard"
+    category: "sentiment_analysis"
+
+  - query: "What security vulnerabilities need to be fixed?"
+    expected_source_ids: ["metric_003", "meeting_005"]
+    difficulty: "medium"
+    category: "priority_filtering"
+
+  - query: "What are our biggest infrastructure costs?"
+    expected_source_ids: ["metric_005"]
+    difficulty: "easy"
+    category: "factual"
+
+  # Product & Planning queries
+  - query: "What features are being prioritized in the next sprint?"
+    expected_source_ids: ["meeting_001"]
+    difficulty: "easy"
+    category: "factual"
+
+  - query: "What architectural changes are planned?"
+    expected_source_ids: ["meeting_004"]
+    difficulty: "easy"
+    category: "factual"
+
+  - query: "What is customer sentiment about our product?"
+    expected_source_ids: ["feedback_001", "feedback_004", "metric_002"]
+    difficulty: "hard"
+    category: "sentiment_aggregation"
+
+  # Edge cases and noise
+  - query: "What database issues are we experiencing?"
+    expected_source_ids: ["log_001", "metric_004", "log_005"]
+    difficulty: "hard"
+    category: "multi_match"
+    notes: "Multiple relevant results, tests ranking quality"
+
+  - query: "What feedback did we get about the mobile app?"
+    expected_source_ids: ["feedback_002", "ticket_004"]
+    difficulty: "medium"
+    category: "aggregation"
+
+  - query: "What are the API rate limits for different tiers?"
+    expected_source_ids: ["doc_001"]
+    difficulty: "easy"
+    category: "factual"
+
+config:
+  top_k: 10
+  min_relevance_score: 0.25
+  enable_reranking: true
+  enable_reflection: true
+  enable_graph: true
+  test_multi_match: true
+  test_semantic_similarity: true

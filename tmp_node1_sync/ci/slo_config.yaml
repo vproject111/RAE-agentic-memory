@@ -1,0 +1,36 @@
+# SLO Configuration for Zero Drift
+# Based on RAE-CI-QUALITY-SPEC-enterprise-v2.0.md
+# Version: 1.0
+
+timing:
+  max_increase_percent: 10  # SLO: <= 5% between releases, CI allows 10%
+  max_test_duration_seconds: 300  # 5 minutes max for full suite
+  description: "Test execution time regression check"
+
+memory:
+  max_peak_mb: 2048  # 2GB max
+  max_increase_percent: 10
+  description: "Memory usage regression check"
+
+logs:
+  max_warning: 0  # Zero warnings policy
+  max_error: 0    # Zero errors in tests
+  max_critical: 0  # Zero critical logs in tests
+  description: "Log volume and severity check"
+
+coverage:
+  min_overall: 65  # From pytest.ini --cov-fail-under
+  min_math_layer: 80  # SLO for math+reflective (from spec)
+  min_reflective_layer: 80
+  description: "Test coverage minimum thresholds"
+
+api_latency:
+  p95_max_ms: 200  # 95th percentile max latency
+  p99_max_ms: 350  # 99th percentile max latency
+  increase_threshold_percent: 20  # Max allowed increase
+  description: "API endpoint latency check"
+
+benchmark:
+  mrr_drop_threshold: 0.05  # Max 5% drop in MRR
+  quality_drop_threshold: 0.10  # Max 10% drop in quality metrics
+  description: "Benchmark quality regression check"
