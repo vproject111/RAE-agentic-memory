@@ -529,6 +529,10 @@ class BridgeInteractionRequest(BaseModel):
         description="Optional readable label. If missing, RAE generates one intelligently.",
         examples=["STABILIZACJA INFRASTRUKTURY: Python 3.14"],
     )
+    strategy: Optional[str] = Field(
+        None,
+        description="Optional routing/reasoning strategy",
+    )
 
 
 class GetTriggerExecutionsRequest(BaseModel):
