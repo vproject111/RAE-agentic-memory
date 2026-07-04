@@ -1,5 +1,18 @@
 import os
+import sys
 from contextlib import asynccontextmanager
+
+# Enforce Git Flow & SemVer Branch Guard Validation
+try:
+    from rae_core.governance.versioning import VersioningValidator
+    VersioningValidator(
+        project_path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        module_name="rae-agentic-memory",
+        config={"strategy": "git-flow", "strict": True}
+    ).validate()
+except Exception as e:
+    print(f"❌ Git Flow Validation failed: {e}", file=sys.stderr)
+    sys.exit(1)
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request
