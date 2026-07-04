@@ -11,6 +11,8 @@ from anthropic import APIError, AsyncAnthropic, AuthenticationError, RateLimitEr
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..models import (
+    EmbeddingRequest,
+    EmbeddingResponse,
     LLMAuthError,
     LLMChunk,
     LLMContextLengthError,
