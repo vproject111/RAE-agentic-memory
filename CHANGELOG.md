@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0] - 2026-07-04
+
+### ✨ Features
+- **LLM Agnosticism**: Unified multi-model dynamic resolver runtime (`resolve_llm_runtime`) supporting OpenAI, Anthropic, Google, OpenRouter, and OpenCode across all modules (agentic-memory, quality, hive) in a standalone fashion.
+- **Security**: Implemented Iteration 4 Security and Limiters: `SecretRedactor`, `CircuitBreaker`, and `StandaloneRateLimiter` to prevent API credential leakage and endless billing loops.
+- **Governance**: Embedded Versioning Validator runtime contract to enforce strict Git Flow branch guards on module startup in development environments.
+- **Integrations**: Consolidated and merged legacy RAE-Windows (Universal Node) and NiceGUI dashboard features from `release/v3.0.2` to prevent regressions.
+
 ## [3.6.1-LTS] - 2026-03-01
 
 ### ✨ Features
