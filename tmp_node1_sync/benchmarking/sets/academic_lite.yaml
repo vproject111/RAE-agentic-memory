@@ -1,0 +1,112 @@
+# Academic Lite Benchmark
+# Prosty zestaw testowy do szybkiej weryfikacji działania RAE
+# 10 faktów naukowych, 7 zapytań testowych
+
+name: "academic_lite"
+description: "Lightweight academic benchmark for RAE quality testing"
+version: "1.0"
+
+memories:
+  - id: "1"
+    text: "DNA was discovered by Watson and Crick in 1953."
+    tags: ["biology", "dna", "genetics"]
+    metadata:
+      source: "Science History"
+      importance: 0.9
+
+  - id: "2"
+    text: "The capital of France is Paris, which is also its largest city."
+    tags: ["geography", "france", "europe"]
+    metadata:
+      source: "Geography Facts"
+      importance: 0.7
+
+  - id: "3"
+    text: "Python is a popular programming language created by Guido van Rossum."
+    tags: ["technology", "programming", "python"]
+    metadata:
+      source: "Tech Encyclopedia"
+      importance: 0.8
+
+  - id: "4"
+    text: "Albert Einstein developed the theory of relativity in the early 20th century."
+    tags: ["physics", "einstein", "relativity"]
+    metadata:
+      source: "Physics History"
+      importance: 0.95
+
+  - id: "5"
+    text: "The Amazon rainforest is the largest tropical rainforest in the world."
+    tags: ["geography", "environment", "amazon"]
+    metadata:
+      source: "Environmental Science"
+      importance: 0.85
+
+  - id: "6"
+    text: "The human brain contains approximately 86 billion neurons."
+    tags: ["biology", "neuroscience", "brain"]
+    metadata:
+      source: "Neuroscience Journal"
+      importance: 0.9
+
+  - id: "7"
+    text: "Shakespeare wrote 37 plays and 154 sonnets during his lifetime."
+    tags: ["literature", "shakespeare", "history"]
+    metadata:
+      source: "Literary History"
+      importance: 0.75
+
+  - id: "8"
+    text: "The speed of light in vacuum is approximately 299,792,458 meters per second."
+    tags: ["physics", "light", "constants"]
+    metadata:
+      source: "Physics Constants"
+      importance: 0.92
+
+  - id: "9"
+    text: "The Great Wall of China is one of the Seven Wonders of the Medieval World."
+    tags: ["history", "china", "architecture"]
+    metadata:
+      source: "World History"
+      importance: 0.8
+
+  - id: "10"
+    text: "Marie Curie was the first woman to win a Nobel Prize and the only person to win Nobel Prizes in two different sciences."
+    tags: ["science", "history", "nobel"]
+    metadata:
+      source: "Science History"
+      importance: 0.95
+
+queries:
+  - query: "What is the capital of France?"
+    expected_source_ids: ["2"]
+    difficulty: "easy"
+
+  - query: "Who discovered DNA?"
+    expected_source_ids: ["1"]
+    difficulty: "easy"
+
+  - query: "What programming language was created by Guido van Rossum?"
+    expected_source_ids: ["3"]
+    difficulty: "medium"
+
+  - query: "How fast does light travel?"
+    expected_source_ids: ["8"]
+    difficulty: "medium"
+
+  - query: "How many neurons are in the human brain?"
+    expected_source_ids: ["6"]
+    difficulty: "medium"
+
+  - query: "Which scientist developed the theory of relativity?"
+    expected_source_ids: ["4"]
+    difficulty: "easy"
+
+  - query: "What awards did Marie Curie win?"
+    expected_source_ids: ["10"]
+    difficulty: "medium"
+
+config:
+  top_k: 5
+  min_relevance_score: 0.5
+  enable_reranking: true

@@ -1,0 +1,150 @@
+# CODEOWNERS - Code Ownership and Review Requirements
+#
+# This file defines code ownership for the RAE (Reflective Agentic Memory Engine) repository.
+# When a pull request modifies files matching these patterns, the specified teams/users
+# will automatically be requested for review.
+#
+# Format: <path-pattern> @owner1 @owner2 @teamname
+#
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# =============================================================================
+# DEFAULT OWNERS - Applied to everything unless overridden
+# =============================================================================
+
+* @grzegorz
+
+# =============================================================================
+# CRITICAL POLICIES AND AGENT RULES - Core Team Only
+# =============================================================================
+
+# Critical agent policies - require core maintainer approval
+/CRITICAL_AGENT_RULES.md @grzegorz
+/AI_AGENT_MANIFEST.md @grzegorz
+/SESSION_START.md @grzegorz
+/AUTONOMOUS_OPERATIONS.md @grzegorz
+/BRANCH_STRATEGY.md @grzegorz
+/TESTING_OPTIMIZATION.md @grzegorz
+/BRANCH_PROTECTION.md @grzegorz
+/PUBLIC_REPO_STRATEGY.md @grzegorz
+/.ai-agent-rules.md @grzegorz
+/.cursorrules @grzegorz
+
+# =============================================================================
+# CI/CD AND INFRASTRUCTURE - DevOps Team
+# =============================================================================
+
+# GitHub Actions workflows - critical for CI/CD
+/.github/workflows/* @grzegorz
+
+# Infrastructure configuration
+/infra/* @grzegorz
+/docker compose*.yml @grzegorz
+/Dockerfile @grzegorz
+/.dockerignore @grzegorz
+
+# Kubernetes configurations
+/infra/kubernetes/* @grzegorz
+
+# =============================================================================
+# SECURITY-SENSITIVE CODE - Security Team
+# =============================================================================
+
+# Security module - requires security team review
+/apps/memory_api/security/* @grzegorz
+/apps/memory_api/middleware/auth.py @grzegorz
+/apps/memory_api/middleware/rbac.py @grzegorz
+/apps/memory_api/security/rbac_service.py @grzegorz
+/apps/memory_api/security/auth_service.py @grzegorz
+
+# Security policies and documentation
+/docs/guides/security-best-practices.md @grzegorz
+/SECURITY.md @grzegorz
+
+# =============================================================================
+# DATABASE AND MIGRATIONS - Database Team
+# =============================================================================
+
+# Database DDL and migrations - requires careful review
+/infra/postgres/ddl/* @grzegorz
+/infra/postgres/migrations/* @grzegorz
+
+# =============================================================================
+# CORE SERVICES AND REPOSITORIES - Core Maintainers
+# =============================================================================
+
+# Core service layer - high-risk changes
+/apps/memory_api/services/* @grzegorz
+/apps/memory_api/repositories/* @grzegorz
+
+# Core domain models
+/apps/memory_api/models/* @grzegorz
+
+# =============================================================================
+# API LAYER - API Team
+# =============================================================================
+
+# REST API endpoints
+/apps/memory_api/api/v1/* @grzegorz
+/apps/memory_api/routes/* @grzegorz
+
+# =============================================================================
+# DOCUMENTATION - Anyone Can Contribute
+# =============================================================================
+
+# General documentation - lower barrier for contributions
+/docs/* @grzegorz
+/README.md @grzegorz
+/CHANGELOG.md @grzegorz
+
+# Examples and tutorials
+/examples/* @grzegorz
+
+# =============================================================================
+# TESTING - QA Team
+# =============================================================================
+
+# Test infrastructure and policies
+/tests/* @grzegorz
+/apps/memory_api/tests/* @grzegorz
+/docs/testing/* @grzegorz
+/docs/AGENTS_TEST_POLICY.md @grzegorz
+
+# =============================================================================
+# DEPENDENCIES AND BUILD CONFIGURATION
+# =============================================================================
+
+# Python dependencies - careful review needed
+/pyproject.toml @grzegorz
+/requirements*.txt @grzegorz
+/setup.py @grzegorz
+
+# =============================================================================
+# SDK AND INTEGRATIONS
+# =============================================================================
+
+# Python SDK
+/sdk/python/rae_memory_sdk/* @grzegorz
+
+# MCP integration
+/integrations/mcp/* @grzegorz
+
+# =============================================================================
+# NOTES
+# =============================================================================
+
+# For public repository:
+# - External contributors can ONLY target 'develop' branch
+# - Changes to critical files (workflows, security, infra) from external
+#   contributors require extra scrutiny
+# - See PUBLIC_REPO_STRATEGY.md for full external contribution guidelines
+#
+# For team expansion:
+# - Replace @grzegorz with GitHub team names: @dreamsoft-pro/core-maintainers
+# - Create teams on GitHub: Settings → Collaborators and teams → New team
+# - Recommended teams:
+#   - @dreamsoft-pro/core-maintainers (core code)
+#   - @dreamsoft-pro/security-team (security-sensitive)
+#   - @dreamsoft-pro/devops (infrastructure)
+#   - @dreamsoft-pro/database-team (DB changes)
+#   - @dreamsoft-pro/maintainers (general contributions)

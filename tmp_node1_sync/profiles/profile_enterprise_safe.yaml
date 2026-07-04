@@ -1,0 +1,39 @@
+# Profile: Enterprise Safe
+# Use case: Production systems, business applications, reliable operations
+# Priority: Balance of quality, reliability, and reasonable cost
+
+name: "Enterprise Safe"
+config_id: "cfg_quality_optimized"
+description: "Production-grade balance of quality and reliability"
+
+parameters:
+  math_level: 3  # Strong reasoning
+  batch_size: 25  # Moderate batches
+  cache_enabled: true  # Cache for efficiency
+
+memory_config:
+  context_window: 8000  # Adequate context
+  layers: ["episodic", "working", "semantic", "ltm"]  # Core layers
+  vector_similarity_threshold: 0.88  # Good precision
+
+reasoning:
+  depth: 10  # Solid reasoning depth
+  timeout_ms: 1000  # Reasonable timeout
+  strategy: "balanced"
+
+tradeoffs:
+  latency: "good"  # <1 second typical
+  quality: "high"  # 95%+ accuracy
+  cost: "moderate"  # Cost-effective for production
+
+use_cases:
+  - "Production APIs"
+  - "Business applications"
+  - "Customer-facing systems"
+  - "Enterprise workflows"
+  - "Reliable operations"
+
+compliance:
+  tenant_isolation: "mandatory"
+  audit_logging: "enabled"
+  error_handling: "robust"

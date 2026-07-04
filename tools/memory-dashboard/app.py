@@ -16,6 +16,7 @@ import os
 import time
 
 import streamlit as st
+import streamlit.components.v1 as components
 from utils.api_client import RAEClient, get_cached_stats
 from utils.visualizations import (
     apply_custom_css,
@@ -340,9 +341,13 @@ if "connected" in st.session_state and st.session_state.connected:
                 help="Concept and guideline memories",
             )
         with col5:
-            st.metric(
-                "Long-term", stats.get("ltm", 0), help="Consolidated long-term memories"
-            )
+            st.metric("Long-term", stats.get("ltm", 0), help="Consolidated long-term memories")
+
+        # Manual Refresh Button
+        if st.button("🔄 Refresh Data"):
+            # Clearing cache to force reload
+            get_cached_stats.clear()
+            st.rerun()
 
         # Manual Refresh Button
         if st.button("🔄 Refresh Data"):

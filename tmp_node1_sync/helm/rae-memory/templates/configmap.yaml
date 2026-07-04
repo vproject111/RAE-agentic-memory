@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rae-memory.fullname" . }}
+  labels:
+    {{- include "rae-memory.labels" . | nindent 4 }}
+data:
+  # Application configuration
+  RAE_LOG_LEVEL: {{ .Values.memoryApi.env | default "INFO" | quote }}
+  RAE_VECTOR_BACKEND: "qdrant"
+
+  # Service URLs (internal)
+  QDRANT_URL: "http://{{ include "rae-memory.fullname" . }}-qdrant:6333"
+  ML_SERVICE_URL: "http://{{ include "rae-memory.fullname" . }}-ml-service:8001"
+  RERANKER_SERVICE_URL: "http://{{ include "rae-memory.fullname" . }}-reranker:8002"
+
+  # Cost Controller Settings
+  ENABLE_COST_TRACKING: "true"
+  DEFAULT_DAILY_LIMIT: "10.00"
+  DEFAULT_MONTHLY_LIMIT: "100.00"
+  BUDGET_WARNING_THRESHOLD: "0.8"
+
+  # Performance tuning
+  WORKERS: "4"
+  MAX_CONNECTIONS: "100"
+  POOL_SIZE: "20"
+
+  # Feature flags
+  ENABLE_REFLECTION_GENERATION: "true"
+  ENABLE_HYBRID_SEARCH: "true"
+  ENABLE_GRAPH_RAG: "true"
+  ENABLE_RULES_ENGINE: "true"
+  ENABLE_EVALUATION: "true"
+
+  # OpenTelemetry
+  OTEL_SERVICE_NAME: "rae-memory-api"
+  OTEL_TRACES_ENABLED: "true"
+  OTEL_METRICS_ENABLED: "true"

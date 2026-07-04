@@ -1,0 +1,353 @@
+# RAE OpenTelemetry Configuration - Production/Government Profile
+#
+# This profile is optimized for production deployment in regulated environments
+# (medical, government, financial):
+# - Full tracing for compliance and audit (100% sampling)
+# - Aggressive PII scrubbing
+# - No sensitive content (prompts/responses excluded)
+# - Long retention for compliance (365 days)
+# - Export to SIEM/audit systems
+# - ISO 42001, HIPAA, GDPR compliant
+#
+# Target users: Compliance officers, auditors, production engineers
+#
+# Usage:
+#   export RAE_TELEMETRY_PROFILE=gov
+#   export OTEL_CONFIG_FILE=config/otel_prod_gov.yaml
+
+# Profile identification
+profile:
+  name: "Production/Government"
+  environment: "production"
+  version: "1.0"
+  compliance:
+    - "ISO 42001"
+    - "HIPAA"
+    - "GDPR"
+    - "SOC 2"
+
+# Service configuration
+service:
+  name: "rae-memory-api"
+  version: "${OTEL_SERVICE_VERSION:-prod}"
+  namespace: "rae"
+
+# Sampling configuration
+sampling:
+  # Full tracing for compliance
+  rate: 1.0
+
+  # Always trace critical operations
+  always_on:
+    - "safety.*"
+    - "compliance.*"
+    - "human.approval"
+    - "audit.*"
+    - "decision.*"
+
+  # Never sample user content
+  always_off:
+    - "*.content"
+    - "*.prompt"
+    - "*.response"
+
+# Attribute filtering
+attributes:
+  # Never include sensitive content
+  include_sensitive: false
+
+  # Short attributes for compliance
+  max_length: 500
+
+  # Extensive exclusions for privacy
+  excluded:
+    - "llm.prompt"
+    - "llm.response"
+    - "memory.content"
+    - "user.email"
+    - "user.name"
+    - "user.phone"
+    - "user.address"
+    - "user.ip"
+    - "*.pii"
+    - "*.sensitive"
+
+  # Include only metadata and metrics
+  included:
+    - "rae.agent.role"
+    - "rae.memory.layer"
+    - "rae.memory.operation"
+    - "rae.reasoning.step_type"
+    - "rae.outcome.label"
+    - "rae.safety.*"
+    - "rae.cost.*"
+    - "rae.performance.*"
+    - "rae.session.id"
+    - "rae.task.id"
+
+# PII scrubbing
+pii:
+  # Mandatory PII scrubbing
+  enabled: true
+  preserve_structure: false  # Full redaction
+
+  # All PII patterns
+  patterns:
+    - "email"
+    - "phone"
+    - "phone_us"
+    - "phone_intl"
+    - "ssn"
+    - "credit_card"
+    - "name_pattern"
+    - "ipv4"
+    - "ipv6"
+    - "address"
+
+  # Medical/healthcare specific
+  medical_patterns:
+    - "mrn"  # Medical Record Number
+    - "patient_id"
+    - "diagnosis_code"
+    - "prescription"
+
+  # Government specific
+  government_patterns:
+    - "passport"
+    - "driver_license"
+    - "tax_id"
+    - "case_number"
+
+# Data retention
+retention:
+  days: 365  # 1 year for compliance
+  auto_cleanup: false  # Manual approval for deletion
+
+  # Compliance archive
+  archive:
+    enabled: true
+    format: "encrypted_parquet"
+    storage_path: "${COMPLIANCE_DATA_PATH:-/secure/compliance}"
+    encryption: "AES-256"
+    access_log: true
+
+# Export configuration
+export:
+  # Primary OTLP to SIEM
+  primary:
+    type: "otlp"
+    endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+    protocol: "grpc"
+    compression: "gzip"
+    timeout_ms: 30000
+
+    # TLS for production
+    tls:
+      enabled: true
+      cert_file: "${TLS_CERT_FILE}"
+      key_file: "${TLS_KEY_FILE}"
+      ca_file: "${TLS_CA_FILE}"
+
+  # SIEM integration (Splunk, Elastic, etc.)
+  siem:
+    enabled: "${SIEM_ENABLED:-false}"
+    type: "${SIEM_TYPE:-splunk}"
+    endpoint: "${SIEM_ENDPOINT}"
+    index: "rae_compliance"
+    authentication:
+      type: "token"
+      token: "${SIEM_TOKEN}"
+
+  # Audit log export
+  audit:
+    enabled: true
+    format: "jsonl"
+    path: "${AUDIT_LOG_PATH:-/var/log/rae/audit}"
+    rotation: "daily"
+    retention_days: 365
+    encryption: true
+
+  # Console (disabled in production)
+  console:
+    enabled: false
+
+# Metrics configuration
+metrics:
+  enabled: true
+  export_interval_ms: 60000  # 1 minute
+
+  # Compliance-focused metrics
+  collect:
+    - "memory.operations"
+    - "safety.interventions"
+    - "compliance.violations"
+    - "human.approvals"
+    - "outcome.success_rate"
+    - "performance.latency_ms"
+    - "cost.tokens_total"
+
+  # Don't collect detailed LLM metrics
+  exclude:
+    - "llm.prompt_length"
+    - "llm.response_length"
+
+# Logging instrumentation
+logging:
+  enabled: true
+  level: "INFO"
+
+  inject_trace_context: true
+  log_span_events: true
+
+  # Scrub logs
+  scrub_logs: true
+
+  # Structured logging for SIEM
+  structured: true
+  format: "json"
+
+# Resource attributes
+resource:
+  auto_detect:
+    - "host.name"
+    - "os.type"
+
+  # Production/compliance attributes
+  custom:
+    deployment.environment: "production"
+    team: "rae-ops"
+    compliance.framework: "ISO-42001"
+    security.classification: "confidential"
+    data.residency: "${DATA_RESIDENCY:-US}"
+
+# Safety and compliance
+safety:
+  enabled: true
+
+  # Track safety interventions
+  track_interventions: true
+
+  # Alert on safety violations
+  alert_on_violation: true
+
+  # Safety metrics
+  metrics:
+    - "intervention.count"
+    - "intervention.type"
+    - "toxicity.score"
+    - "pii.detected"
+
+# Human-in-the-loop tracking
+human:
+  enabled: true
+
+  # Track approval workflows
+  track_approvals: true
+
+  # Capture approval metadata
+  capture:
+    - "approver.id"
+    - "approval.timestamp"
+    - "approval.reason"
+    - "wait_time_ms"
+
+  # Don't capture approval content
+  exclude_content: true
+
+# Performance tuning (conservative for stability)
+performance:
+  batch:
+    max_queue_size: 2048
+    schedule_delay_ms: 5000
+    export_timeout_ms: 30000
+    max_export_batch_size: 256
+
+  memory:
+    max_attributes_per_span: 64  # Limited for compliance
+    max_events_per_span: 64
+    max_links_per_span: 32
+
+# Feature flags
+features:
+  enable_trace_response: false  # Disabled for privacy
+  enable_db_statement_capture: false  # May contain PII
+  enable_http_client_trace: true
+  enable_http_server_trace: true
+  enable_redis_trace: true
+  enable_celery_trace: true
+  enable_qdrant_trace: true
+
+  # Compliance features
+  enable_compliance_tracking: true
+  enable_audit_logging: true
+  enable_pii_detection: true
+  enable_safety_monitoring: true
+
+# Alerting
+alerting:
+  enabled: true
+
+  # Alert conditions
+  conditions:
+    - name: "high_error_rate"
+      metric: "outcome.error_rate"
+      threshold: 0.05
+      window_minutes: 5
+
+    - name: "safety_violation"
+      metric: "safety.intervention_triggered"
+      threshold: 1
+      window_minutes: 1
+
+    - name: "pii_detected"
+      metric: "pii.detected"
+      threshold: 1
+      window_minutes: 1
+
+  # Alert destinations
+  destinations:
+    - type: "pagerduty"
+      enabled: "${PAGERDUTY_ENABLED:-false}"
+      integration_key: "${PAGERDUTY_KEY}"
+
+    - type: "email"
+      enabled: true
+      recipients: "${ALERT_EMAILS}"
+
+# Access control
+access:
+  # Require authentication for trace access
+  require_auth: true
+
+  # Role-based access control
+  rbac:
+    enabled: true
+    roles:
+      - name: "auditor"
+        permissions: ["read"]
+      - name: "operator"
+        permissions: ["read", "export"]
+      - name: "admin"
+        permissions: ["read", "write", "export", "delete"]
+
+  # Audit access to traces
+  audit_access: true
+
+# Data sovereignty
+data_sovereignty:
+  # Region restrictions
+  region: "${DATA_REGION:-US}"
+
+  # Data export restrictions
+  export_allowed_regions:
+    - "US"
+    - "EU"
+
+  # Block cross-border transfer
+  block_cross_border: true
+
+# Debug options (minimal in production)
+debug:
+  enabled: false
+  log_spans: false
+  validate_schema: true  # Still validate for compliance

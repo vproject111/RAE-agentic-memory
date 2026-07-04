@@ -1,0 +1,2 @@
+httpx
+tqdm # For showing progress

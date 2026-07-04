@@ -1,0 +1,10 @@
+tasks:
+  - id: TEST-GEMINI
+    goal: "Test if Gemini CLI works: Write a simple Python function that adds two numbers"
+    area: tests
+    risk: low
+    constraints:
+      - "Create a simple add(a, b) function"
+      - "Function should return a + b"
+      - "Output: Python code only"
+    context_files: []

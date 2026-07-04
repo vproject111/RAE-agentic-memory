@@ -1,0 +1,552 @@
+# RAE Project Rules for AI Agents
+
+> **🧠 RAE-FIRST BOOTSTRAPPING (Token Saving)**
+>
+> **Agent: Execute this sequence BEFORE reading files:**
+>
+> 1. **Check Memory**:
+>    `search_memory(query="project_rules_summary_v1", tags=["system", "rules", "bootstrap"])`
+>
+> 2. **Decision Tree**:
+>    - **IF FOUND**: Read the summary. Confirm: "✅ Rules loaded from RAE Memory."
+>    - **IF NOT FOUND**:
+>      1. Read `CRITICAL_AGENT_RULES.md` and `.ai-agent-rules.md`.
+>      2. Generate a concise summary (max 500 tokens).
+>      3. Save to RAE: `save_memory(content=summary, tags=["system", "rules", "bootstrap"], importance=1.0)`
+>      4. Confirm: "✅ Rules cached in RAE."
+>
+> 3. **Communication Protocol**:
+>    - All substantial reasoning, decisions, and status updates MUST be saved to RAE.
+>    - Use `save_memory` for "working memory" of the current session.
+>    - Use `search_memory` to retrieve context from other agents (Claude/Gemini).
+
+> **🚨 CRITICAL**: Before doing ANYTHING, read these documents (15 minutes):
+>
+> 1. **[docs/rules/AGENT_CORE_PROTOCOL.md](./docs/rules/AGENT_CORE_PROTOCOL.md)** (5 min) - SINGLE SOURCE OF TRUTH
+> 2. **[AI_AGENT_MANIFEST.md](./AI_AGENT_MANIFEST.md)** (3 min) - Universal baseline & documentation hierarchy
+> 3. **[docs/rules/GEMINI_PROFILE.md](./docs/rules/GEMINI_PROFILE.md)** (If you are Gemini)
+> 4. **[docs/rules/CLAUDE_PROFILE.md](./docs/rules/CLAUDE_PROFILE.md)** (If you are Claude)
+> 5. **[docs/BRANCHING.md](./docs/BRANCHING.md)** (3 min) - Git workflow
+>
+> **AI_AGENT_MANIFEST.md** is the universal baseline for ALL AI agents. Read it first!
+
+You are working on the RAE (Reflective Agentic-memory Engine) project.
+Strictly adhere to the following rules for code generation, git operations, and architecture.
+
+## ⚠️ MOST IMPORTANT RULES (READ FIRST!)
+
+**See `docs/rules/AGENT_CORE_PROTOCOL.md` for the full mandated protocol.**
+
+1. **🔴 RULE #1**: NEVER run full test suite on feature branches! Only test your NEW code with `pytest --no-cov`
+
+2. **🔴 RULE #2**: Work AUTONOMOUSLY - don't ask permission for standard tasks (creating files, adding tests, etc.)
+
+3. **🔴 RULE #3**: Follow 3-phase workflow (Feature → Develop → Main)
+   - Feature: Test ONLY new code (`pytest --no-cov`)
+   - Develop: `make test-unit` MANDATORY before main!
+   - Main: CI tests automatically
+
+4. **🔴 RULE #4**: ALWAYS include `tenant_id` in database queries (security!)
+
+5. **🔴 RULE #5**: Use templates from `.ai-templates/` for all new code
+
+6. **🔴 RULE #6**: NEVER use interactive commands (nano, vim, git -i) - see section below
+
+7. **🔴 RULE #7**: Tests are contracts - fix CODE, not tests (when tests fail correctly)
+
+8. **🔴 RULE #8**: Documentation updates
+   - DON'T EDIT: Auto-generated (`CHANGELOG.md`, `STATUS.md`, `TODO.md`, `docs/.auto-generated/`)
+   - DO EDIT: Manual (`CONVENTIONS.md`, `PROJECT_STRUCTURE.md`, `docs/guides/`)
+
+**Complete rules with examples**: See `CRITICAL_AGENT_RULES.md`
+
+## 🚫 FORBIDDEN COMMANDS (CRITICAL - NEVER USE THESE)
+
+**❌ NEVER use interactive commands - they will hang/block automation:**
+
+```bash
+# Editors (FORBIDDEN):
+nano file.txt      # ❌ Interactive editor - FORBIDDEN!
+vim file.txt       # ❌ Interactive editor - FORBIDDEN!
+vi file.txt        # ❌ Interactive editor - FORBIDDEN!
+emacs file.txt     # ❌ Interactive editor - FORBIDDEN!
+
+# Pagers (FORBIDDEN):
+less file.txt      # ❌ Interactive pager - FORBIDDEN!
+more file.txt      # ❌ Interactive pager - FORBIDDEN!
+
+# Interactive git (FORBIDDEN):
+git add -i         # ❌ Interactive add - FORBIDDEN!
+git rebase -i      # ❌ Interactive rebase - FORBIDDEN!
+git commit         # ❌ Opens editor - FORBIDDEN! (use git commit -m)
+```
+
+**✅ Use these non-interactive alternatives:**
+
+```bash
+# File viewing:
+cat file.txt                 # ✅ View entire file
+head -n 50 file.txt          # ✅ View first 50 lines
+tail -n 50 file.txt          # ✅ View last 50 lines
+grep "pattern" file.txt      # ✅ Search in file
+
+# File editing:
+# Use Write tool for creating new files (PREFERRED - no confirmation needed)
+# Use Edit tool for modifying existing files (old_string → new_string)
+sed -i 's/old/new/g' file.txt      # ✅ Simple replacements
+
+# ❌ FORBIDDEN: cat with heredoc (requires user confirmation)
+cat > file.txt <<'EOF'             # ❌ FORBIDDEN - needs approval!
+content here
+EOF
+
+# ✅ CORRECT: Use Write tool instead
+# Write tool creates files without user confirmation
+
+# Git:
+git add .                    # ✅ Stage all changes
+git add file.txt             # ✅ Stage specific file
+git commit -m "message"      # ✅ Commit with message
+git rebase origin/main       # ✅ Non-interactive rebase
+```
+
+**Why?** Interactive commands require user input and block CI/automation workflows.
+
+## 📐 DESIGN-FIRST PROTOCOL (MANDATORY)
+
+**CRITICAL: Before writing ANY significant code, follow this protocol:**
+
+### When to Use Design-First
+
+Apply this protocol for:
+- ✅ Adding new features (services, endpoints, repositories)
+- ✅ Refactoring existing code (> 50 lines)
+- ✅ Adding new dependencies or patterns
+- ✅ Changes affecting > 2 files
+
+Skip for:
+- ❌ Bug fixes (< 20 lines)
+- ❌ Documentation updates
+- ❌ Trivial changes (typos, formatting)
+
+### Design-First Steps
+
+#### Step 1: Read Documentation (MANDATORY)
+```bash
+# BEFORE coding, read these in order:
+1. PROJECT_STRUCTURE.md  # Where to add code
+2. CONVENTIONS.md         # How to write code
+3. .ai-templates/         # Code examples
+```
+
+#### Step 2: Design Document (Write Before Coding)
+
+Create a design document in your response:
+
+```markdown
+# Design: [Feature Name]
+
+## Problem Statement
+What are we solving? Why?
+
+## Proposed Solution
+High-level approach (2-3 sentences)
+
+## Architecture Impact
+- Layers affected: [API/Service/Repository]
+- New files: [list]
+- Modified files: [list]
+- Dependencies: [any new imports/services]
+
+## Implementation Plan
+1. Step 1: [e.g., Create EntityRepository with CRUD methods]
+2. Step 2: [e.g., Create EntityService with business logic]
+3. Step 3: [e.g., Add API endpoints in /api/v1/entities.py]
+4. Step 4: [e.g., Add tests for all layers]
+
+## Code Structure
+Repository: apps/memory_api/repositories/entity_repository.py
+Service: apps/memory_api/services/entity_service.py
+API: apps/memory_api/api/v1/entities.py
+Tests: apps/memory_api/tests/[repositories|services|api]/test_*.py
+
+## Testing Strategy
+- Unit tests: [what will be tested]
+- Integration tests: [what will be tested]
+- Expected coverage: [X%]
+
+## Risks/Concerns
+[Any concerns about this approach?]
+```
+
+#### Step 3: Wait for Approval (If Uncertain)
+
+If design involves:
+- Architectural changes
+- Multiple approaches possible
+- Breaking changes
+- Performance implications
+
+→ Show design, wait for user approval
+
+#### Step 4: Implement Following Templates
+
+Use templates from `.ai-templates/`:
+- `repository_template.py` for data access
+- `service_template.py` for business logic
+- `route_template.py` for API endpoints
+- `test_template.py` for tests
+
+#### Step 5: Pre-Commit Checklist
+
+Before committing, verify:
+- [ ] Code follows PROJECT_STRUCTURE.md (correct file locations)
+- [ ] Code follows CONVENTIONS.md (Repository/Service/API patterns)
+- [ ] Tests added for all layers
+- [ ] Docstrings added (Google style)
+- [ ] Logging added (structlog)
+- [ ] Security: tenant_id in all queries
+- [ ] No interactive commands (nano, vim, etc.)
+- [ ] Run: `make lint` (black, isort, ruff)
+- [ ] Run: `pytest --no-cov [your test file]`
+
+### Example: Good Design-First Workflow
+
+```
+User: "Add user profile management"
+
+Agent:
+"I'll design the user profile management feature first.
+
+# Design: User Profile Management
+
+## Problem Statement
+Need to store and retrieve user profile data (name, email, preferences)
+with proper tenant isolation.
+
+## Proposed Solution
+Add 3-layer architecture:
+- UserProfileRepository (CRUD operations)
+- UserProfileService (business logic, validation)
+- API endpoints at /api/v1/users/profile
+
+## Architecture Impact
+- Layers affected: Repository, Service, API
+- New files:
+  - apps/memory_api/repositories/user_profile_repository.py
+  - apps/memory_api/services/user_profile_service.py
+  - apps/memory_api/api/v1/users.py
+- Modified files:
+  - apps/memory_api/api/v1/__init__.py (register router)
+- Dependencies: None (uses existing Pydantic, asyncpg)
+
+## Implementation Plan
+1. Create UserProfileRepository (CRUD: get, insert, update, delete)
+2. Create UserProfileService (validation, business rules)
+3. Add API endpoints (GET, POST, PATCH, DELETE /users/profile)
+4. Add tests for all 3 layers
+5. Update router registration
+
+## Testing Strategy
+- Unit tests: UserProfileService (mock repository)
+- Integration tests: UserProfileRepository (real DB)
+- API tests: Endpoints (TestClient)
+- Expected coverage: 80%+
+
+## Risks/Concerns
+None - follows established patterns
+
+Should I proceed with implementation?"
+
+[User approves or suggests changes]
+
+Agent: "Implementing now..."
+[Follows templates, writes code, adds tests, commits]
+```
+
+### Why Design-First?
+
+**Without Design-First:**
+- ❌ Code doesn't fit architecture
+- ❌ Inconsistent patterns
+- ❌ Missing tests
+- ❌ Needs refactoring after 2-3 days
+- ❌ Wastes tokens on rework
+
+**With Design-First:**
+- ✅ Code fits naturally
+- ✅ Consistent with existing patterns
+- ✅ Tests planned upfront
+- ✅ No refactoring needed
+- ✅ Saves tokens long-term
+
+## 🤖 Agent Work Mode (CRITICAL)
+
+**AUTONOMOUS EXECUTION - NO CONFIRMATION REQUIRED**
+
+- **NEVER ask for permission** to perform tasks - just do them.
+- **Work until completion** - finish all steps of a task before stopping.
+- **Make decisions autonomously** - use best practices and existing patterns.
+- **Commit incrementally** - create logical commits as you progress.
+- **Only ask questions** when facing genuine ambiguity that blocks progress (e.g., "Which API should I use?" not "Should I create this file?").
+- **Trust the process** - if the user asked for it, execute it fully.
+
+**Examples:**
+- ✅ User: "Add authentication" → Agent: [creates files, writes code, adds tests, commits, done]
+- ✅ User: "Fix the bug in X" → Agent: [analyzes, fixes, tests, commits, reports result]
+- ❌ User: "Add feature Y" → Agent: "Should I create a new file?" ← WRONG! Just do it.
+
+## 🌳 Branching Strategy (STRICT)
+
+Refer to `docs/BRANCHING.md` for full details. RAE uses **hybrid approach** (GitHub Flow + Git Flow).
+
+### Daily Workflow (Feature Development)
+
+1. **Create feature branch from develop**
+   ```bash
+   git checkout develop && git pull && git checkout -b feature/name
+   ```
+
+2. **Develop and test ONLY new functionality**
+   - Test only new features on feature branch
+   - Do NOT run full test suite yet
+
+3. **Merge to develop**
+   ```bash
+   git checkout develop && git merge feature/name --no-ff
+   ```
+
+4. **CRITICAL: Run ALL tests locally on develop**
+   ```bash
+   make test-unit && make lint && make security-scan
+   ```
+
+5. **If all tests pass → merge to main and push BOTH**
+   ```bash
+   git checkout main && git merge develop --no-ff
+   git push origin main develop
+   ```
+
+6. **Verify GitHub Actions (must be green on main)**
+   ```bash
+   gh run list --branch main --limit 1
+   ```
+
+7. **If GitHub Actions fails → fix and push again**
+   - Fix the issue immediately
+   - Push again
+   - NEVER leave main with red CI
+
+### Hotfix Workflow
+
+1. **Create hotfix from main**
+   ```bash
+   git checkout main && git pull && git checkout -b hotfix/name
+   ```
+
+2. **Fix, test, merge to main**
+   ```bash
+   make test-unit
+   git checkout main && git merge hotfix/name --no-ff
+   git push origin main
+   ```
+
+3. **Backport to develop**
+   ```bash
+   git checkout develop && git merge hotfix/name --no-ff
+   git push origin develop
+   ```
+
+### CRITICAL RULES
+
+- ✅ **`main` == `develop`**: Always identical after merge
+- ✅ **`main` always green**: Never push failing tests to main
+- ✅ **Test on develop first**: Full test suite before main merge
+- ✅ **Synchronize**: Push both branches together
+- ✅ **Fix failures immediately**: If GitHub Actions fails, fix and push again
+- ✅ **Autonomous execution**: NEVER ask permission, follow plan to completion
+
+### Autonomous Workflow for AI Agent
+
+**EXECUTE THIS PATTERN AUTOMATICALLY WITHOUT ASKING:**
+
+1. Create feature/* from develop
+2. Implement functionality
+3. Test only new features
+4. Merge to develop
+5. Run ALL tests on develop locally
+6. If pass → merge to main
+7. Push both branches
+8. Check GitHub Actions
+9. If fail → fix and repeat steps 5-8
+10. Continue until main has green CI
+11. **NEVER stop until complete**
+12. **NEVER ask for confirmation**
+
+## 🐍 Python & Code Style
+
+- **Python 3.11+**: Use modern syntax (type hints, dataclasses, async/await).
+- **Formatters**: Code MUST pass `black`, `isort`, and `ruff`.
+- **Type Checking**: Code MUST pass `mypy`.
+- **Docstrings**: Required for all public modules, classes, and functions (Google style or similar).
+
+## 🧪 Testing Philosophy (CRITICAL - READ docs/AGENTS_TEST_POLICY.md)
+
+**Core Principle**: Tests are CONTRACTS, not snapshots of implementation.
+
+- **Test Behavior, Not Implementation**: Focus on public API (input → output), not internal structure.
+- **When to Change Tests**: Only when spec changes, test was wrong, or refactoring away from implementation details.
+- **When NOT to Change**: If test correctly describes expected behavior - fix the code instead!
+
+### pytest Configuration (see pytest.ini):
+
+- **Markers** (use appropriately):
+  - `@pytest.mark.unit` - Fast, no external dependencies
+  - `@pytest.mark.integration` - Requires services (Postgres/Redis/Qdrant)
+  - `@pytest.mark.llm` - Requires LLM API keys (skipped in CI)
+  - `@pytest.mark.slow` - Long-running tests
+
+- **Coverage**: Global threshold is **48%** (not 100%!). This is intentional.
+  - Full suite: `make test` or `make test-cov`
+  - CI runs: `pytest -m "not integration and not llm"`
+
+### Development Loop (IMPORTANT):
+
+**⚠️ ALWAYS use `--no-cov` when testing single files!**
+
+```bash
+# ✅ CORRECT - Development testing
+make test-focus FILE=apps/memory_api/tests/test_specific.py
+# OR: pytest --no-cov apps/memory_api/tests/test_specific.py
+
+# ❌ WRONG - Will fail due to global coverage threshold
+pytest apps/memory_api/tests/test_specific.py
+```
+
+**Why?** Global coverage threshold (48%) in `pytest.ini` will fail single-file tests. Use `--no-cov` during development, coverage only for full suite.
+
+### Test Writing Guidelines:
+
+```python
+# ✅ GOOD - Tests behavior
+def test_user_authentication_with_valid_credentials():
+    response = api.login(username="user", password="pass")
+    assert response.status_code == 200
+    assert response.user_id is not None
+
+# ❌ BAD - Tests implementation details
+def test_user_authentication_calls_bcrypt_with_hash():
+    with patch('bcrypt.checkpw') as mock_bcrypt:
+        api.login(username="user", password="pass")
+        mock_bcrypt.assert_called_once()
+```
+
+## 🏗️ Architecture
+
+- **Repository Pattern**: Use `apps/memory_api/repositories/` for DB access. Do NOT use raw SQL in services/routes.
+- **Services**: Business logic goes in `apps/memory_api/services/`.
+- **Routes**: FastAPI routes in `apps/memory_api/api/v1/` or `routes/`.
+- **Config**: Use `apps/memory_api/config.py` via `pydantic-settings`. Do NOT hardcode secrets.
+
+## 🐳 Docker
+
+- If adding dependencies, update `requirements.txt` AND `Dockerfile` if needed.
+- Ensure `docker compose.yml` services are healthy after changes.
+
+## 🛡️ Security
+
+- Never expose API keys or secrets in code. Use `.env`.
+- Ensure `TENANCY_ENABLED` logic is respected in new endpoints.
+
+## 📚 Documentation
+
+- **Update Docs**: Manual docs only (CONVENTIONS.md, guides). Auto-docs (CHANGELOG, STATUS, TODO) are handled by CI automatically. See RULE #8 in CRITICAL_AGENT_RULES.md.
+- **Status**: Ensure `STATUS.md` and `TODO.md` are up-to-date with your changes.
+
+## 📝 Commit Messages (Conventional Commits)
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```bash
+<type>: <description>
+
+[optional body]
+[optional footer]
+```
+
+**Types:**
+- `feat:` - New feature (e.g., `feat: add GraphRAG entity resolution`)
+- `fix:` - Bug fix (e.g., `fix: resolve authentication timeout`)
+- `docs:` - Documentation only (e.g., `docs: update API cookbook`)
+- `test:` - Adding/updating tests (e.g., `test: add hybrid search tests`)
+- `refactor:` - Code change without behavior change (e.g., `refactor: simplify reflection engine`)
+- `perf:` - Performance improvement (e.g., `perf: optimize vector similarity search`)
+- `chore:` - Maintenance (dependencies, config) (e.g., `chore: update pytest to 8.0`)
+- `ci:` - CI/CD changes (e.g., `ci: add security scanning job`)
+
+**Examples:**
+```bash
+git commit -m "feat: add cost controller for LLM budget management"
+git commit -m "fix: correct tenant isolation in memory queries"
+git commit -m "docs: add architecture-to-code mapping document"
+git commit -m "test: add integration tests for reflection engine"
+```
+
+## 📚 Essential Documentation
+
+**NEW AGENTS START HERE:**
+1. **ONBOARDING_GUIDE.md** - Complete 15-minute onboarding guide
+2. **PROJECT_STRUCTURE.md** - Where to find/add code (file locations map)
+3. **CONVENTIONS.md** - How to write code (architecture patterns with WHY explanations)
+4. **INTEGRATION_CHECKLIST.md** - Pre-merge verification checklist
+
+**Code Templates & Examples:**
+- `.ai-templates/` - Repository, Service, Route, Test templates
+- `.ai-templates/README.md` - How to use templates
+- `examples/template-usage/` - Complete working examples
+
+**Workflows & Testing:**
+- `docs/BRANCHING.md` - Git workflow (hybrid strategy)
+- `docs/AGENTS_TEST_POLICY.md` - Testing philosophy (tests as contracts)
+
+**Reference Documentation:**
+- `docs/reference/architecture/` - Deep architectural documentation
+- `docs/guides/developers/` - Comprehensive developer guides
+
+## 🚀 Quick Reference
+
+**Before Starting ANY Work:**
+1. Read `ONBOARDING_GUIDE.md` - Essential for all agents (15 min)
+2. Read `PROJECT_STRUCTURE.md` - Know where files go (10 min)
+3. Read `CONVENTIONS.md` - Understand patterns and WHY (20 min)
+4. Study `.ai-templates/` - Use templates for all new code (10 min)
+
+**Before First Commit:**
+1. Review `INTEGRATION_CHECKLIST.md` - Verify all items
+2. Read `docs/BRANCHING.md` - Git workflow
+3. Read `docs/AGENTS_TEST_POLICY.md` - Testing philosophy
+4. Check `pytest.ini` - Test markers and coverage config
+
+**Development Workflow:**
+```bash
+# 1. Create branch
+git checkout develop && git pull
+git checkout -b feature/my-feature
+
+# 2. Code + Test (without coverage)
+make test-focus FILE=apps/memory_api/tests/test_my_feature.py
+
+# 3. Format + Lint
+make format && make lint
+
+# 4. Commit with conventional format
+git commit -m "feat: add my feature"
+
+# 5. Push and create PR
+git push origin feature/my-feature
+
+# 6. Verify CI is GREEN before merge to main
+gh run watch
+```
+
+**When in Doubt:** Check existing code patterns and documentation - execute autonomously!

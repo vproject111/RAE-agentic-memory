@@ -1,0 +1,23 @@
+providers:
+  claude:
+    enabled: true
+    default_model: claude-sonnet-4-5-20250929
+    settings:
+      api_key: ${ANTHROPIC_API_KEY}
+  gemini:
+    enabled: true
+    default_model: gemini-2.5-flash
+    settings:
+      cli_path: gemini
+      rate_limit_delay: true
+      min_delay: 1.0
+      max_delay: 10.0
+  ollama:
+    enabled: false
+    default_model: llama3:70b
+    settings:
+      endpoint: http://localhost:11434
+routing:
+  prefer_local: false
+  max_cost_per_task: 1.0
+  fallback_provider: claude

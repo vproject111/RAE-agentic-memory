@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Python Coding Conventions: Use descriptive variable names. For loops, use `index` for counters, and singular nouns for items (e.g., `for user in users`). Avoid single-letter variable names unless they are loop counters or mathematical variables.",
+    "source": "manual/coding_conventions.md",
+    "layer": "ltm",
+    "tags": ["python", "style-guide", "best-practice"]
+  },
+  {
+    "content": "Refactoring technique: Extract Method. Identify a code fragment that can be grouped into a new method. This improves readability, reduces duplication, and makes the code easier to test. Consider extracting methods when a function is too long or performs multiple distinct tasks.",
+    "source": "refactoring-guru/extract-method",
+    "layer": "ltm",
+    "tags": ["refactoring", "best-practice", "design-pattern"]
+  },
+  {
+    "content": "Refactoring technique: Rename Variable. Choose clear, concise, and descriptive names for variables, functions, and classes. Avoid abbreviations unless they are widely understood. Consistency in naming across the codebase is crucial.",
+    "source": "refactoring-guru/rename-variable",
+    "layer": "ltm",
+    "tags": ["refactoring", "best-practice", "naming-convention"]
+  },
+  {
+    "content": "Code Smells: Long Method. A method that contains too many lines of code or performs too many responsibilities. This often indicates a need for method extraction or decomposition.",
+    "source": "code-smells/long-method",
+    "layer": "ltm",
+    "tags": ["code-smell", "refactoring"]
+  },
+  {
+    "content": "Code Smells: Duplicate Code. Identical or very similar code blocks appearing in multiple places. This should be refactored into a shared function or class to improve maintainability.",
+    "source": "code-smells/duplicate-code",
+    "layer": "ltm",
+    "tags": ["code-smell", "refactoring"]
+  }
+]

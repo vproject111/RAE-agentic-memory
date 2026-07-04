@@ -1,0 +1,39 @@
+# Profile: Fast Development
+# Use case: Development, testing, prototyping, demos
+# Priority: Speed and iteration velocity
+
+name: "Fast Development"
+config_id: "cfg_latency_optimized"
+description: "Optimized for fast iteration during development"
+
+parameters:
+  math_level: 2  # Moderate reasoning
+  batch_size: 10  # Small batches for quick feedback
+  cache_enabled: true  # Cache for speed
+
+memory_config:
+  context_window: 4000  # Moderate context
+  layers: ["episodic", "working", "semantic"]  # Core layers only
+  vector_similarity_threshold: 0.85  # Good-enough matching
+
+reasoning:
+  depth: 7  # Moderate reasoning
+  timeout_ms: 500  # Fast timeout for development
+  strategy: "iterative"
+
+tradeoffs:
+  latency: "fast"  # <500ms target
+  quality: "good"  # 90%+ accuracy
+  cost: "low"  # Minimize dev costs
+
+use_cases:
+  - "Local development"
+  - "Rapid prototyping"
+  - "Testing and debugging"
+  - "Demos and POCs"
+  - "Learning and exploration"
+
+dev_features:
+  verbose_logging: true
+  debug_mode: true
+  fast_failure: true

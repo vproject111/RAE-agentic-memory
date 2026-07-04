@@ -1,0 +1,1301 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**', 'release/**' ]
+  pull_request:
+    branches: [ main, develop, 'feature/**', 'release/**' ]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC for flaky detection
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🚨 FEATURE BRANCH TESTING - READ THIS CAREFULLY!
+  # ═══════════════════════════════════════════════════════════════════════════
+  #
+  # This job runs ONLY SMART TEST SELECTION (not full test suite!)
+  # It uses 'testmon' to run only tests affected by changed files.
+  #
+  # ❌ DO NOT modify this to run full test suite on feature branches!
+  # ❌ DO NOT add `make test-unit` or `pytest` without markers here!
+  # ✅ Full test suite runs ONLY on develop/main branches (see test-full job)
+  #
+  # Why?
+  # - Feature branches push frequently (every small change)
+  # - Full tests take 10-15 minutes and cost CI credits
+  # - Smart selection gives quick feedback (1-2 minutes)
+  # - Full validation happens on develop before merging to main
+  #
+  # If you need full tests on a feature branch, use: git commit -m "message [full-test]"
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  test-quick:
+    name: Quick Test - Feature Branch ONLY (Smart Selection)
+    runs-on: ubuntu-latest
+    # Run ONLY on feature branches AND NOT on PR AND NOT when commit contains [full-test]
+    if: |
+      startsWith(github.ref, 'refs/heads/feature/') &&
+      github.event_name != 'pull_request' &&
+      !contains(github.event.head_commit.message, '[full-test]')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11']  # Only one version for quick feedback
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better diff detection
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+
+      - name: Detect changed files
+        id: changes
+        run: |
+          # Get changed Python files compared to develop
+          git fetch origin develop:develop
+          CHANGED_FILES=$(git diff --name-only develop...HEAD | grep '\.py$' || echo "")
+          echo "Changed Python files:"
+          echo "$CHANGED_FILES"
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Count changed files
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run quick tests (testmon - smart test selection)
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚨 FEATURE BRANCH - SMART TEST SELECTION ONLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "This is NOT a full test run. We only test files affected by your changes."
+          echo ""
+          echo "Why? Feature branches push frequently. Full tests would:"
+          echo "  - Take 10-15 minutes instead of 1-2 minutes"
+          echo "  - Cost 5-10x more in CI credits"
+          echo "  - Slow down your development"
+          echo ""
+          echo "Full test suite runs on develop/main branches automatically."
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "🚀 Running smart test selection..."
+          # testmon tracks which tests cover which code and runs only affected tests
+          pytest -m "not integration and not llm and not contract and not performance" --testmon --cov --cov-report=xml --cov-report=term
+          echo ""
+          echo "✅ Quick tests completed for your changes!"
+          echo ""
+          echo "Next steps:"
+          echo "  1. Continue developing on feature branch"
+          echo "  2. When ready, merge to develop"
+          echo "  3. Run FULL test suite on develop: make test-unit"
+          echo "  4. If passes, merge to main"
+          echo ""
+
+      - name: No changes detected
+        if: steps.changes.outputs.has_changes == 'false'
+        run: |
+          echo "ℹ️ No Python file changes detected - skipping tests"
+          echo "This is normal for documentation-only commits"
+
+      - name: Upload coverage
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: quick-tests
+          name: codecov-quick
+          fail_ci_if_error: false
+
+      - name: Comment on efficiency
+        if: success()
+        run: |
+          echo "⚡ Quick test mode:"
+          echo "   - Ran only tests affected by your changes"
+          echo "   - Saved tokens and CI time"
+          echo "   - Add [full-test] to commit message for full validation"
+
+  # Full test job for main/develop branches, PRs, or when explicitly requested
+  test-full:
+    name: Full Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    # Run on main/develop OR pull_request OR [full-test] in commit message
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      github.event_name == 'pull_request' ||
+      contains(github.event.head_commit.message, '[full-test]')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+
+      - name: Run ALL unit tests (full validation)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          echo "🔍 Running FULL test suite..."
+          pytest -m "not integration and not llm and not contract and not performance" --cov --cov-report=xml --cov-report=term
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          pytest -m "integration" --cov --cov-append --cov-report=xml --cov-report=term || true
+
+      - name: Run architectural tests
+        run: |
+          echo "🏗️ Running architectural tests..."
+          pytest tests/architecture/ -v || echo "⚠️ Architectural tests failed"
+
+      - name: Run contract tests
+        run: |
+          echo "📋 Contract tests skipped (require full test infrastructure)"
+          echo "ℹ️  To run contract tests: pytest -m contract"
+
+      - name: Check coverage trend
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          echo "📊 Checking coverage trend..."
+          git fetch origin main
+          git show origin/main:coverage.xml > coverage_previous.xml 2>/dev/null || echo "<coverage line-rate='0'/>" > coverage_previous.xml
+          python scripts/check_coverage_trend.py coverage.xml coverage_previous.xml || true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: full-tests
+          name: codecov-full-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            junit.xml
+            coverage.xml
+            htmlcov/
+          retention-days: 1
+
+  test-mcp:
+    name: Test MCP (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    # Run on main/develop/PR only (not on every feature push)
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      github.event_name == 'pull_request'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install MCP dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd integrations/mcp
+          pip install -e ".[dev]"
+
+      - name: Run MCP tests
+        run: |
+          cd integrations/mcp
+          pytest -m "not integration and not e2e and not load"
+
+  benchmark-smoke:
+    name: Benchmark Smoke Test
+    runs-on: ubuntu-latest
+    # Run on PRs and main/develop branches
+    if: |
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop'
+
+    timeout-minutes: 5  # Increased timeout for benchmark with math metrics
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: rae_memory
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install only essential dependencies for smoke test
+          pip install pytest pytest-asyncio anthropic
+          # Need sentence-transformers for embeddings (QdrantStore requirement)
+          # Using lightweight model: all-MiniLM-L6-v2 (~80MB)
+          pip install sentence-transformers
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+
+      - name: Setup database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: rae_memory
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          PGPASSWORD: postgres
+        run: |
+          # Wait for postgres
+          sleep 5
+          # Test database connection
+          python -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect(host='localhost', database='rae_memory', user='postgres', password='postgres'))"
+          echo "✅ Database connection successful"
+          # Use Alembic to create the schema instead of raw SQL
+          pip install alembic sqlalchemy asyncpg
+          alembic upgrade head
+          echo "✅ Database schema created via Alembic"
+
+      - name: Run lite benchmark
+        env:
+          CUDA_VISIBLE_DEVICES: ""
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: rae_memory
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          export PYTHONPATH=.
+          python benchmarking/scripts/run_benchmark.py --set academic_lite.yaml
+
+      - name: Check benchmark results
+        run: |
+          # Get the latest result file
+          RESULT_FILE=$(ls -t benchmarking/results/academic_lite_*.json | head -1)
+
+          if [ ! -f "$RESULT_FILE" ]; then
+            echo "❌ No benchmark results found"
+            exit 1
+          fi
+
+          # Extract metrics using Python
+          python -c "
+          import json
+          import sys
+
+          with open('$RESULT_FILE', 'r') as f:
+              data = json.load(f)
+
+          metrics = data['metrics']
+          mrr = metrics['mrr']
+          hit_rate_5 = metrics['hit_rate']['@5']
+          quality_score = metrics['overall_quality_score']
+
+          print(f'📊 Benchmark Results:')
+          print(f'   MRR: {mrr:.4f}')
+          print(f'   Hit Rate @5: {hit_rate_5:.4f}')
+          print(f'   Overall Quality: {quality_score:.4f}')
+
+          # Quality thresholds (minimum acceptable scores)
+          MRR_THRESHOLD = 0.50
+          HIT_RATE_THRESHOLD = 0.60
+          QUALITY_THRESHOLD = 0.55
+
+          failed = []
+          if mrr < MRR_THRESHOLD:
+              failed.append(f'MRR ({mrr:.4f}) below threshold ({MRR_THRESHOLD})')
+          if hit_rate_5 < HIT_RATE_THRESHOLD:
+              failed.append(f'Hit Rate @5 ({hit_rate_5:.4f}) below threshold ({HIT_RATE_THRESHOLD})')
+          if quality_score < QUALITY_THRESHOLD:
+              failed.append(f'Overall Quality ({quality_score:.4f}) below threshold ({QUALITY_THRESHOLD})')
+
+          if failed:
+              print('\\n❌ Benchmark quality check FAILED:')
+              for failure in failed:
+                  print(f'   - {failure}')
+              sys.exit(1)
+          else:
+              print('\\n✅ Benchmark quality check PASSED')
+          "
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmarking/results/
+          retention-days: 7
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run black
+        run: |
+          black --check apps/ sdk/ integrations/
+
+      - name: Run isort
+        run: |
+          isort --check apps/ sdk/ integrations/
+
+      - name: Run ruff
+        run: |
+          ruff check apps/ sdk/ integrations/
+
+      - name: Run mypy (optional, continue on error)
+        continue-on-error: true
+        run: |
+          mypy apps/ sdk/ || true
+
+  quality-gate:
+    name: Code Quality Gate
+    runs-on: ubuntu-latest
+    # Run on all branches
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for changed files detection
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check required documentation exists
+        run: |
+          echo "📋 Checking required documentation..."
+
+          REQUIRED_DOCS=(
+            "PROJECT_STRUCTURE.md"
+            "CONVENTIONS.md"
+            "ONBOARDING_GUIDE.md"
+            "INTEGRATION_CHECKLIST.md"
+            ".cursorrules"
+            "docs/AGENTS_TEST_POLICY.md"
+            "docs/BRANCHING.md"
+            ".ai-templates/README.md"
+          )
+
+          MISSING_DOCS=()
+          for doc in "${REQUIRED_DOCS[@]}"; do
+            if [ ! -f "$doc" ]; then
+              MISSING_DOCS+=("$doc")
+            fi
+          done
+
+          if [ ${#MISSING_DOCS[@]} -ne 0 ]; then
+            echo "❌ Missing required documentation files:"
+            printf '   - %s\n' "${MISSING_DOCS[@]}"
+            exit 1
+          fi
+
+          echo "✅ All required documentation exists"
+
+      - name: Check for forbidden interactive commands
+        run: |
+          echo "🔍 Checking for forbidden interactive commands..."
+
+          # Search for interactive commands in actual code (not comments/strings)
+          # We check for patterns that indicate actual command usage, not natural language
+          VIOLATIONS=()
+
+          # Check for editor commands (nano, vim, vi, emacs)
+          # These are rarely used in natural language, so we can check broadly
+          EDITOR_PATTERNS=("nano " "vim " "vi " "emacs ")
+          for pattern in "${EDITOR_PATTERNS[@]}"; do
+            if git grep -n "$pattern" -- '*.py' '*.sh' 2>/dev/null | grep -v "^[^:]*:[^:]*:#"; then
+              VIOLATIONS+=("Found forbidden editor command: $pattern")
+            fi
+          done
+
+          # Check for interactive git commands
+          if git grep -n "git add -i" -- '*.py' '*.sh' 2>/dev/null | grep -v "^[^:]*:[^:]*:#"; then
+            VIOLATIONS+=("Found forbidden command: git add -i")
+          fi
+          if git grep -n "git rebase -i" -- '*.py' '*.sh' 2>/dev/null | grep -v "^[^:]*:[^:]*:#"; then
+            VIOLATIONS+=("Found forbidden command: git rebase -i")
+          fi
+
+          # For less/more: only check in command contexts (subprocess, os.system, etc)
+          # Skip these as they're too common in natural language comments
+          if git grep -nE '(subprocess|os\.system|run|exec|popen).*["\x27](less|more)["\x27]' -- '*.py' 2>/dev/null; then
+            VIOLATIONS+=("Found interactive pager command (less/more) in code")
+          fi
+
+          if [ ${#VIOLATIONS[@]} -ne 0 ]; then
+            echo "❌ Forbidden interactive commands found:"
+            printf '   - %s\n' "${VIOLATIONS[@]}"
+            echo ""
+            echo "Use non-interactive alternatives:"
+            echo "   - cat, head, tail instead of less/more"
+            echo "   - Edit/Write tools instead of nano/vim"
+            echo "   - git add/commit without -i flags"
+            exit 1
+          fi
+
+          echo "✅ No forbidden commands found"
+
+      - name: Check file structure compliance
+        run: |
+          echo "🗂️  Checking file structure compliance..."
+
+          # Check if new Python files are in correct locations
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            CHANGED_FILES=$(git diff --name-only origin/develop...HEAD 2>/dev/null | grep '\.py$' || echo "")
+
+            if [ -n "$CHANGED_FILES" ]; then
+              echo "Changed Python files:"
+              echo "$CHANGED_FILES"
+
+              MISPLACED=()
+              while IFS= read -r file; do
+                # Check if file is in apps/ but not in correct structure
+                if [[ "$file" == apps/memory_api/* ]] && \
+                   [[ "$file" != apps/memory_api/api/* ]] && \
+                   [[ "$file" != apps/memory_api/services/* ]] && \
+                   [[ "$file" != apps/memory_api/repositories/* ]] && \
+                   [[ "$file" != apps/memory_api/models/* ]] && \
+                   [[ "$file" != apps/memory_api/tasks/* ]] && \
+                   [[ "$file" != apps/memory_api/middleware/* ]] && \
+                   [[ "$file" != apps/memory_api/security/* ]] && \
+                   [[ "$file" != apps/memory_api/utils/* ]] && \
+                   [[ "$file" != apps/memory_api/tests/* ]] && \
+                   [[ "$file" != apps/memory_api/main.py ]] && \
+                   [[ "$file" != apps/memory_api/config.py ]] && \
+                   [[ "$file" != apps/memory_api/__init__.py ]]; then
+                  MISPLACED+=("$file")
+                fi
+              done <<< "$CHANGED_FILES"
+
+              if [ ${#MISPLACED[@]} -ne 0 ]; then
+                echo "⚠️  Warning: Files may be in wrong locations:"
+                printf '   - %s\n' "${MISPLACED[@]}"
+                echo ""
+                echo "Check PROJECT_STRUCTURE.md for correct locations"
+              else
+                echo "✅ File structure looks good"
+              fi
+            fi
+          fi
+
+      - name: Check for tenant_id in SQL queries (security)
+        run: |
+          echo "🔒 Checking tenant_id usage in database queries..."
+
+          # Find Python files with SQL queries but without tenant_id
+          CHANGED_FILES=$(git diff --name-only origin/develop...HEAD 2>/dev/null | grep '\.py$' || echo "")
+
+          if [ -n "$CHANGED_FILES" ]; then
+            SECURITY_ISSUES=()
+
+            while IFS= read -r file; do
+              if [ -f "$file" ] && [[ "$file" == apps/memory_api/repositories/* ]]; then
+                # Check if file has SELECT/UPDATE/DELETE without tenant_id
+                if grep -i "SELECT.*FROM" "$file" | grep -v "tenant_id" | grep -v "#" > /dev/null 2>&1; then
+                  SECURITY_ISSUES+=("$file: SELECT query may be missing tenant_id")
+                fi
+                if grep -i "UPDATE.*SET" "$file" | grep -v "tenant_id" | grep -v "#" > /dev/null 2>&1; then
+                  SECURITY_ISSUES+=("$file: UPDATE query may be missing tenant_id")
+                fi
+                if grep -i "DELETE.*FROM" "$file" | grep -v "tenant_id" | grep -v "#" > /dev/null 2>&1; then
+                  SECURITY_ISSUES+=("$file: DELETE query may be missing tenant_id")
+                fi
+              fi
+            done <<< "$CHANGED_FILES"
+
+            if [ ${#SECURITY_ISSUES[@]} -ne 0 ]; then
+              echo "⚠️  Potential security issues (missing tenant_id):"
+              printf '   - %s\n' "${SECURITY_ISSUES[@]}"
+              echo ""
+              echo "CRITICAL: All database queries MUST include tenant_id for multi-tenancy security!"
+              echo "Review CONVENTIONS.md for details"
+              # Don't fail - just warn (might be false positives)
+            else
+              echo "✅ tenant_id usage looks good"
+            fi
+          fi
+
+      - name: Check test file naming conventions
+        run: |
+          echo "🧪 Checking test file naming conventions..."
+
+          # Find test files that don't follow naming convention
+          WRONG_NAMES=$(find apps/ -path "*/tests/*" -name "*.py" ! -name "test_*.py" ! -name "__init__.py" ! -name "conftest.py" 2>/dev/null || echo "")
+
+          if [ -n "$WRONG_NAMES" ]; then
+            echo "⚠️  Test files should be named test_*.py:"
+            echo "$WRONG_NAMES"
+          else
+            echo "✅ Test naming conventions followed"
+          fi
+
+      - name: Verify documentation automation is enabled
+        run: |
+          echo "📚 Checking if docs automation is properly configured..."
+
+          ISSUES=()
+
+          # Check if docs-update job exists in CI workflow
+          if ! grep -q "docs-update:" .github/workflows/ci.yml; then
+            ISSUES+=("Missing docs-update job in .github/workflows/ci.yml")
+          fi
+
+          # Check if docs.yml workflow exists
+          if [ ! -f ".github/workflows/docs.yml" ]; then
+            ISSUES+=("Missing .github/workflows/docs.yml file")
+          fi
+
+          # Check if docs_automator.py script exists
+          if [ ! -f "scripts/docs_automator.py" ]; then
+            ISSUES+=("Missing scripts/docs_automator.py script")
+          fi
+
+          # Check if AI_AGENT_MANIFEST.md exists (new universal baseline)
+          if [ ! -f "AI_AGENT_MANIFEST.md" ]; then
+            ISSUES+=("Missing AI_AGENT_MANIFEST.md (universal agent baseline)")
+          fi
+
+          # Check if docs-update job has correct dependencies
+          if grep -A 5 "docs-update:" .github/workflows/ci.yml | grep -q "needs:"; then
+            if ! grep -A 5 "docs-update:" .github/workflows/ci.yml | grep "needs:" | grep -q "test-full"; then
+              ISSUES+=("docs-update job should depend on test-full job")
+            fi
+          else
+            ISSUES+=("docs-update job missing 'needs' dependencies")
+          fi
+
+          if [ ${#ISSUES[@]} -ne 0 ]; then
+            echo "❌ Documentation automation issues found:"
+            printf '   - %s\n' "${ISSUES[@]}"
+            echo ""
+            echo "Documentation automation ensures:"
+            echo "  - CHANGELOG.md stays current (git history)"
+            echo "  - STATUS.md reflects live metrics"
+            echo "  - TODO.md tracks code TODOs"
+            echo "  - TESTING_STATUS.md shows test results"
+            echo ""
+            echo "Fix these issues to enable automatic documentation updates"
+            exit 1
+          fi
+
+          echo "✅ Documentation automation is properly configured"
+          echo ""
+          echo "Automated docs (CI handles):"
+          echo "  - CHANGELOG.md (git history)"
+          echo "  - STATUS.md (live metrics)"
+          echo "  - TODO.md (code TODOs)"
+          echo "  - docs/TESTING_STATUS.md (test results)"
+          echo ""
+          echo "Manual docs (agent responsibility):"
+          echo "  - CONVENTIONS.md (patterns)"
+          echo "  - PROJECT_STRUCTURE.md (locations)"
+          echo "  - docs/guides/ (feature guides)"
+
+      - name: Check AI agent baseline configuration
+        run: |
+          echo "🤖 Verifying AI agent baseline configuration..."
+
+          ISSUES=()
+
+          # Check if all agent config files reference the manifest
+          if [ -f "GEMINI.md" ]; then
+            if ! grep -q "AI_AGENT_MANIFEST.md" GEMINI.md; then
+              ISSUES+=("GEMINI.md missing reference to AI_AGENT_MANIFEST.md")
+            fi
+          fi
+
+          if [ -f ".clauderc" ]; then
+            if ! grep -q "AI_AGENT_MANIFEST.md" .clauderc; then
+              ISSUES+=(".clauderc missing reference to AI_AGENT_MANIFEST.md")
+            fi
+          fi
+
+          if [ -f ".cursorrules" ]; then
+            if ! grep -q "AI_AGENT_MANIFEST.md" .cursorrules; then
+              ISSUES+=(".cursorrules missing reference to AI_AGENT_MANIFEST.md")
+            fi
+          fi
+
+          # Check if critical rule files exist
+          CRITICAL_FILES=(
+            "CRITICAL_AGENT_RULES.md"
+            "AI_AGENT_MANIFEST.md"
+            ".ai-agent-rules.md"
+            "docs/BRANCHING.md"
+            "docs/AGENTS_TEST_POLICY.md"
+          )
+
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              ISSUES+=("Missing critical file: $file")
+            fi
+          done
+
+          if [ ${#ISSUES[@]} -ne 0 ]; then
+            echo "⚠️ AI agent baseline configuration issues:"
+            printf '   - %s\n' "${ISSUES[@]}"
+            echo ""
+            echo "Note: These are warnings. Agents should have unified baseline."
+          else
+            echo "✅ AI agent baseline properly configured"
+            echo ""
+            echo "All agents read same baseline:"
+            echo "  - AI_AGENT_MANIFEST.md (universal navigation)"
+            echo "  - CRITICAL_AGENT_RULES.md (8 mandatory rules)"
+            echo "  - .ai-agent-rules.md (commands & testing)"
+            echo "  - docs/BRANCHING.md (git workflow)"
+            echo "  - docs/AGENTS_TEST_POLICY.md (test philosophy)"
+          fi
+
+      - name: Quality gate summary
+        run: |
+          echo "✅ Code Quality Gate Passed!"
+          echo ""
+          echo "Verified:"
+          echo "  ✅ Required documentation exists"
+          echo "  ✅ No forbidden interactive commands"
+          echo "  ✅ File structure compliance checked"
+          echo "  ✅ tenant_id security check performed"
+          echo "  ✅ Test naming conventions verified"
+          echo "  ✅ Documentation automation configured"
+          echo "  ✅ AI agent baseline unified"
+          echo ""
+          echo "Next: Full test suite and integration checks"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install safety bandit
+
+      - name: Run safety check
+        continue-on-error: true
+        run: |
+          safety check --file requirements-dev.txt || true
+
+      - name: Run bandit
+        continue-on-error: true
+        run: |
+          bandit -r apps/ sdk/ -ll || true
+
+  docs-update:
+    name: Auto-Update Documentation
+    runs-on: ubuntu-latest
+    # Run ONLY on develop and main after successful tests
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
+      github.event_name == 'push'
+    needs: [test-full, lint, quality-gate]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for CHANGELOG
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run documentation automation
+        run: |
+          echo "📚 Auto-updating documentation..."
+          python3 scripts/docs_automator.py || echo "⚠️  Docs automation had issues (non-blocking)"
+
+      - name: Check if documentation changed
+        id: docs_changed
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No documentation changes"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Documentation was updated"
+          fi
+
+      - name: Commit documentation updates
+        if: steps.docs_changed.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CHANGELOG.md TODO.md STATUS.md docs/TESTING_STATUS.md || true
+          git commit -m "docs: auto-update documentation [skip ci]" || echo "Nothing to commit"
+
+      - name: Push documentation changes
+        if: steps.docs_changed.outputs.changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+
+  warning-check:
+    name: Warning Detection
+    runs-on: ubuntu-latest
+    # Run on main/develop/PR
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      github.event_name == 'pull_request'
+    needs: [test-full]
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+
+      - name: Run tests with warning detection
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          echo "🔍 Checking for new warnings..."
+          pytest -W default \
+            -m "not integration and not llm and not contract and not performance" \
+            --tb=no -q 2>&1 | tee warnings.log
+          python scripts/ci/check_new_warnings.py warnings.log
+
+      - name: Upload warnings log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warnings-log
+          path: warnings.log
+          retention-days: 7
+
+  flaky-detection:
+    name: Flaky Test Detection
+    runs-on: ubuntu-latest
+    # Run on schedule (nightly) or when commit contains [flaky-check]
+    if: |
+      github.event_name == 'schedule' ||
+      contains(github.event.head_commit.message, '[flaky-check]')
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+          pip install pytest-json-report
+
+      - name: Run tests multiple times (3x)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          mkdir -p .flaky-reports
+          for i in 1 2 3; do
+            echo "🔄 Run $i/3..."
+            pytest -m "not integration and not llm and not contract and not performance" \
+              --json-report \
+              --json-report-file=.flaky-reports/run_$i.json \
+              --tb=no -q || true
+          done
+
+      - name: Analyze flakiness
+        run: |
+          echo "📊 Analyzing test consistency..."
+          python scripts/ci/analyze_flaky_tests.py \
+            .flaky-reports/run_1.json \
+            .flaky-reports/run_2.json \
+            .flaky-reports/run_3.json \
+            --output flaky_report.json
+
+      - name: Upload flaky report
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaky-report
+          path: flaky_report.json
+          retention-days: 30
+
+      - name: Check for flaky tests
+        run: |
+          if [ -f "flaky_report.json" ]; then
+            FLAKY_COUNT=$(python3 -c "import json; print(len(json.load(open('flaky_report.json'))['flaky_tests']))")
+            if [ "$FLAKY_COUNT" -gt 0 ]; then
+              echo "⚠️  Found $FLAKY_COUNT flaky tests!"
+              python3 -c "import json; import sys; data=json.load(open('flaky_report.json')); [print(f\"  - {t['nodeid']} (pass rate: {t['pass_rate']}) - {t['recommendation']}\") for t in data['flaky_tests'][:10]]"
+              echo ""
+              echo "📝 Action required: Review flaky_report.json artifact and quarantine unstable tests"
+              echo "   Use: python scripts/ci/quarantine_test.py <test_nodeid>"
+              exit 1
+            fi
+          fi
+          echo "✅ No flaky tests detected"
+
+  drift-detection:
+    name: Zero Drift Check
+    runs-on: ubuntu-latest
+    # Run on PR and develop/main
+    if: |
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/develop' ||
+      github.ref == 'refs/heads/main'
+    needs: [test-full]
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for comparison
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+          pip install -e rae-core
+          pip install pyyaml psutil memory-profiler pytest-timeout
+
+      - name: Collect performance metrics
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          RAE_VECTOR_BACKEND: qdrant
+        run: |
+          echo "📊 Collecting metrics..."
+          python scripts/ci/collect_metrics.py \
+            --output metrics_current.json \
+            --include-memory \
+            --include-timing
+
+      - name: Check against SLO
+        run: |
+          echo "🔍 Checking SLO compliance..."
+          python scripts/ci/check_slo.py \
+            --current metrics_current.json \
+            --baseline benchmarking/results/metrics_reference.json \
+            --slo-config ci/slo_config.yaml \
+            --output drift_report.md || true
+
+      - name: Upload metrics snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-snapshot-${{ github.sha }}
+          path: metrics_current.json
+          retention-days: 90
+
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: drift_report.md
+          retention-days: 30
+
+      - name: Comment on PR with drift report
+        if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
+        run: |
+          if [ -f "drift_report.md" ]; then
+            echo "📄 Drift report generated - see artifacts"
+            cat drift_report.md
+          fi
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    # Only on main/develop/PR
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: rae-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test-full, lint, docker]
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build and push RAE API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rae-api:latest
+            ghcr.io/${{ github.repository_owner }}/rae-api:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push ML Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/ml_service
+          file: ./apps/ml_service/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rae-ml-service:latest
+            ghcr.io/${{ github.repository_owner }}/rae-ml-service:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push Dashboard image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tools/memory-dashboard
+          file: ./tools/memory-dashboard/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rae-dashboard:latest
+            ghcr.io/${{ github.repository_owner }}/rae-dashboard:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Summary
+        run: |
+          echo "✅ Published Docker images for version ${{ steps.version.outputs.version }}"
+          echo ""
+          echo "Images published to GitHub Container Registry:"
+          echo "  - ghcr.io/${{ github.repository_owner }}/rae-api:${{ steps.version.outputs.version }}"
+          echo "  - ghcr.io/${{ github.repository_owner }}/rae-ml-service:${{ steps.version.outputs.version }}"
+          echo "  - ghcr.io/${{ github.repository_owner }}/rae-dashboard:${{ steps.version.outputs.version }}"
+          echo ""
+          echo "Also tagged as 'latest'"

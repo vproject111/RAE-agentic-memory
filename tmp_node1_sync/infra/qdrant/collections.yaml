@@ -1,0 +1,10 @@
+collections:
+  - name: "memories"
+    vectors:
+      dense:
+        size: 384
+        distance: Cosine
+    sparse_vectors:
+      text:
+        index:
+          on_disk: true

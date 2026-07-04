@@ -1,0 +1,99 @@
+name: Mutation Testing
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Sunday at 2 AM
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  mutmut:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_rae
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mutmut
+          pip install -r requirements-dev.txt
+          pip install -r apps/memory_api/requirements-base.txt
+          pip install -r apps/memory_api/requirements-test.txt
+          pip install -e sdk/python/rae_memory_sdk
+
+      - name: Run mutation testing on core modules
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_rae
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          echo "🧬 Running mutation testing on core modules..."
+
+          # Run on critical modules
+          mutmut run --paths-to-mutate=apps/memory_api/core/ --tests-dir=apps/memory_api/tests/core/ || true
+
+          # Generate report
+          if mutmut results > mutation_report.txt 2>&1; then
+            echo "✅ Mutation report generated"
+          else
+            echo "⚠️ No mutation results available" > mutation_report.txt
+          fi
+
+          # Show summary
+          mutmut show || echo "No mutations to show"
+
+      - name: Check mutation score
+        run: |
+          # Extract mutation score
+          SCORE=$(grep "mutation score" mutation_report.txt | awk '{print $3}' | sed 's/%//' || echo "0")
+
+          echo "📊 Mutation Score: $SCORE%"
+
+          if (( $(echo "$SCORE < 70" | bc -l) )); then
+            echo "⚠️  Mutation score $SCORE% is below threshold (70%)"
+            echo "This means tests may not be catching bugs effectively."
+            echo "Consider adding more edge case tests."
+          else
+            echo "✅ Mutation score $SCORE% meets threshold!"
+          fi
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            mutation_report.txt
+            .mutmut-cache
+          retention-days: 30

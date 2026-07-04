@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rae-memory-dashboard"
+version = "1.0.0"
+description = "Streamlit dashboard for RAE Memory Engine"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Grzegorz Leśniowski", email = "lesniowskig@gmail.com"}
+]
+
+dependencies = [
+    "streamlit>=1.28.0",
+    "plotly>=5.17.0",
+    "httpx>=0.27.0",
+    "pandas>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.setuptools]
+packages = ["utils"]

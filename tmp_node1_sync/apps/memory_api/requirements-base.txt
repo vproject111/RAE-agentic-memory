@@ -1,0 +1,57 @@
+# Base requirements for RAE Memory API (Lightweight)
+# This file contains only essential dependencies without heavy ML libraries
+# Total size: ~500MB vs 3-5GB with ML dependencies
+
+# Core API Framework
+fastapi==0.128.0
+uvicorn==0.40.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
+
+# Database & Vector Store
+asyncpg==0.30.0
+qdrant-client==1.10.1
+pgvector==0.4.1
+alembic==1.17.2
+
+# HTTP & Networking
+httpx==0.27.2
+
+# Background Tasks
+celery==5.5.3
+redis==7.1.0
+
+# Observability
+opentelemetry-api==1.39.0
+opentelemetry-sdk==1.39.0
+opentelemetry-exporter-otlp==1.39.0
+opentelemetry-exporter-otlp-proto-grpc==1.39.0
+opentelemetry-instrumentation-fastapi==0.60b0
+opentelemetry-instrumentation-asgi==0.60b0
+opentelemetry-instrumentation-asyncpg==0.60b0
+opentelemetry-instrumentation-redis==0.60b0
+opentelemetry-instrumentation-celery==0.60b0
+opentelemetry-instrumentation-psycopg2==0.60b0
+opentelemetry-instrumentation-requests==0.60b0
+opentelemetry-instrumentation-httpx==0.60b0
+opentelemetry-instrumentation-logging==0.60b0
+prometheus-fastapi-instrumentator==7.1.0
+prometheus_client==0.23.1
+structlog==25.5.0
+
+# LLM Providers (API-based, no local models)
+litellm==1.80.11
+openai==2.14.0
+anthropic==0.75.0
+google-generativeai==0.8.5
+google-auth==2.35.0
+
+# Utilities
+tenacity==9.1.2  # Retry logic
+python-jose[cryptography]==3.5.0  # JWT handling
+zstandard==0.25.0  # Compression
+slowapi>=0.1.9  # Rate limiting
+instructor>=1.0.0  # Structured LLM outputs
+scipy>=1.11.0  # Statistical functions
+python-louvain>=0.16  # Community detection
+psycopg2-binary>=2.9.9

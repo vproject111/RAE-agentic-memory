@@ -1155,6 +1155,15 @@ class RAECoreService:
             enable_reranking=enable_reranking,
         )
 
+        # 4. AUDIT: Record this search in the Working Layer (DISABLED FOR PERFORMANCE/NOISE)
+        # try:
+        #     audit_content = f"Search Query: {query} | Results: {len(results_list)} | Weights: {weights}"
+        #     await self.engine.store_memory(...)
+        # except Exception as e:
+        #     logger.warning("search_audit_failed", error=str(e))
+
+        return response
+
     async def consolidate_memories(
         self,
         tenant_id: str,

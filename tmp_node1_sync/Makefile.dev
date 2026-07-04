@@ -1,0 +1,170 @@
+# Development Mode Makefile
+# Shortcuts for running RAE in development mode with hot-reload
+
+.PHONY: help dev-up dev-down dev-restart dev-logs dev-ps dev-rebuild dev-clean
+
+help: ## Show this help message
+	@echo "RAE Development Mode Commands:"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# ============================================================================
+# Development Environment
+# ============================================================================
+
+dev-up: ## Start all services in development mode (hot-reload enabled)
+	@echo "🚀 Starting RAE in development mode with hot-reload..."
+	@echo "📝 Code changes will automatically reload services"
+	docker compose -f docker compose.yml -f docker compose.dev.yml up -d
+	@echo ""
+	@echo "✅ Services started!"
+	@echo ""
+	@echo "📍 Service URLs:"
+	@echo "   - API:       http://localhost:8000"
+	@echo "   - ML Service: http://localhost:8001"
+	@echo "   - Dashboard:  http://localhost:8501"
+	@echo "   - Jaeger UI:  http://localhost:16686"
+	@echo "   - Adminer DB: http://localhost:8080"
+	@echo ""
+	@echo "📊 Database connections:"
+	@echo "   - PostgreSQL: localhost:5432 (user: rae, pass: rae_password)"
+	@echo "   - Redis:      localhost:6379"
+	@echo "   - Qdrant:     localhost:6333"
+	@echo ""
+	@echo "💡 Tip: Run 'make dev-logs' to follow logs"
+
+dev-up-build: ## Start dev mode and rebuild containers
+	@echo "🔨 Building and starting services in dev mode..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml up -d --build
+
+dev-down: ## Stop all development services
+	@echo "🛑 Stopping development services..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml down
+
+dev-restart: ## Restart all development services
+	@echo "🔄 Restarting development services..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml restart
+
+dev-logs: ## Follow logs from all services
+	docker compose -f docker compose.yml -f docker compose.dev.yml logs -f
+
+dev-logs-api: ## Follow logs from API service only
+	docker compose -f docker compose.yml -f docker compose.dev.yml logs -f rae-api
+
+dev-logs-ml: ## Follow logs from ML service only
+	docker compose -f docker compose.yml -f docker compose.dev.yml logs -f ml-service
+
+dev-ps: ## Show status of all services
+	@echo "📊 Service Status:"
+	@docker compose -f docker compose.yml -f docker compose.dev.yml ps
+
+dev-rebuild: ## Rebuild specific service (usage: make dev-rebuild SERVICE=rae-api)
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "❌ Error: SERVICE not specified"; \
+		echo "Usage: make dev-rebuild SERVICE=rae-api"; \
+		exit 1; \
+	fi
+	@echo "🔨 Rebuilding $(SERVICE)..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml up -d --build $(SERVICE)
+
+dev-shell-api: ## Open shell in API container
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api /bin/bash
+
+dev-shell-ml: ## Open shell in ML service container
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec ml-service /bin/bash
+
+dev-shell-db: ## Open PostgreSQL shell
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec postgres psql -U rae -d rae
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+
+dev-clean: ## Remove all containers, volumes, and images (DESTRUCTIVE!)
+	@echo "⚠️  WARNING: This will remove all data!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker compose -f docker compose.yml -f docker compose.dev.yml down -v --rmi local; \
+		echo "✅ Cleanup complete"; \
+	else \
+		echo "❌ Cancelled"; \
+	fi
+
+dev-clean-volumes: ## Remove only volumes (keeps containers)
+	@echo "🗑️  Removing volumes..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml down -v
+	@echo "✅ Volumes removed"
+
+# ============================================================================
+# Health Checks
+# ============================================================================
+
+dev-health: ## Check health of all services
+	@echo "🏥 Service Health Check:"
+	@echo ""
+	@echo "API Service:"
+	@curl -s http://localhost:8000/health | jq . || echo "❌ API not responding"
+	@echo ""
+	@echo "ML Service:"
+	@curl -s http://localhost:8001/health | jq . || echo "❌ ML Service not responding"
+	@echo ""
+	@echo "PostgreSQL:"
+	@docker compose -f docker compose.yml -f docker compose.dev.yml exec -T postgres pg_isready -U rae && echo "✅ PostgreSQL OK" || echo "❌ PostgreSQL down"
+	@echo ""
+	@echo "Redis:"
+	@docker compose -f docker compose.yml -f docker compose.dev.yml exec -T redis redis-cli ping && echo "✅ Redis OK" || echo "❌ Redis down"
+	@echo ""
+	@echo "Qdrant:"
+	@curl -s http://localhost:6333/health | jq . || echo "❌ Qdrant not responding"
+
+# ============================================================================
+# Database Management
+# ============================================================================
+
+dev-migrate: ## Run database migrations
+	@echo "🔄 Running database migrations..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api alembic upgrade head
+
+dev-migrate-create: ## Create new migration (usage: make dev-migrate-create MSG="description")
+	@if [ -z "$(MSG)" ]; then \
+		echo "❌ Error: MSG not specified"; \
+		echo "Usage: make dev-migrate-create MSG='add user table'"; \
+		exit 1; \
+	fi
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api alembic revision --autogenerate -m "$(MSG)"
+
+dev-db-reset: ## Reset database (DESTRUCTIVE!)
+	@echo "⚠️  WARNING: This will delete all data!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker compose -f docker compose.yml -f docker compose.dev.yml stop rae-api celery-worker celery-beat; \
+		docker compose -f docker compose.yml -f docker compose.dev.yml exec postgres psql -U rae -d rae -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; \
+		docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api alembic upgrade head; \
+		docker compose -f docker compose.yml -f docker compose.dev.yml start rae-api celery-worker celery-beat; \
+		echo "✅ Database reset complete"; \
+	else \
+		echo "❌ Cancelled"; \
+	fi
+
+# ============================================================================
+# Testing
+# ============================================================================
+
+dev-test: ## Run all tests in development environment
+	@echo "🧪 Running tests..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api pytest
+
+dev-test-unit: ## Run unit tests only
+	@echo "🧪 Running unit tests..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api pytest -m "unit"
+
+dev-test-integration: ## Run integration tests
+	@echo "🧪 Running integration tests..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api pytest -m "integration"
+
+dev-test-coverage: ## Run tests with coverage report
+	@echo "📊 Running tests with coverage..."
+	docker compose -f docker compose.yml -f docker compose.dev.yml exec rae-api pytest --cov=apps --cov-report=html
+	@echo "✅ Coverage report generated at htmlcov/index.html"

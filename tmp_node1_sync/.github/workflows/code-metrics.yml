@@ -1,0 +1,61 @@
+name: Code Metrics (Weekly)
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git metrics
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install radon lizard pytest pytest-cov
+          pip install -r requirements-dev.txt || true
+          pip install -r apps/memory_api/requirements.txt || true
+
+      - name: Generate code complexity metrics
+        run: |
+          python scripts/docs_generators/code_metrics.py
+        continue-on-error: true
+
+      - name: Run test coverage
+        run: |
+          PYTHONPATH=. pytest --cov=apps --cov=sdk --cov-report=json --cov-report=term -m "not integration and not llm and not contract and not performance" || true
+        continue-on-error: true
+
+      - name: Update docs automator
+        run: |
+          python scripts/docs_automator.py
+
+      - name: Commit and push metrics
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add docs/.auto-generated/metrics/
+          git add docs/TESTING_STATUS.md
+          git add STATUS.md
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update weekly code metrics [skip ci]"
+            git push
+          fi

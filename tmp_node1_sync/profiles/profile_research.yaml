@@ -1,0 +1,34 @@
+# Profile: Research Grade
+# Use case: Academic research, deep analysis, thorough investigations
+# Priority: Maximum quality and thoroughness
+
+name: "Research Grade"
+config_id: "cfg_research"
+description: "Research-grade quality for academic and deep analysis work"
+
+parameters:
+  math_level: 4  # Maximum reasoning capability
+  batch_size: 50  # Moderate batches for thoroughness
+  cache_enabled: true  # Cache for efficiency
+
+memory_config:
+  context_window: 16000  # Large context for comprehensive analysis
+  layers: ["episodic", "working", "semantic", "ltm", "reflective"]  # All layers
+  vector_similarity_threshold: 0.92  # High precision matching
+
+reasoning:
+  depth: 15  # Deep reasoning chains
+  timeout_ms: 5000  # Generous timeout for complex queries
+  strategy: "comprehensive"
+
+tradeoffs:
+  latency: "acceptable"  # 1-5 seconds ok
+  quality: "maximum"  # 98%+ accuracy target
+  cost: "high"  # Expensive but worth it for research
+
+use_cases:
+  - "Academic research"
+  - "Deep analysis"
+  - "Complex problem solving"
+  - "Thorough investigations"
+  - "High-stakes decisions"

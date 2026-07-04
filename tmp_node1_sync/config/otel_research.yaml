@@ -1,0 +1,263 @@
+# RAE OpenTelemetry Configuration - Research Profile
+#
+# This profile is optimized for AI research and scientific analysis:
+# - Full tracing (100% sampling) for complete data
+# - Rich semantic attributes for analysis
+# - PII anonymization (not scrubbing)
+# - Long retention (90 days) for longitudinal studies
+# - Export to ClickHouse/Parquet for data analysis
+# - Experiment tracking and A/B testing support
+#
+# Target users: AI researchers, data scientists
+#
+# Usage:
+#   export RAE_TELEMETRY_PROFILE=research
+#   export OTEL_CONFIG_FILE=config/otel_research.yaml
+
+# Profile identification
+profile:
+  name: "Research"
+  environment: "research"
+  version: "1.0"
+
+# Service configuration
+service:
+  name: "rae-memory-api"
+  version: "${OTEL_SERVICE_VERSION:-research}"
+  namespace: "rae"
+
+# Sampling configuration
+sampling:
+  # Trace everything for complete data
+  rate: 1.0
+
+  # Always trace for research
+  always_on:
+    - "rae.*"
+    - "memory.*"
+    - "reasoning.*"
+    - "llm.*"
+    - "agent.*"
+    - "experiment.*"
+
+  always_off: []
+
+# Attribute filtering
+attributes:
+  # Include full data but anonymize PII
+  include_sensitive: true
+
+  # Longer attributes for detailed analysis
+  max_length: 5000
+
+  # Minimal exclusions (keep data rich)
+  excluded: []
+
+  # Research-specific attributes
+  included:
+    - "rae.*"
+    - "memory.*"
+    - "llm.*"
+    - "agent.*"
+    - "reasoning.*"
+    - "experiment.*"
+    - "cost.*"
+    - "performance.*"
+    - "outcome.*"
+
+# PII scrubbing
+pii:
+  # Enable anonymization (not full scrubbing)
+  enabled: true
+  preserve_structure: true
+
+  # Anonymize but keep patterns for analysis
+  patterns:
+    - "email"
+    - "phone"
+    - "ssn"
+    - "name_pattern"
+
+  # Preserve for research (with anonymization)
+  preserve_entities:
+    - "timestamps"
+    - "metrics"
+    - "scores"
+    - "categories"
+
+# Data retention
+retention:
+  days: 90  # 3 months for longitudinal studies
+  auto_cleanup: true
+
+  # Archive for long-term storage
+  archive:
+    enabled: true
+    format: "parquet"
+    storage_path: "${RESEARCH_DATA_PATH:-/data/research}"
+
+# Export configuration
+export:
+  # Primary OTLP exporter
+  primary:
+    type: "otlp"
+    endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+    protocol: "grpc"
+    compression: "gzip"
+    timeout_ms: 30000
+
+  # Secondary exporter for analytics
+  secondary:
+    type: "clickhouse"
+    enabled: "${CLICKHOUSE_ENABLED:-false}"
+    endpoint: "${CLICKHOUSE_ENDPOINT:-http://localhost:8123}"
+    database: "rae_research"
+    table: "traces"
+
+  # File export for offline analysis
+  file:
+    enabled: true
+    format: "jsonl"  # JSON Lines for easy processing
+    path: "${TRACES_EXPORT_PATH:-/data/traces}"
+    rotation: "daily"
+
+  # Console (disabled in research)
+  console:
+    enabled: false
+
+# Metrics configuration
+metrics:
+  enabled: true
+  export_interval_ms: 30000  # 30s for detailed metrics
+
+  # Research-focused metrics
+  collect:
+    - "memory.operations"
+    - "memory.access_count"
+    - "memory.hit_rate"
+    - "llm.tokens"
+    - "llm.cost"
+    - "reasoning.iterations"
+    - "reasoning.depth"
+    - "reasoning.confidence"
+    - "agent.operations"
+    - "experiment.metrics"
+    - "outcome.success_rate"
+    - "outcome.accuracy"
+
+  # Statistical aggregations
+  aggregations:
+    - "mean"
+    - "median"
+    - "p95"
+    - "p99"
+    - "stddev"
+
+# Logging instrumentation
+logging:
+  enabled: true
+  level: "INFO"
+
+  inject_trace_context: true
+  log_span_events: true
+
+  # Export logs for analysis
+  export_logs: true
+
+# Resource attributes
+resource:
+  auto_detect:
+    - "host.name"
+    - "os.type"
+    - "process.pid"
+
+  # Research-specific attributes
+  custom:
+    deployment.environment: "research"
+    team: "rae-research"
+    research.institution: "${RESEARCH_INSTITUTION:-unknown}"
+    research.project: "${RESEARCH_PROJECT:-default}"
+
+# Experiment tracking
+experiment:
+  enabled: true
+
+  # Automatic experiment detection
+  auto_detect: true
+
+  # Experiment attributes to capture
+  attributes:
+    - "experiment.id"
+    - "experiment.name"
+    - "experiment.variant"
+    - "experiment.hypothesis"
+    - "experiment.parameters"
+    - "experiment.metrics"
+
+  # A/B testing support
+  ab_testing:
+    enabled: true
+    split_by: "user.id"
+
+# Performance tuning
+performance:
+  batch:
+    max_queue_size: 4096  # Larger for research
+    schedule_delay_ms: 10000
+    export_timeout_ms: 60000
+    max_export_batch_size: 1024
+
+  memory:
+    max_attributes_per_span: 256  # More attributes for research
+    max_events_per_span: 256
+    max_links_per_span: 256
+
+# Feature flags
+features:
+  enable_trace_response: true
+  enable_db_statement_capture: true
+  enable_http_client_trace: true
+  enable_http_server_trace: true
+  enable_redis_trace: true
+  enable_celery_trace: true
+  enable_qdrant_trace: true
+
+  # Research-specific features
+  enable_experiment_tracking: true
+  enable_correlation_analysis: true
+  enable_causal_tracing: true
+
+# Research tools integration
+research_tools:
+  # Jupyter notebook integration
+  jupyter:
+    enabled: "${JUPYTER_ENABLED:-false}"
+    kernel_name: "rae-research"
+
+  # Data export for analysis tools
+  export:
+    - format: "pandas"
+      enabled: true
+    - format: "csv"
+      enabled: true
+    - format: "parquet"
+      enabled: true
+
+# Data quality
+data_quality:
+  # Validate data completeness
+  validate_completeness: true
+
+  # Check for data anomalies
+  detect_anomalies: true
+
+  # Quality thresholds
+  thresholds:
+    min_completeness: 0.95
+    max_missing_attributes: 5
+
+# Debug options
+debug:
+  enabled: false  # Off in research for performance
+  log_spans: false
+  validate_schema: true

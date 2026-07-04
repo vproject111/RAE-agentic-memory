@@ -1,0 +1,69 @@
+# LLM Orchestrator Configuration
+# Defines models and strategies for LLM Orchestrator
+
+default_strategy: single
+
+models:
+  - id: openai_gpt4o
+    provider: openai
+    model_name: gpt-4o
+    enabled: true
+    roles: [general, reflection, coding]
+    cost_weight: 1.0
+
+  - id: openai_gpt4o_mini
+    provider: openai
+    model_name: gpt-4o-mini
+    enabled: true
+    roles: [general, low_cost]
+    cost_weight: 0.1
+
+  - id: anthropic_claude_opus
+    provider: anthropic
+    model_name: claude-3-opus-20240229
+    enabled: false
+    roles: [analysis, legal]
+    cost_weight: 1.2
+
+  - id: local_llama3
+    provider: ollama
+    model_name: llama3
+    enabled: true
+    roles: [low_cost, offline]
+    cost_weight: 0.0
+
+  - id: local_deepseek_coder
+    provider: ollama
+    model_name: deepseek-coder:1.3b
+    enabled: true
+    roles: [general, reflection, coding, low_cost]
+    cost_weight: 0.0
+
+  - id: delegated_gpu
+    provider: delegated
+    model_name: deepseek-coder:33b
+    enabled: true
+    roles: [heavy_compute, high_quality, coding]
+    cost_weight: 0.0
+
+strategies:
+  default:
+    mode: single
+    primary: local_deepseek_coder
+
+  heavy:
+    mode: single
+    primary: delegated_gpu
+
+  low_cost:
+    mode: single
+    primary: local_deepseek_coder
+
+  reflection:
+    mode: single
+    primary: local_deepseek_coder
+
+  summaries:
+    mode: fallback
+    primary: local_deepseek_coder
+    fallback: local_llama3

@@ -1,0 +1,47 @@
+apiVersion: v2
+name: rae
+version: 2.0.0
+appVersion: "2.0.0-enterprise"
+description: |
+  RAE (Reflective Agentic Memory Engine) - Enterprise-grade cognitive memory system for AI agents.
+
+  Features:
+  - Multi-layered memory (semantic, episodic, reflective)
+  - GraphRAG with knowledge graph integration
+  - Hierarchical reflection engine with pattern detection
+  - Multi-tenant architecture with tenant isolation
+  - Cost tracking and governance
+  - OpenTelemetry distributed tracing
+  - Rate limiting and security
+
+type: application
+keywords:
+  - ai
+  - memory
+  - agents
+  - rag
+  - graphrag
+  - embeddings
+  - knowledge-graph
+  - multi-tenant
+  - enterprise
+
+maintainers:
+  - name: RAE Team
+    email: contact@example.com
+    url: https://github.com/dreamsoft-pro/RAE-agentic-memory
+
+home: https://github.com/dreamsoft-pro/RAE-agentic-memory
+sources:
+  - https://github.com/dreamsoft-pro/RAE-agentic-memory
+
+icon: https://raw.githubusercontent.com/dreamsoft-pro/RAE-agentic-memory/main/docs/assets/logo.png
+
+dependencies: []
+
+annotations:
+  # Artifact Hub annotations
+  artifacthub.io/category: ai-machine-learning
+  artifacthub.io/license: MIT
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/operator: "false"

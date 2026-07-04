@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAE Memory Capture</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 16px;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 16px 0;
+      color: #1f2937;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f3f4f6;
+      border-radius: 8px;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .status-indicator.inactive {
+      background: #ef4444;
+    }
+
+    .setting {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #374151;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .info {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>RAE Memory Capture</h1>
+
+  <div class="status">
+    <div class="status-indicator" id="statusIndicator"></div>
+    <span id="statusText">Active</span>
+  </div>
+
+  <div class="setting">
+    <label>
+      <input type="checkbox" id="enabledCheckbox" checked>
+      Enable memory capture
+    </label>
+  </div>
+
+  <div class="setting">
+    <label for="endpointInput">RAE Endpoint:</label>
+    <input type="text" id="endpointInput" value="http://localhost:8765/memories">
+  </div>
+
+  <button id="saveButton">Save Settings</button>
+
+  <div class="info">
+    Supported: ChatGPT, Claude, Gemini<br>
+    Version 0.1.0
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

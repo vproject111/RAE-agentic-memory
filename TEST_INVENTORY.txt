@@ -1,0 +1,1861 @@
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /home/grzegorz-lesniowski/cloud/RAE-agentic-memory-agnostic-core
+configfile: pytest.ini
+testpaths: apps/memory_api/tests, integrations/context-watcher/tests, tests, test_enterprise_features.py, benchmarking/performance
+plugins: html-4.1.1, asyncio-1.3.0, mock-3.15.1, metadata-3.1.1, locust-2.43.1, sugar-1.1.1, json-report-1.5.0, anyio-4.12.1, cov-7.0.0, timeout-2.4.0, benchmark-5.2.3, testmon-2.2.0, picked-0.5.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 1263 items / 6 skipped
+
+<Dir RAE-agentic-memory-agnostic-core>
+  <Package apps>
+    <Package memory_api>
+      <Package tests>
+        <Dir adapters>
+          <Package memory>
+            <Module test_cache.py>
+              <Class TestInMemoryCache>
+                <Coroutine test_set_and_get>
+                <Coroutine test_get_nonexistent_key>
+                <Coroutine test_set_with_ttl>
+                <Coroutine test_set_overwrite>
+                <Coroutine test_delete>
+                <Coroutine test_delete_nonexistent>
+                <Coroutine test_exists>
+                <Coroutine test_exists_expired>
+                <Coroutine test_clear_all>
+                <Coroutine test_clear_with_pattern_asterisk>
+                <Coroutine test_clear_with_pattern_question_mark>
+                <Coroutine test_clear_with_complex_pattern>
+                <Coroutine test_cleanup_expired>
+                <Coroutine test_get_ttl>
+                <Coroutine test_get_ttl_no_expiry>
+                <Coroutine test_get_ttl_nonexistent>
+                <Coroutine test_get_ttl_expired>
+                <Coroutine test_set_if_not_exists_new_key>
+                <Coroutine test_set_if_not_exists_existing_key>
+                <Coroutine test_set_if_not_exists_expired_key>
+                <Coroutine test_increment_new_key>
+                <Coroutine test_increment_existing_key>
+                <Coroutine test_increment_with_delta>
+                <Coroutine test_increment_negative_delta>
+                <Coroutine test_increment_non_numeric>
+                <Coroutine test_increment_preserves_ttl>
+                <Coroutine test_get_statistics>
+                <Coroutine test_clear_all_method>
+                <Coroutine test_store_complex_types>
+                <Coroutine test_concurrent_operations>
+                <Coroutine test_glob_pattern_edge_cases>
+                <Coroutine test_glob_pattern_special_chars>
+            <Module test_cache_coverage.py>
+              <Class TestInMemoryCacheCoverage>
+                <Coroutine test_get_full_key_logic>
+                <Coroutine test_clear_with_agent_filter>
+                <Coroutine test_clear_with_agent_and_session_filter>
+                <Coroutine test_clear_with_prefix_and_pattern>
+                <Coroutine test_increment_non_numeric_types>
+            <Module test_coverage_gaps.py>
+              <Class TestInMemoryCacheCoverage>
+                <Coroutine test_increment_expired_key>
+                <Coroutine test_get_ttl_exists_but_expired>
+                <Coroutine test_set_if_not_exists_with_ttl>
+              <Class TestInMemoryStorageCoverage>
+                <Coroutine test_count_memories_all_filters>
+                <Coroutine test_adjust_importance_missing_field>
+                <Coroutine test_update_memory_layer_explicit>
+                <Coroutine test_clear_tenant_with_tags>
+                <Coroutine test_delete_memory_with_tags>
+                <Coroutine test_delete_expired_with_tags>
+                <Coroutine test_delete_memories_with_metadata_filter_with_tags>
+              <Class TestInMemoryVectorStoreCoverage>
+                <Coroutine test_search_threshold_filtering>
+                <Coroutine test_delete_vector_wrong_tenant>
+                <Coroutine test_batch_store_exception>
+            <Module test_storage.py>
+              <Class TestInMemoryStorage>
+                <Coroutine test_store_memory_basic>
+                <Coroutine test_store_and_retrieve_memory>
+                <Coroutine test_get_nonexistent_memory>
+                <Coroutine test_get_memory_wrong_tenant>
+                <Coroutine test_update_memory_content>
+                <Coroutine test_update_memory_tags>
+                <Coroutine test_update_memory_layer>
+                <Coroutine test_update_nonexistent_memory>
+                <Coroutine test_delete_memory>
+                <Coroutine test_delete_nonexistent_memory>
+                <Coroutine test_list_memories_by_tenant>
+                <Coroutine test_list_memories_by_agent>
+                <Coroutine test_list_memories_by_layer>
+                <Coroutine test_list_memories_by_tags>
+                <Coroutine test_list_memories_pagination>
+                <Coroutine test_count_memories_by_tenant>
+                <Coroutine test_count_memories_with_filters>
+                <Coroutine test_increment_access_count>
+                <Coroutine test_increment_access_count_nonexistent>
+                <Coroutine test_clear_tenant>
+                <Coroutine test_get_statistics>
+                <Coroutine test_clear_all>
+                <Coroutine test_concurrent_operations>
+                <Coroutine test_delete_memories_with_metadata_filter>
+                <Coroutine test_delete_memories_below_importance>
+                <Coroutine test_search_memories_substring>
+                <Coroutine test_delete_expired_memories>
+                <Coroutine test_update_memory_expiration>
+                <Coroutine test_adjust_importance>
+            <Module test_storage_coverage.py>
+              <Class TestInMemoryStorageCoverage>
+                <Coroutine test_save_embedding_nonexistent>
+                <Coroutine test_save_embedding_success>
+                <Coroutine test_save_embedding_access_denied>
+                <Coroutine test_delete_memory_not_found_or_wrong_tenant>
+                <Coroutine test_clear_tenant_with_multiple_memories>
+                <Coroutine test_update_memory_access_not_found>
+                <Coroutine test_update_memory_expiration_not_found>
+                <Coroutine test_get_metric_aggregate_stub>
+                <Coroutine test_update_memory_access_batch>
+                <Coroutine test_adjust_importance_not_found>
+                <Coroutine test_adjust_importance_clamping>
+                <Coroutine test_decay_importance_inconsistency>
+                <Coroutine test_delete_memory_internal_none>
+                <Coroutine test_decay_importance>
+                <Coroutine test_decay_importance_with_access_stats>
+                <Coroutine test_decay_importance_no_memories>
+            <Module test_vector.py>
+              <Class TestInMemoryVectorStore>
+                <Coroutine test_store_vector>
+                <Coroutine test_store_and_retrieve_vector>
+                <Coroutine test_get_nonexistent_vector>
+                <Coroutine test_get_vector_wrong_tenant>
+                <Coroutine test_update_vector>
+                <Coroutine test_update_nonexistent_vector>
+                <Coroutine test_delete_vector>
+                <Coroutine test_delete_nonexistent_vector>
+                <Coroutine test_search_similar_basic>
+                <Coroutine test_search_similar_with_threshold>
+                <Coroutine test_search_similar_with_layer_filter>
+                <Coroutine test_search_similar_tenant_isolation>
+                <Coroutine test_search_similar_empty_store>
+                <Coroutine test_search_similar_zero_vector>
+                <Coroutine test_batch_store_vectors>
+                <Coroutine test_batch_store_vectors_with_invalid>
+                <Coroutine test_search_similar_batch>
+                <Coroutine test_clear_tenant>
+                <Coroutine test_get_statistics>
+                <Coroutine test_clear_all>
+                <Coroutine test_concurrent_operations>
+            <Module test_vector_extra.py>
+              <Coroutine test_in_memory_vector_store_extra>
+          <Package sqlite>
+            <Module test_graph.py>
+              <Class TestSQLiteGraphStore>
+                <Coroutine test_create_node>
+                <Coroutine test_create_edge>
+                <Coroutine test_get_neighbors>
+                <Coroutine test_delete_node>
+                <Coroutine test_delete_edge>
+                <Coroutine test_shortest_path>
+                <Coroutine test_get_subgraph>
+            <Module test_sqlite_extra.py>
+              <Coroutine test_sqlite_graph_extra>
+              <Coroutine test_sqlite_storage_extra>
+              <Coroutine test_sqlite_vector_extra>
+            <Module test_storage.py>
+              <Class TestSQLiteStorageBasicOperations>
+                <Coroutine test_store_memory>
+                <Coroutine test_get_memory_not_found>
+                <Coroutine test_get_memory_wrong_tenant>
+                <Coroutine test_update_memory>
+                <Coroutine test_update_memory_not_found>
+                <Coroutine test_update_memory_immutable_fields>
+                <Coroutine test_delete_memory>
+                <Coroutine test_delete_memory_not_found>
+                <Coroutine test_delete_memory_wrong_tenant>
+              <Class TestSQLiteStorageListOperations>
+                <Coroutine test_list_memories_basic>
+                <Coroutine test_list_memories_by_agent>
+                <Coroutine test_list_memories_by_layer>
+                <Coroutine test_list_memories_by_tags>
+                <Coroutine test_list_memories_pagination>
+                <Coroutine test_list_memories_order_by_created_at>
+                <Coroutine test_list_memories_tenant_isolation>
+                <Coroutine test_count_memories>
+                <Coroutine test_count_memories_with_filters>
+              <Class TestSQLiteStorageAccessTracking>
+                <Coroutine test_increment_access_count>
+                <Coroutine test_increment_access_count_multiple>
+                <Coroutine test_increment_access_count_not_found>
+              <Class TestSQLiteStorageFullTextSearch>
+                <Coroutine test_search_full_text_basic>
+                <Coroutine test_search_full_text_with_quotes>
+                <Coroutine test_search_full_text_limit>
+                <Coroutine test_search_full_text_tenant_isolation>
+                <Coroutine test_search_full_text_no_results>
+              <Class TestSQLiteStoragePersistence>
+                <Coroutine test_persistence_across_connections>
+                <Coroutine test_wal_mode_enabled>
+              <Class TestSQLiteStorageEdgeCases>
+                <Coroutine test_store_memory_empty_content>
+                <Coroutine test_store_memory_no_tags_metadata>
+                <Coroutine test_store_memory_default_importance>
+                <Coroutine test_update_memory_empty_updates>
+                <Coroutine test_initialize_idempotent>
+                <Coroutine test_delete_memories_below_importance>
+                <Coroutine test_delete_memories_with_metadata_filter>
+                <Coroutine test_delete_expired_memories>
+                <Coroutine test_search_memories_wrapper>
+                <Coroutine test_update_memory_expiration>
+              <Class TestSQLiteStorageExtendedOperations>
+                <Coroutine test_get_metric_aggregate>
+                <Coroutine test_update_memory_access_batch>
+                <Coroutine test_adjust_importance>
+              <Class TestSQLiteStorageEmbeddings>
+                <Coroutine test_save_embedding>
+                <Coroutine test_save_embedding_access_denied>
+              <Class TestSQLiteStorageTagsAndFilters>
+                <Coroutine test_list_memories_advanced_filters>
+                <Coroutine test_list_memories_invalid_order_by>
+            <Module test_storage_extra.py>
+              <Coroutine test_sqlite_decay_importance>
+              <Coroutine test_sqlite_decay_importance_with_access_stats>
+            <Module test_storage_search.py>
+              <Coroutine test_search_memories_fts5>
+            <Module test_vector.py>
+              <Class TestSQLiteVectorStoreBasicOperations>
+                <Coroutine test_store_vector>
+                <Coroutine test_store_vector_different_dimensions>
+                <Coroutine test_store_vector_replace>
+                <Coroutine test_get_vector_not_found>
+                <Coroutine test_get_vector_wrong_tenant>
+                <Coroutine test_delete_vector>
+                <Coroutine test_delete_vector_not_found>
+                <Coroutine test_update_vector>
+                <Coroutine test_update_vector_not_found>
+              <Class TestSQLiteVectorStoreSimilaritySearch>
+                <Coroutine test_search_similar_exact_match>
+                <Coroutine test_search_similar_orthogonal_vectors>
+                <Coroutine test_search_similar_ranking>
+                <Coroutine test_search_similar_with_limit>
+                <Coroutine test_search_similar_with_threshold>
+                <Coroutine test_search_similar_with_layer_filter>
+                <Coroutine test_search_similar_tenant_isolation>
+                <Coroutine test_search_similar_empty_results>
+                <Coroutine test_search_similar_zero_query_vector>
+              <Class TestSQLiteVectorStoreBatchOperations>
+                <Coroutine test_batch_store_vectors>
+                <Coroutine test_batch_store_vectors_empty>
+                <Coroutine test_batch_store_vectors_partial_failure>
+              <Class TestSQLiteVectorStoreTenantOperations>
+                <Coroutine test_clear_tenant>
+                <Coroutine test_clear_tenant_empty>
+              <Class TestSQLiteVectorStoreStatistics>
+                <Coroutine test_get_statistics>
+                <Coroutine test_get_statistics_empty>
+              <Class TestSQLiteVectorStorePersistence>
+                <Coroutine test_persistence_across_connections>
+              <Class TestSQLiteVectorStoreEdgeCases>
+                <Coroutine test_store_vector_no_metadata>
+                <Coroutine test_store_vector_large_dimension>
+                <Coroutine test_initialize_idempotent>
+          <Module test_postgres.py>
+            <Class TestPostgreSQLStorage>
+              <Coroutine test_store_memory>
+              <Coroutine test_get_memory>
+              <Coroutine test_get_memory_not_found>
+              <Coroutine test_search_memories>
+              <Coroutine test_list_memories>
+              <Coroutine test_update_memory>
+              <Coroutine test_update_memory_fail>
+              <Coroutine test_delete_memory>
+              <Coroutine test_delete_expired>
+              <Coroutine test_count_memories>
+          <Module test_postgres_coverage.py>
+            <Class TestPostgreSQLStorageCoverage>
+              <Coroutine test_init_no_asyncpg>
+              <Coroutine test_get_pool_no_dsn_or_pool>
+              <Coroutine test_close_with_pool>
+              <Coroutine test_list_memories_with_many_filters>
+              <Coroutine test_search_memories_no_agent_or_layer>
+              <Coroutine test_update_memory_no_updates>
+              <Coroutine test_get_pool_lazy_init>
+          <Module test_postgres_db.py>
+            <Class TestPostgresDatabaseProvider>
+              <Coroutine test_fetchrow>
+              <Coroutine test_fetchrow_none>
+              <Coroutine test_fetch>
+              <Coroutine test_fetchval>
+              <Coroutine test_execute>
+              <Coroutine test_executemany>
+              <Function test_acquire>
+              <Coroutine test_close>
+          <Module test_postgres_db_extended.py>
+            <Class TestPostgresDatabaseConnection>
+              <Coroutine test_connection_methods>
+            <Class TestPostgresTransaction>
+              <Coroutine test_transaction_methods>
+            <Class TestPostgresAcquireContext>
+              <Coroutine test_acquire_context>
+            <Coroutine test_provider_acquire_returns_context>
+          <Module test_postgres_extended.py>
+            <Class TestPostgreSQLStorageExtended>
+              <Coroutine test_get_metric_aggregate>
+              <Coroutine test_get_metric_aggregate_validation>
+              <Coroutine test_update_memory_access_batch>
+              <Coroutine test_adjust_importance>
+              <Coroutine test_adjust_importance_not_found>
+              <Coroutine test_delete_below_importance>
+              <Coroutine test_delete_with_metadata_filter>
+              <Coroutine test_delete_with_metadata_filter_operator>
+              <Coroutine test_search_memories_with_filters>
+              <Coroutine test_update_memory_expiration>
+          <Module test_postgres_extra.py>
+            <Coroutine test_get_memory_not_found>
+            <Coroutine test_list_memories_empty>
+            <Coroutine test_list_memories_with_data>
+            <Coroutine test_decay_importance_coverage>
+            <Coroutine test_save_embedding_coverage>
+            <Coroutine test_postgres_save_embedding_access_denied>
+            <Coroutine test_search_memories_coverage>
+            <Coroutine test_update_memory_access_coverage>
+            <Coroutine test_update_memory_expiration_coverage>
+            <Coroutine test_get_metric_aggregate_coverage>
+            <Coroutine test_update_memory_access_batch_coverage>
+            <Coroutine test_delete_expired_memories_coverage>
+            <Coroutine test_delete_memories_below_importance_coverage>
+            <Coroutine test_increment_access_count_coverage>
+            <Coroutine test_delete_memory_coverage>
+            <Coroutine test_update_memory_coverage>
+            <Coroutine test_delete_memories_with_metadata_filter_coverage>
+            <Coroutine test_adjust_importance_not_found>
+          <Module test_qdrant.py>
+            <Class TestQdrantVectorStore>
+              <Coroutine test_ensure_collection>
+              <Coroutine test_store_vector>
+              <Coroutine test_batch_store_vectors>
+              <Coroutine test_search_similar>
+              <Coroutine test_get_vector>
+              <Coroutine test_get_vector_wrong_tenant>
+              <Coroutine test_delete_vector>
+              <Coroutine test_delete_by_layer>
+              <Coroutine test_count_vectors>
+              <Coroutine test_close>
+              <Coroutine test_search_with_contradiction_penalty>
+          <Module test_qdrant_coverage.py>
+            <Class TestQdrantVectorStoreCoverage>
+              <Coroutine test_init_no_qdrant_client>
+              <Coroutine test_add_vector_failure>
+              <Coroutine test_update_vector>
+              <Coroutine test_search_similar_with_filters>
+              <Coroutine test_delete_vector_not_found>
+              <Coroutine test_delete_vector_wrong_tenant>
+          <Module test_qdrant_extra.py>
+            <Coroutine test_batch_store_vectors_empty>
+            <Coroutine test_search_similar_with_session_id>
+            <Coroutine test_search_with_contradiction_penalty_missing_vectors>
+            <Coroutine test_search_similar_with_agent_id>
+            <Coroutine test_count_vectors_with_layer>
+            <Coroutine test_all_qdrant_methods_exception_handling>
+            <Coroutine test_qdrant_init_with_url>
+            <Coroutine test_search_similar_exception>
+            <Coroutine test_get_vector_tenant_mismatch>
+            <Coroutine test_delete_vector_not_found_or_tenant_mismatch>
+            <Coroutine test_search_with_contradiction_penalty_low_results>
+            <Coroutine test_search_with_contradiction_penalty_full_logic>
+            <Function test_cosine_similarity_edge_cases>
+          <Module test_qdrant_multivector.py>
+            <Coroutine test_ensure_collection_multivector>
+            <Coroutine test_add_vector_determines_name>
+            <Coroutine test_search_uses_correct_vector>
+          <Module test_redis.py>
+            <Class TestRedisCache>
+              <Coroutine test_get_hit>
+              <Coroutine test_get_miss>
+              <Coroutine test_get_json_error>
+              <Coroutine test_set_string>
+              <Coroutine test_set_dict>
+              <Coroutine test_set_no_ttl>
+              <Coroutine test_delete>
+              <Coroutine test_exists>
+              <Coroutine test_increment>
+              <Coroutine test_decrement>
+              <Coroutine test_get_ttl>
+              <Coroutine test_expire>
+              <Coroutine test_clear_prefix>
+              <Coroutine test_clear>
+              <Coroutine test_ping>
+              <Coroutine test_close>
+          <Module test_redis_coverage.py>
+            <Class TestRedisCacheCoverage>
+              <Coroutine test_init_no_aioredis>
+              <Coroutine test_get_exception>
+              <Coroutine test_set_exception>
+              <Coroutine test_delete_exception>
+              <Coroutine test_exists_exception>
+              <Coroutine test_increment_exception>
+              <Coroutine test_decrement_exception>
+              <Coroutine test_clear_exception>
+              <Coroutine test_ping_exception>
+              <Coroutine test_close_exception>
+              <Coroutine test_init_from_url>
+              <Coroutine test_init_default>
+          <Module test_redis_extra.py>
+            <Coroutine test_clear_prefix_no_keys>
+            <Coroutine test_redis_key_generation>
+            <Coroutine test_redis_init_variants>
+            <Coroutine test_redis_methods_exception_handling>
+            <Coroutine test_redis_get_not_json>
+            <Coroutine test_redis_set_complex_objects>
+        <Package api>
+          <Dir v1>
+            <Module test_federation.py>
+              <Function test_federation_query_unauthorized>
+              <Coroutine test_federation_query_success>
+        <Package core>
+          <Module test_actions.py>
+            <Function test_action_type_enum>
+            <Function test_retrieve_episodic_action_creation>
+            <Function test_retrieve_episodic_valid_state>
+            <Function test_retrieve_episodic_invalid_no_memories>
+            <Function test_retrieve_episodic_invalid_budget_exhausted>
+            <Function test_retrieve_episodic_cost_estimation>
+            <Function test_retrieve_working_action>
+            <Function test_retrieve_semantic_without_graph>
+            <Function test_retrieve_semantic_with_graph>
+            <Function test_retrieve_semantic_invalid_no_graph>
+            <Function test_retrieve_ltm_action>
+            <Function test_retrieve_reflective_action>
+            <Function test_call_llm_action_valid>
+            <Function test_call_llm_action_invalid_no_context>
+            <Function test_call_llm_action_cost_estimation>
+            <Function test_call_llm_action_exceeds_budget>
+            <Function test_prune_context_action>
+            <Function test_prune_context_invalid_empty>
+            <Function test_generate_reflection_action_valid>
+            <Function test_generate_reflection_action_invalid_insufficient_memories>
+            <Function test_generate_reflection_cost_estimation>
+            <Function test_update_graph_action>
+            <Function test_consolidate_episodic_to_working_action>
+            <Function test_consolidate_invalid_no_episodic>
+            <Function test_consolidate_invalid_working_full>
+            <Function test_summarize_context_extractive>
+            <Function test_summarize_context_abstractive>
+            <Function test_action_serialization>
+            <Function test_multiple_actions_in_sequence>
+          <Module test_actions_coverage.py>
+            <Function test_retrieve_semantic_invalid_no_graph_warning>
+            <Function test_retrieve_semantic_cost_with_graph>
+            <Function test_call_llm_invalid_no_context_warning>
+            <Function test_call_llm_invalid_tokens_exceeded>
+            <Function test_prune_context_validity>
+            <Function test_generate_reflection_invalid_insufficient_memories_log>
+            <Function test_update_graph_validity>
+            <Function test_consolidate_episodic_invalid_working_full>
+            <Function test_summarize_context_invalid_budget>
+            <Function test_summarize_context_invalid_empty>
+            <Function test_update_graph_cost_variations>
+          <Module test_graph_operator.py>
+            <Function test_graph_operator_creation>
+            <Function test_graph_operator_defaults>
+            <Function test_graph_node_creation>
+            <Function test_graph_edge_creation>
+            <Function test_knowledge_graph_creation>
+            <Function test_knowledge_graph_get_node>
+            <Function test_knowledge_graph_get_edge>
+            <Function test_knowledge_graph_adjacency_matrix>
+            <Function test_knowledge_graph_copy>
+            <Function test_knowledge_graph_to_dict>
+            <Function test_add_node_basic>
+            <Function test_add_node_duplicate>
+            <Function test_add_node_missing_data>
+            <Function test_add_edge_basic>
+            <Function test_add_edge_strengthen_existing>
+            <Function test_add_edge_nonexistent_nodes>
+            <Function test_update_edge_weight_decay>
+            <Function test_update_edge_weight_prune_low_weight>
+            <Function test_merge_nodes_basic>
+            <Function test_merge_nodes_redirect_edges>
+            <Function test_merge_nodes_missing_parameters>
+            <Function test_prune_node_basic>
+            <Function test_prune_node_nonexistent>
+            <Function test_prune_edge_basic>
+            <Function test_prune_edge_nonexistent>
+            <Function test_convergence_analysis_insufficient_history>
+            <Function test_convergence_analysis_stable_graph>
+            <Function test_convergence_analysis_growing_graph>
+            <Function test_convergence_analysis_spectral_gap>
+            <Function test_transformation_deterministic>
+            <Function test_invalid_action_type>
+            <Function test_temporal_decay_exponential>
+            <Function test_edge_weight_bounds>
+          <Module test_graph_operator_coverage.py>
+            <Function test_add_node_missing_data>
+            <Function test_add_edge_missing_data>
+            <Function test_merge_nodes_missing_ids>
+            <Function test_merge_nodes_edge_redirect_and_cleanup>
+            <Function test_analyze_convergence_exception_handling>
+          <Module test_ib_coverage.py>
+            <Function test_select_context_skip_low_relevance>
+            <Function test_compute_compression_costs_layers>
+            <Function test_estimate_i_z_x_empty_full_memory>
+            <Function test_adaptive_beta_budget_adjustment>
+            <Function test_adaptive_beta_query_complexity>
+            <Function test_adaptive_beta_user_preference>
+          <Module test_information_bottleneck.py>
+            <Function test_ib_selector_creation>
+            <Function test_ib_selector_default_beta>
+            <Function test_select_context_basic>
+            <Function test_select_context_empty_memory>
+            <Function test_select_context_high_beta_compression>
+            <Function test_select_context_respects_min_relevance>
+            <Function test_select_context_respects_max_tokens>
+            <Function test_compute_relevance_scores>
+            <Function test_compute_compression_costs>
+            <Function test_compression_cost_layer_penalty>
+            <Function test_estimate_I_Z_Y>
+            <Function test_estimate_I_Z_Y_empty_context>
+            <Function test_estimate_I_Z_X>
+            <Function test_estimate_I_Z_X_all_memories>
+            <Function test_estimate_I_Z_X_empty_context>
+            <Function test_cosine_similarity_identical_vectors>
+            <Function test_cosine_similarity_orthogonal_vectors>
+            <Function test_cosine_similarity_zero_vector>
+            <Function test_compute_diversity>
+            <Function test_compute_diversity_single_embedding>
+            <Function test_compute_diversity_identical_embeddings>
+            <Function test_adaptive_beta_complex_query>
+            <Function test_adaptive_beta_low_budget>
+            <Function test_adaptive_beta_user_preferences>
+            <Function test_compute_ib_objective>
+            <Function test_ib_selection_prefers_relevant_memories>
+          <Module test_reward.py>
+            <Function test_reward_function_creation>
+            <Function test_reward_function_defaults>
+            <Function test_reward_computation_basic>
+            <Function test_reward_components_structure>
+            <Function test_high_quality_high_reward>
+            <Function test_zero_memories_zero_quality>
+            <Function test_token_penalty_scaling>
+            <Function test_retrieval_quality_evaluation>
+            <Function test_llm_quality_evaluation>
+            <Function test_pruning_quality_evaluation>
+            <Function test_graph_update_quality_evaluation>
+            <Function test_metrics_tracker_creation>
+            <Function test_metrics_tracker_records_transition>
+            <Function test_metrics_tracker_averages>
+            <Function test_metrics_best_and_worst_actions>
+            <Function test_metrics_get_current_metrics>
+            <Function test_reward_with_no_execution_result>
+            <Function test_reward_with_zero_cost>
+            <Function test_quality_score_clamped_to_0_1>
+          <Module test_reward_coverage.py>
+            <Function test_evaluate_quality_default_fallback>
+            <Function test_evaluate_retrieval_quality_zero_memories>
+            <Function test_evaluate_llm_quality_no_result>
+            <Function test_evaluate_llm_quality_short_output>
+            <Function test_evaluate_reflection_quality_no_scoring>
+          <Module test_state.py>
+            <Function test_working_context_creation>
+            <Function test_memory_layer_state>
+            <Function test_memory_state_total_count>
+            <Function test_budget_state_exhaustion>
+            <Function test_graph_state>
+            <Function test_rae_state_creation>
+            <Function test_rae_state_with_full_initialization>
+            <Function test_rae_state_validation_budget_exhausted>
+            <Function test_rae_state_validation_negative_tokens>
+            <Function test_rae_state_comparison>
+            <Function test_rae_state_serialization>
+            <Function test_rae_state_log_state>
+            <Function test_memory_state_serialization>
+            <Function test_working_context_empty_importance>
+            <Function test_state_comparison_time_delta>
+            <Function test_budget_state_partial_exhaustion>
+            <Function test_memory_layer_none_values>
+            <Function test_rae_state_identity_fields>
+            <Function test_rae_state_validation_mismatched_importance_scores>
+            <Function test_rae_state_validation_negative_memory_count>
+        <Dir observability>
+          <Module test_pii_scrubber.py>
+            <Function test_pii_scrubber_init_default_patterns>
+            <Function test_pii_scrubber_init_enabled_patterns>
+            <Function test_pii_scrubber_init_custom_patterns>
+            <Function test_scrub_method[test@example.com-[EMAIL]-False]>
+            <Function test_scrub_method[My email is test@example.com-My email is [EMAIL]-False]>
+            <Function test_scrub_method[My email is test@example.com-My email is [EMAIL]*********-True]>
+            <Function test_scrub_method[123-45-6789-[SSN]-False]>
+            <Function test_scrub_method[SSN: 123-45-6789-SSN: [SSN]******-True]>
+            <Function test_scrub_method[192.168.1.1-[IP_ADDRESS]-False]>
+            <Function test_scrub_method[My IP is 192.168.1.1-My IP is [IP_ADDRESS-True]>
+            <Function test_scrub_method[No PII here.-No PII here.-False]>
+            <Function test_scrub_method[--False]>
+            <Function test_scrub_method[None-None-False]>
+            <Function test_detect_method[test@example.com-expected_detections0]>
+            <Function test_detect_method[Call me at 555-123-4567 or email at user@domain.com-expected_detections1]>
+            <Function test_detect_method[No PII here.-expected_detections2]>
+            <Function test_detect_method[-expected_detections3]>
+            <Function test_detect_method[None-expected_detections4]>
+            <Function test_has_pii_method[test@example.com-True]>
+            <Function test_has_pii_method[No PII here.-False]>
+            <Function test_has_pii_method[-False]>
+            <Function test_has_pii_method[None-False]>
+            <Function test_preserve_length[longtext-[SHORT]-[SHORT]*]>
+            <Function test_preserve_length[[LONG_REPLACEMENT]-short-short*************]>
+            <Function test_preserve_length[exact-exact-exact]>
+            <Function test_global_scrub_pii>
+            <Function test_global_detect_pii>
+            <Function test_global_has_pii>
+            <Function test_global_configure_scrubber>
+            <Function test_scrub_span_attributes[attributes0-expected_scrubbed_attributes0]>
+            <Function test_scrub_span_attributes[attributes1-expected_scrubbed_attributes1]>
+            <Function test_scrub_span_attributes[attributes2-expected_scrubbed_attributes2]>
+            <Function test_scrub_span_attributes[attributes3-expected_scrubbed_attributes3]>
+            <Function test_scrub_span_attributes[None-None]>
+            <Function test_scrub_span_attributes[attributes5-expected_scrubbed_attributes5]>
+            <Function test_create_pii_scrubbing_processor_instantiation_and_on_end>
+          <Module test_rae_tracing.py>
+            <Function test_rae_tracing_context>
+            <Function test_start_reasoning_step>
+            <Function test_start_memory_operation>
+            <Function test_start_llm_call>
+            <Function test_start_safety_check>
+            <Coroutine test_trace_agent_operation_decorator_async>
+            <Function test_trace_agent_operation_decorator_sync>
+            <Coroutine test_trace_agent_operation_error>
+        <Dir repositories>
+          <Module test_cost_logs_repository.py>
+            <Coroutine test_log_llm_call_success>
+            <Coroutine test_log_llm_call_failure>
+            <Coroutine test_get_cost_statistics_success>
+            <Coroutine test_get_cost_statistics_empty>
+            <Coroutine test_get_model_breakdown>
+            <Coroutine test_get_cache_savings>
+            <Coroutine test_get_recent_logs>
+          <Module test_enhanced_graph_repository_agnostic.py>
+            <Coroutine test_repository_initialization_with_provider>
+            <Coroutine test_create_node_uses_provider>
+          <Module test_trigger_repository.py>
+            <Coroutine test_create_trigger>
+            <Coroutine test_get_active_triggers_for_event>
+            <Coroutine test_update_trigger_dynamic_query>
+            <Coroutine test_update_trigger_no_valid_updates>
+            <Coroutine test_delete_trigger>
+            <Coroutine test_delete_trigger_not_found>
+        <Dir services>
+          <Dir llm>
+            <Module test_orchestrator_adapter.py>
+              <Coroutine test_generate_calls_orchestrator>
+              <Coroutine test_generate_structured_parses_json>
+          <Module test_analytics_service.py>
+            <Coroutine test_get_tenant_stats_structure>
+            <Coroutine test_get_tenant_stats_caching>
+            <Coroutine test_generate_report_json>
+            <Coroutine test_generate_report_unsupported>
+            <Coroutine test_get_real_time_metrics>
+            <Coroutine test_internal_helpers_execution>
+          <Module test_compliance_service.py>
+            <Coroutine test_generate_compliance_report_full>
+            <Coroutine test_verify_rls_status_success>
+            <Coroutine test_verify_rls_status_failure>
+            <Coroutine test_get_active_risks>
+            <Coroutine test_calculate_overall_score>
+            <Coroutine test_get_governance_metrics_logic>
+          <Module test_context_builder_coverage.py>
+            <Coroutine test_build_context_basic>
+            <Coroutine test_build_context_no_reflections>
+            <Coroutine test_format_messages>
+            <Coroutine test_inject_reflections_into_prompt>
+            <Coroutine test_retrieve_ltm_empty>
+            <Coroutine test_working_memory_context_serialization>
+          <Module test_context_builder_v3.py>
+            <Coroutine test_context_builder_uses_v3_when_enabled>
+            <Coroutine test_context_builder_v3_integration_mock>
+          <Module test_control_plane_service.py>
+            <Coroutine test_register_node>
+            <Coroutine test_process_heartbeat_success>
+            <Coroutine test_process_heartbeat_fail>
+            <Coroutine test_poll_task_success>
+          <Module test_cost_controller_v2.py>
+            <Function test_calculate_cost_known_model>
+            <Function test_calculate_cost_unknown_model>
+            <Function test_calculate_cost_cache_hit>
+            <Function test_estimate_cost>
+            <Function test_get_model_rates_success>
+            <Function test_get_model_rates_not_found>
+            <Function test_calculate_cache_savings>
+            <Function test_is_model_known>
+            <Function test_validate_cost_calculation_valid>
+            <Function test_validate_cost_calculation_invalid>
+          <Module test_feedback_service.py>
+            <Coroutine test_process_feedback_positive>
+            <Coroutine test_process_feedback_negative>
+            <Coroutine test_process_feedback_disabled>
+          <Module test_graph_extraction_service_v2.py>
+            <Coroutine test_extract_knowledge_graph_success>
+            <Coroutine test_extract_knowledge_graph_no_memories>
+            <Coroutine test_extract_knowledge_graph_gatekeeper_filters_all>
+            <Function test_normalize_entity_name>
+            <Function test_format_memories>
+            <Coroutine test_store_graph_triples>
+          <Module test_hybrid_search_service.py>
+            <Coroutine test_search_flow_uncached>
+            <Coroutine test_search_cached>
+            <Coroutine test_fuse_results>
+            <Coroutine test_rerank_results>
+            <Coroutine test_vector_search_execution>
+            <Coroutine test_semantic_search_execution>
+            <Coroutine test_graph_search_execution>
+            <Coroutine test_fulltext_search_execution>
+            <Coroutine test_search_with_manual_weights>
+            <Coroutine test_vector_search_error_handling>
+            <Coroutine test_rerank_results_error_handling>
+          <Module test_importance_scoring_coverage.py>
+            <Coroutine test_calculate_importance_basic>
+            <Coroutine test_calculate_importance_factors>
+            <Coroutine test_calculate_importance_access_boost>
+            <Coroutine test_decay_importance>
+            <Coroutine test_scoring_explanation>
+            <Coroutine test_manual_boost>
+            <Coroutine test_identify_undervalued_memories>
+            <Coroutine test_suggest_importance_adjustments>
+            <Coroutine test_auto_archive_low_importance>
+            <Coroutine test_get_importance_trends>
+          <Module test_memory_consolidation.py>
+            <Coroutine test_consolidate_episodic_to_working_success>
+            <Coroutine test_consolidate_episodic_to_working_no_candidates>
+            <Coroutine test_consolidate_working_to_semantic_success>
+            <Coroutine test_consolidate_semantic_to_ltm_success>
+            <Coroutine test_run_automatic_consolidation>
+            <Coroutine test_run_automatic_consolidation_failure>
+            <Coroutine test_consolidate_group_logic>
+            <Coroutine test_consolidate_group_empty>
+            <Coroutine test_generate_consolidated_content_fallback>
+            <Coroutine test_revert_consolidation>
+            <Coroutine test_get_consolidation_stats>
+            <Coroutine test_preview_consolidation>
+            <Coroutine test_group_similar_memories_execution>
+            <Coroutine test_group_by_patterns_execution>
+            <Coroutine test_consolidate_group_exception>
+            <Coroutine test_generate_consolidated_content_llm>
+            <Function test_build_consolidation_prompt>
+            <Coroutine test_revert_consolidation_exception>
+            <Coroutine test_no_candidates_other_layers>
+          <Module test_memory_scoring_v2.py>
+            <Function test_scoring_weights_validation>
+            <Function test_compute_memory_score_basic>
+            <Function test_recency_decay>
+            <Function test_access_count_boost>
+            <Function test_future_timestamp>
+            <Function test_batch_scoring>
+            <Function test_batch_scoring_mismatch>
+            <Function test_rank_memories>
+            <Function test_decay_config_limits>
+          <Module test_memory_scoring_v3.py>
+            <Function test_scoring_weights_v3_default>
+            <Function test_compute_batch_scores_v3_basic>
+            <Function test_compute_batch_scores_v3_fallback_diversity>
+            <Function test_density_calculation>
+          <Module test_reflection_engine_v2.py>
+            <Coroutine test_generate_reflection_success>
+            <Coroutine test_generate_reflection_failure>
+            <Coroutine test_generate_reflection_partial>
+            <Function test_format_events>
+            <Coroutine test_store_reflection>
+            <Coroutine test_store_reflection_no_strategy>
+            <Coroutine test_query_reflections>
+            <Coroutine test_error_handling>
+          <Module test_reflection_pipeline.py>
+            <Coroutine test_fetch_memories_filters>
+            <Coroutine test_generate_reflections_no_memories>
+            <Coroutine test_generate_reflections_with_clusters>
+            <Coroutine test_generate_cluster_insight>
+            <Coroutine test_generate_meta_insight>
+            <Coroutine test_cluster_memories_fallback_kmeans>
+            <Coroutine test_score_reflection_fallback>
+            <Function test_calculate_priority>
+            <Coroutine test_fetch_memories_full_filters>
+            <Coroutine test_clustering_noise_handling>
+            <Coroutine test_embedding_generation_failure>
+            <Coroutine test_generate_reflections_exception_handling>
+          <Module test_retention_service.py>
+            <Coroutine test_get_tenant_retention_policies_defaults>
+            <Coroutine test_get_tenant_retention_policies_custom>
+            <Coroutine test_cleanup_expired_data_single_tenant>
+            <Coroutine test_cleanup_expired_data_all_tenants>
+            <Coroutine test_cleanup_exceptions_handled>
+            <Coroutine test_delete_user_data_gdpr>
+            <Coroutine test_get_deletion_audit_log>
+            <Coroutine test_get_deletion_audit_log_with_dates>
+            <Coroutine test_cleanup_embeddings_error>
+            <Coroutine test_log_audit_failure_fallback>
+          <Module test_rules_engine.py>
+            <Coroutine test_evaluate_condition_operators>
+            <Coroutine test_evaluate_condition_group>
+            <Coroutine test_process_event_flow>
+            <Coroutine test_action_retry_logic>
+            <Coroutine test_rate_limit_check>
+            <Coroutine test_webhook_action>
+          <Module test_semantic_extractor.py>
+            <Coroutine test_initialization>
+            <Coroutine test_extract_from_memories_no_memories>
+            <Coroutine test_extract_from_memories_success>
+            <Coroutine test_canonicalize_term>
+            <Coroutine test_create_or_update_semantic_node_existing>
+            <Coroutine test_create_or_update_semantic_node_new>
+            <Coroutine test_create_semantic_relationship_success>
+            <Coroutine test_create_semantic_relationship_nodes_missing>
+            <Coroutine test_extract_semantic_knowledge_error>
+            <Coroutine test_extract_from_memories_with_ids>
+            <Coroutine test_node_creation_exceptions>
+            <Coroutine test_canonicalize_term_fallback>
+            <Coroutine test_generate_embedding_fallback>
+            <Coroutine test_create_semantic_relationship_db_error>
+          <Module test_semantic_search_v2.py>
+            <Coroutine test_search_stage1_only>
+            <Coroutine test_search_stage2_only>
+            <Coroutine test_search_stage3_reranking>
+            <Coroutine test_filters>
+            <Coroutine test_extract_topics_simple>
+            <Coroutine test_deduplication>
+            <Coroutine test_empty_results>
+            <Coroutine test_reranking_logic>
+            <Coroutine test_filter_by_domain>
+          <Module test_smart_reranker.py>
+            <Coroutine test_reranker_disabled>
+            <Coroutine test_reranker_heuristic_boost>
+            <Coroutine test_reranker_limit>
+        <Module test_adapters.py>
+          <Coroutine test_redis_validation_success>
+          <Coroutine test_redis_validation_connection_fail>
+          <Coroutine test_redis_validation_write_fail>
+          <Coroutine test_redis_connect_success>
+          <Coroutine test_redis_connect_fail>
+          <Coroutine test_redis_report_success>
+          <Coroutine test_redis_report_fail>
+          <Coroutine test_qdrant_connect_success>
+          <Coroutine test_qdrant_connect_fail>
+          <Coroutine test_qdrant_report_success>
+          <Coroutine test_qdrant_report_fail>
+          <Coroutine test_qdrant_validation_success>
+          <Coroutine test_qdrant_validation_missing_collection>
+          <Coroutine test_qdrant_validation_dimension_mismatch>
+        <Module test_analytics.py>
+          <Coroutine test_get_tenant_stats_cached>
+          <Coroutine test_get_tenant_stats_uncached>
+          <Coroutine test_get_memory_stats>
+          <Coroutine test_get_query_stats>
+          <Coroutine test_get_graph_stats>
+          <Coroutine test_get_reflection_stats>
+          <Coroutine test_get_api_usage_stats>
+          <Coroutine test_get_performance_stats>
+          <Coroutine test_get_cost_stats>
+          <Coroutine test_calculate_graph_density>
+          <Coroutine test_cache_operations>
+          <Coroutine test_generate_report>
+          <Coroutine test_get_real_time_metrics>
+          <Coroutine test_get_usage_alerts>
+          <Coroutine test_mock_db_methods>
+        <Module test_api_client.py>
+          <Function test_classify_network_error>
+          <Function test_classify_timeout_error>
+          <Function test_classify_rate_limit>
+          <Function test_classify_authentication_error>
+          <Coroutine test_circuit_breaker_closed_success>
+          <Coroutine test_circuit_breaker_opens_on_failures>
+          <Coroutine test_circuit_breaker_rejects_when_open>
+          <Coroutine test_circuit_breaker_half_open_recovery>
+          <Function test_cache_set_and_get>
+          <Function test_cache_miss>
+          <Function test_cache_expiration>
+          <Function test_cache_invalidation>
+          <Function test_cache_clear>
+          <Coroutine test_retry_on_network_error>
+          <Coroutine test_retry_exhausted>
+          <Coroutine test_no_retry_on_client_error>
+          <Coroutine test_exponential_backoff>
+          <Coroutine test_get_request>
+          <Coroutine test_post_request>
+          <Function test_client_statistics>
+          <Function test_reset_statistics>
+        <Module test_api_e2e.py>
+          <Class TestMemoryAPISmoke>
+            <Function test_store_and_query_memory_e2e>
+            <Function test_hybrid_search_e2e>
+          <Class TestHealthCheckSmoke>
+            <Function test_health_check>
+          <Class TestAPIErrorHandling>
+            <Function test_missing_tenant_header>
+            <Function test_invalid_json>
+        <Module test_background_tasks.py>
+          <Class TestExtractGraphLazy>
+            <Function test_extract_graph_success>
+            <Function test_extract_graph_with_mini_model>
+            <Function test_extract_graph_exception_handling>
+            <Function test_extract_graph_pool_cleanup>
+          <Class TestProcessGraphExtractionQueue>
+            <Function test_queue_processor_schedules_tasks>
+            <Function test_queue_processor_no_pending_memories>
+          <Class TestGenerateReflection>
+            <Function test_generate_reflection_calls_engine>
+          <Class TestMemoryDecay>
+            <Function test_apply_decay_updates_strength>
+          <Class TestCleanupExpiredData>
+            <Coroutine test_cleanup_expired_data_success>
+            <Coroutine test_cleanup_expired_data_failure>
+          <Class TestGDPRDeletion>
+            <Coroutine test_gdpr_deletion_success>
+          <Class TestDecayMemoryImportance>
+            <Coroutine test_decay_task_all_tenants>
+        <Module test_circuit_breaker.py>
+          <Class TestCircuitBreaker>
+            <Coroutine test_initial_state_closed>
+            <Coroutine test_successful_call>
+            <Coroutine test_failed_call>
+            <Coroutine test_opens_after_threshold>
+            <Coroutine test_fails_fast_when_open>
+            <Coroutine test_half_open_after_timeout>
+            <Coroutine test_half_open_success_closes_circuit>
+            <Coroutine test_half_open_failure_reopens_circuit>
+            <Coroutine test_get_state_returns_metrics>
+            <Coroutine test_reset_clears_all_state>
+            <Coroutine test_custom_exception_type>
+            <Coroutine test_success_rate_calculation>
+          <Class TestDegradedModeService>
+            <Function test_initial_state_normal>
+            <Function test_enter_degraded_mode>
+            <Function test_exit_degraded_mode>
+            <Function test_get_status_degraded>
+            <Function test_get_status_normal>
+            <Function test_duration_calculation>
+            <Function test_exit_when_not_degraded>
+          <Class TestGlobalCircuitBreakers>
+            <Function test_global_breakers_exist>
+            <Function test_database_breaker_config>
+            <Function test_vector_store_breaker_config>
+            <Function test_llm_service_breaker_config>
+            <Function test_global_degraded_mode_service>
+          <Class TestCircuitBreakerIntegration>
+            <Coroutine test_full_lifecycle>
+        <Module test_clustering_async_safety.py>
+          <Coroutine test_clustering_offload_safety>
+        <Module test_consistency_service.py>
+          <Coroutine test_reconcile_vectors_no_orphans>
+          <Coroutine test_reconcile_vectors_with_orphans>
+        <Module test_context_provenance_service.py>
+          <Class TestCreateDecisionContext>
+            <Coroutine test_create_context_basic>
+            <Coroutine test_quality_metrics_calculation>
+            <Coroutine test_empty_sources>
+            <Coroutine test_trust_level_mapping>
+            <Coroutine test_coverage_score_max_cap>
+          <Class TestRecordDecision>
+            <Coroutine test_record_decision_basic>
+            <Coroutine test_record_decision_with_human_approval>
+            <Coroutine test_context_summary_generation>
+          <Class TestGetDecisionLineage>
+            <Coroutine test_get_full_lineage>
+            <Coroutine test_get_lineage_decision_not_found>
+          <Class TestAuditContextQuality>
+            <Coroutine test_audit_high_quality_context>
+            <Coroutine test_audit_low_trust>
+            <Coroutine test_audit_low_relevance>
+            <Coroutine test_audit_insufficient_sources>
+            <Coroutine test_audit_quality_score_calculation>
+            <Coroutine test_audit_context_not_found>
+        <Module test_dashboard_websocket.py>
+          <Coroutine test_websocket_connect>
+          <Coroutine test_websocket_disconnect>
+          <Coroutine test_subscription_filtering>
+          <Coroutine test_broadcast_to_tenant>
+          <Coroutine test_broadcast_all>
+          <Coroutine test_collect_system_metrics>
+          <Coroutine test_metrics_changed_significantly>
+          <Coroutine test_check_system_health>
+          <Coroutine test_health_monitoring_failure>
+          <Coroutine test_broadcast_memory_created>
+          <Coroutine test_broadcast_quality_alert>
+        <Module test_db_validation.py>
+          <Coroutine test_postgres_connect_success>
+          <Coroutine test_postgres_connect_fail>
+          <Coroutine test_postgres_report_success>
+          <Coroutine test_postgres_report_fail>
+          <Coroutine test_validation_success>
+          <Coroutine test_validation_fail_missing_table>
+          <Coroutine test_validation_fail_type_mismatch>
+        <Module test_distributed_integration.py>
+          <Coroutine test_embedding_service_distributed_routing>
+          <Coroutine test_embedding_service_local_fallback>
+        <Module test_evaluation_suite.py>
+          <Coroutine test_mrr_calculation>
+          <Coroutine test_ndcg_calculation>
+          <Coroutine test_precision_recall>
+          <Coroutine test_kolmogorov_smirnov_test>
+          <Coroutine test_psi_calculation>
+          <Coroutine test_drift_severity_classification>
+          <Coroutine test_drift_detection_no_data>
+          <Coroutine test_ab_test_traffic_validation>
+        <Module test_evaluator_llm.py>
+          <Coroutine test_llm_evaluator_evaluate_success>
+          <Coroutine test_llm_evaluator_evaluate_failure>
+          <Coroutine test_llm_evaluator_fallback>
+        <Module test_event_triggers.py>
+          <Coroutine test_process_event>
+          <Coroutine test_evaluate_simple_condition>
+          <Coroutine test_evaluate_condition_group_and>
+          <Coroutine test_evaluate_condition_group_or>
+          <Coroutine test_nested_condition_groups>
+          <Coroutine test_condition_operators>
+          <Coroutine test_rate_limiting>
+          <Coroutine test_cooldown_period>
+          <Coroutine test_execute_action>
+          <Coroutine test_workflow_execution>
+        <Module test_graph_algorithms.py>
+          <Coroutine test_graph_node>
+          <Coroutine test_graph_edge>
+          <Coroutine test_knowledge_graph>
+          <Coroutine test_service_load_tenant_graph>
+          <Coroutine test_pagerank>
+          <Coroutine test_shortest_path>
+          <Coroutine test_find_all_paths>
+          <Coroutine test_find_related_entities>
+          <Coroutine test_graph_summary>
+          <Coroutine test_community_detection>
+          <Coroutine test_calculate_centrality>
+          <Coroutine test_graph_density>
+          <Coroutine test_subgraph_extraction>
+          <Coroutine test_repr_methods>
+          <Coroutine test_load_tenant_graph_no_db>
+          <Coroutine test_load_tenant_graph_with_project_id>
+          <Coroutine test_load_tenant_graph_exception>
+          <Coroutine test_empty_graph_algorithms>
+          <Coroutine test_find_all_paths_edge_cases>
+          <Coroutine test_find_bridges_and_articulation_points>
+        <Module test_graph_extraction.py>
+          <Class TestGraphTriple>
+            <Function test_triple_creation>
+            <Function test_entity_normalization_helper>
+            <Function test_triple_normalization_integration>
+            <Function test_relation_normalization>
+            <Function test_triple_equality>
+            <Function test_triple_hash>
+            <Function test_confidence_bounds>
+          <Class TestGraphExtractionResult>
+            <Function test_empty_result>
+            <Function test_result_with_data>
+          <Class TestGraphExtractionService>
+            <Coroutine test_service_initialization>
+            <Coroutine test_fetch_episodic_memories>
+            <Coroutine test_format_memories>
+            <Coroutine test_extract_knowledge_graph_empty>
+            <Coroutine test_extract_knowledge_graph_success>
+            <Coroutine test_confidence_filtering>
+            <Coroutine test_store_graph_triples>
+            <Coroutine test_error_handling>
+          <Class TestGraphExtractionIntegration>
+            <Coroutine test_end_to_end_extraction>
+        <Module test_human_approval_service.py>
+          <Class TestRequestApproval>
+            <Coroutine test_auto_approve_low_risk>
+            <Coroutine test_auto_approve_none_risk>
+            <Coroutine test_pending_approval_high_risk>
+            <Coroutine test_pending_approval_critical_risk>
+            <Coroutine test_timeout_configuration>
+          <Class TestProcessDecision>
+            <Coroutine test_approve_single_approver>
+            <Coroutine test_approve_multi_approver>
+            <Coroutine test_reject_decision>
+            <Coroutine test_expired_request>
+            <Coroutine test_unauthorized_approver>
+            <Coroutine test_already_decided>
+          <Class TestCheckApprovalStatus>
+            <Coroutine test_check_pending_status>
+            <Coroutine test_auto_expire_on_check>
+            <Coroutine test_request_not_found>
+          <Class TestRequiresApproval>
+            <Function test_requires_approval_critical>
+            <Function test_requires_approval_high>
+            <Function test_requires_approval_medium>
+            <Function test_no_approval_low>
+            <Function test_no_approval_none>
+        <Module test_lite_mode_init.py>
+          <Function test_lite_mode_initialization>
+        <Module test_openapi.py>
+          <Function test_openapi_schema>
+        <Module test_opentelemetry.py>
+          <Class TestOpenTelemetrySetup>
+            <Function test_setup_opentelemetry_success>
+            <Function test_setup_opentelemetry_disabled>
+            <Function test_setup_opentelemetry_not_available>
+            <Function test_setup_opentelemetry_console_exporter>
+          <Class TestFastAPIInstrumentation>
+            <Function test_instrument_fastapi>
+            <Function test_instrument_fastapi_not_available>
+          <Class TestLibraryInstrumentation>
+            <Function test_instrument_libraries>
+          <Class TestCustomSpanHelpers>
+            <Function test_get_tracer>
+            <Function test_add_span_attributes>
+            <Function test_record_exception>
+          <Class TestLLMTracer>
+            <Function test_llm_tracer_trace>
+            <Function test_llm_tracer_record_tokens>
+            <Function test_llm_tracer_record_cost>
+          <Class TestTracedQdrantClient>
+            <Function test_traced_client_initialization>
+            <Function test_traced_client_create_collection>
+            <Function test_traced_client_search>
+            <Function test_traced_client_upsert>
+            <Function test_traced_client_exception_handling>
+          <Class TestOpenTelemetryIntegration>
+            <Function test_trace_end_to_end>
+        <Module test_phase2_models.py>
+          <Class TestTenantModels>
+            <Function test_tenant_tier_enum>
+            <Function test_tenant_config_defaults>
+            <Function test_tenant_creation>
+            <Function test_get_default_config_for_free_tier>
+            <Function test_get_default_config_for_pro_tier>
+            <Function test_get_default_config_for_enterprise_tier>
+            <Function test_has_quota_available_memories>
+            <Function test_has_quota_available_unlimited>
+            <Function test_increment_usage>
+            <Function test_is_feature_enabled>
+          <Class TestRBACModels>
+            <Function test_role_enum_values>
+            <Function test_role_levels>
+            <Function test_role_can_perform_owner>
+            <Function test_role_can_perform_admin>
+            <Function test_role_can_perform_developer>
+            <Function test_role_can_perform_analyst>
+            <Function test_role_can_perform_viewer>
+            <Function test_permission_model>
+            <Function test_user_role_creation>
+            <Function test_user_role_expiration>
+            <Function test_user_role_project_access>
+            <Function test_user_role_can_perform>
+            <Function test_user_role_can_perform_with_project>
+            <Function test_role_hierarchy_comparison>
+            <Function test_can_assign_role>
+            <Function test_can_modify_user>
+        <Module test_phase2_plugins.py>
+          <Class TestPluginMetadata>
+            <Function test_metadata_creation>
+            <Function test_metadata_to_dict>
+          <Class TestPluginBase>
+            <Coroutine test_plugin_initialization>
+            <Coroutine test_plugin_shutdown>
+            <Coroutine test_plugin_health_check>
+            <Coroutine test_hook_execution>
+            <Coroutine test_transform_hook>
+          <Class TestPluginRegistry>
+            <Function test_registry_creation>
+            <Function test_register_plugin>
+            <Function test_unregister_plugin>
+            <Function test_list_plugins>
+            <Function test_get_plugins_for_hook>
+            <Coroutine test_initialize_all>
+            <Coroutine test_shutdown_all>
+            <Coroutine test_execute_hook>
+            <Coroutine test_execute_transform_hook>
+            <Coroutine test_health_check_all>
+            <Function test_get_global_registry>
+          <Class TestPluginHooks>
+            <Function test_hook_values>
+            <Function test_all_hooks_defined>
+          <Class TestPluginDisabling>
+            <Function test_disabled_plugin_not_executed>
+            <Coroutine test_disabled_plugin_not_initialized>
+          <Class TestMultiplePlugins>
+            <Coroutine test_multiple_plugins_same_hook>
+            <Coroutine test_plugin_chaining>
+        <Module test_policy_versioning_service.py>
+          <Class TestCreatePolicy>
+            <Coroutine test_create_first_policy_version>
+            <Coroutine test_create_second_policy_version>
+            <Coroutine test_create_policy_with_metadata>
+          <Class TestActivatePolicy>
+            <Coroutine test_activate_draft_policy>
+            <Coroutine test_activate_deprecates_previous>
+            <Coroutine test_activate_nonexistent_policy>
+            <Coroutine test_activate_nonexistent_version>
+          <Class TestGetActivePolicy>
+            <Coroutine test_get_active_policy>
+            <Coroutine test_get_active_policy_no_active>
+            <Coroutine test_get_active_policy_nonexistent>
+          <Class TestGetPolicyHistory>
+            <Coroutine test_get_policy_history>
+            <Coroutine test_get_policy_history_nonexistent>
+          <Class TestEnforcePolicy>
+            <Coroutine test_enforce_policy_compliant>
+            <Coroutine test_enforce_policy_max_violation>
+            <Coroutine test_enforce_policy_min_violation>
+            <Coroutine test_enforce_policy_exact_match_warning>
+            <Coroutine test_enforce_policy_missing_field_warning>
+            <Coroutine test_enforce_policy_no_active_version>
+          <Class TestRollbackPolicy>
+            <Coroutine test_rollback_to_previous_version>
+            <Coroutine test_rollback_no_previous_version>
+            <Coroutine test_rollback_nonexistent_policy>
+          <Class TestPolicyTypes>
+            <Coroutine test_all_policy_types>
+        <Module test_refactor_columns.py>
+          <Coroutine test_store_memory_canonical_fields>
+        <Module test_snapshot_restore.py>
+          <Coroutine test_restore_snapshot_logic>
+          <Coroutine test_restore_snapshot_not_found>
+        <Module test_summarization_worker.py>
+          <Coroutine test_summarize_session_llm>
+          <Coroutine test_summarize_long_sessions>
+        <Module test_temporal_graph.py>
+          <Coroutine test_create_snapshot>
+          <Coroutine test_get_snapshot_at_time>
+          <Coroutine test_get_latest_snapshot>
+          <Coroutine test_record_change>
+          <Coroutine test_get_changes_filters>
+          <Coroutine test_get_entity_history>
+          <Coroutine test_reconstruct_graph_at_time>
+          <Coroutine test_apply_change_logic>
+          <Coroutine test_compare_graphs>
+          <Coroutine test_get_evolution_timeline>
+          <Coroutine test_get_growth_metrics>
+          <Coroutine test_find_emerging_patterns>
+          <Coroutine test_cleanup_old_snapshots>
+        <Module test_token_savings.py>
+          <Coroutine test_track_savings_positive>
+          <Coroutine test_track_savings_negative>
+          <Coroutine test_get_summary>
+        <Module test_validation_integration.py>
+          <Coroutine test_real_database_matches_contract>
+        <Module test_validation_service.py>
+          <Coroutine test_validation_service_all_success>
+          <Coroutine test_validation_service_one_adapter_fails_validation>
+          <Coroutine test_validation_service_one_adapter_fails_connect>
+          <Coroutine test_validation_service_get_reports_success>
+          <Coroutine test_validation_service_get_reports_with_failure>
+        <Module test_workers.py>
+          <Coroutine test_decay_worker_run_decay_cycle>
+          <Coroutine test_decay_worker_run_decay_cycle_error>
+          <Coroutine test_hourly_maintenance>
+          <Coroutine test_summarize_session_success>
+          <Coroutine test_summarize_session_insufficient_events>
+          <Coroutine test_summarize_session_disabled>
+          <Coroutine test_summarize_long_sessions>
+          <Coroutine test_dreaming_cycle_success>
+          <Coroutine test_dreaming_cycle_disabled>
+          <Coroutine test_dreaming_cycle_insufficient_memories>
+          <Coroutine test_daily_maintenance>
+          <Coroutine test_daily_maintenance_dreaming_disabled>
+  <Package tests>
+    <Package api>
+      <Package v1>
+        <Module test_agent.py>
+          <Coroutine test_agent_execute_happy_path>
+          <Coroutine test_agent_execute_no_episodic_memories>
+          <Coroutine test_agent_execute_reranker_failure>
+          <Coroutine test_agent_execute_llm_failure>
+          <Coroutine test_agent_execute_reflection_failure_ignored>
+          <Coroutine test_agent_execute_vector_store_failure>
+        <Module test_cache.py>
+          <Function test_rebuild_cache>
+        <Module test_dashboard.py>
+          <Coroutine test_get_system_health>
+          <Coroutine test_get_dashboard_metrics>
+          <Coroutine test_get_activity_log>
+          <Coroutine test_websocket_endpoint>
+          <Coroutine test_compliance_report>
+          <Coroutine test_risk_register>
+          <Coroutine test_get_metric_timeseries_trend_up>
+          <Coroutine test_get_metric_timeseries_trend_stable>
+          <Coroutine test_get_visualization_reflection_tree>
+          <Coroutine test_get_visualization_semantic_graph>
+          <Coroutine test_get_visualization_unsupported>
+          <Coroutine test_error_handling_dashboard_metrics>
+        <Module test_event_triggers.py>
+          <Coroutine test_create_trigger_success>
+          <Coroutine test_create_trigger_failure>
+          <Coroutine test_get_trigger_success>
+          <Coroutine test_get_trigger_not_found>
+          <Coroutine test_update_trigger_success>
+          <Coroutine test_delete_trigger_success>
+          <Coroutine test_enable_disable_trigger>
+          <Coroutine test_list_triggers>
+          <Coroutine test_emit_event_success>
+          <Coroutine test_create_workflow_success>
+          <Coroutine test_get_workflow_success>
+          <Coroutine test_instantiate_template_success>
+          <Coroutine test_instantiate_template_missing_param>
+        <Module test_governance.py>
+          <Coroutine test_governance_overview_success>
+          <Coroutine test_governance_overview_with_custom_days>
+          <Coroutine test_governance_overview_error>
+          <Coroutine test_tenant_governance_stats_success>
+          <Coroutine test_tenant_governance_stats_no_data>
+          <Coroutine test_tenant_governance_stats_with_custom_period>
+          <Coroutine test_tenant_budget_status_success>
+          <Coroutine test_tenant_budget_status_with_alerts>
+          <Coroutine test_tenant_budget_status_zero_usage>
+          <Coroutine test_tenant_budget_status_error>
+          <Coroutine test_governance_overview_invalid_days>
+          <Coroutine test_tenant_governance_stats_invalid_days>
+          <Coroutine test_governance_overview_empty_results>
+        <Module test_graph.py>
+          <Coroutine test_extract_knowledge_graph>
+          <Coroutine test_generate_hierarchical_reflection>
+          <Coroutine test_get_graph_statistics>
+          <Coroutine test_get_graph_nodes>
+          <Coroutine test_get_graph_nodes_with_pagerank>
+          <Coroutine test_get_graph_edges>
+          <Coroutine test_query_knowledge_graph>
+          <Coroutine test_get_subgraph>
+          <Coroutine test_error_handling_missing_tenant>
+        <Module test_graph_enhanced.py>
+          <Coroutine test_create_node>
+          <Coroutine test_get_node_metrics>
+          <Coroutine test_create_edge_success>
+          <Coroutine test_create_edge_failure>
+          <Coroutine test_update_edge_weight>
+          <Coroutine test_deactivate_edge>
+          <Coroutine test_activate_edge>
+          <Coroutine test_set_edge_temporal_validity>
+          <Coroutine test_traverse_graph>
+          <Coroutine test_detect_cycle>
+          <Coroutine test_find_shortest_path>
+          <Coroutine test_get_graph_statistics>
+          <Coroutine test_create_snapshot>
+          <Coroutine test_get_snapshot>
+          <Coroutine test_get_snapshot_not_found>
+          <Coroutine test_list_snapshots>
+          <Coroutine test_restore_snapshot>
+          <Coroutine test_batch_create_nodes>
+          <Coroutine test_batch_create_edges>
+          <Coroutine test_batch_create_edges_partial_failure>
+          <Coroutine test_health_check>
+        <Module test_memory.py>
+          <Coroutine test_store_memory_success>
+          <Coroutine test_store_memory_failure>
+          <Coroutine test_query_memory_vector_only>
+          <Coroutine test_delete_memory_success>
+          <Coroutine test_delete_memory_not_found>
+          <Coroutine test_reflection_stats>
+          <Coroutine test_hierarchical_reflection_deprecated>
+        <Module test_memory_coverage.py>
+          <Coroutine test_store_memory_vector_failure>
+          <Coroutine test_store_memory_db_failure>
+          <Coroutine test_query_memory_hybrid_missing_project>
+          <Coroutine test_delete_memory_success>
+          <Coroutine test_delete_memory_not_found>
+          <Coroutine test_rebuild_reflections>
+          <Coroutine test_get_reflection_stats>
+        <Module test_search_hybrid.py>
+          <Coroutine test_hybrid_search_success>
+          <Coroutine test_hybrid_search_with_reranking>
+          <Coroutine test_hybrid_search_with_filters>
+          <Coroutine test_hybrid_search_service_error>
+    <Package architecture>
+      <Module test_architecture.py>
+        <Function test_core_layer_isolation>
+        <Function test_models_dont_import_services>
+        <Function test_file_size_limits>
+        <Function test_function_complexity>
+        <Function test_tests_mirror_source_structure>
+        <Function test_no_hardcoded_secrets>
+        <Function test_no_circular_dependencies>
+        <Function test_services_use_dependency_injection>
+        <Function test_no_bare_except>
+    <Package contracts>
+      <Module test_api_contracts.py>
+        <Class TestMemoryStoreContract>
+          <Function test_store_memory_response_schema>
+        <Class TestMemoryQueryContract>
+          <Function test_query_memory_response_schema>
+          <Function test_hybrid_search_response_schema>
+        <Class TestMemoryDeleteContract>
+          <Function test_delete_memory_response_schema>
+        <Class TestAgentExecuteContract>
+          <Function test_agent_execute_response_schema>
+        <Class TestHealthContract>
+          <Function test_health_response_schema>
+        <Class TestErrorResponseContract>
+          <Function test_400_error_schema>
+          <Function test_404_error_schema>
+        <Class TestPaginationContract>
+          <Function test_pagination_schema>
+        <Class TestBackwardCompatibility>
+          <Function test_no_removed_endpoints>
+          <Function test_api_version_in_header>
+    <Dir integration>
+      <Module test_decay_worker.py>
+        <Coroutine test_decay_worker_basic_cycle>
+        <Coroutine test_decay_worker_with_access_stats>
+        <Coroutine test_decay_worker_multiple_tenants>
+        <Coroutine test_decay_worker_importance_floor>
+        <Coroutine test_decay_worker_error_handling>
+        <Coroutine test_decay_worker_get_all_tenants>
+        <Coroutine test_decay_worker_empty_database>
+        <Coroutine test_decay_worker_preserves_metadata>
+      <Module test_dreaming_worker.py>
+        <Coroutine test_dreaming_worker_basic_cycle>
+        <Coroutine test_dreaming_worker_disabled>
+        <Coroutine test_dreaming_worker_insufficient_memories>
+        <Coroutine test_dreaming_worker_lookback_window>
+        <Coroutine test_dreaming_worker_importance_filter>
+        <Coroutine test_dreaming_worker_max_samples_limit>
+        <Coroutine test_dreaming_worker_error_handling>
+        <Coroutine test_dreaming_worker_no_recent_memories>
+      <Module test_graphrag.py>
+        <Coroutine test_graph_extraction_basic>
+        <Coroutine test_graph_storage>
+        <Coroutine test_hybrid_search>
+        <Coroutine test_graph_traversal_depth>
+        <Coroutine test_hierarchical_reflection>
+      <Module test_lite_profile.py>
+        <Function test_lite_profile_health_check>
+        <Function test_lite_profile_api_docs>
+        <Function test_lite_profile_store_memory>
+        <Function test_lite_profile_query_memory>
+        <Function test_lite_profile_services_running>
+        <Function test_lite_profile_postgres_accessible>
+        <Function test_lite_profile_qdrant_accessible>
+        <Function test_lite_profile_redis_accessible>
+        <Function test_lite_profile_no_ml_service>
+        <Function test_lite_profile_resource_efficiency>
+        <Function test_lite_profile_config_valid>
+      <Module test_reflection_flow.py>
+        <Coroutine test_generate_reflection_from_failure>
+        <Coroutine test_generate_reflection_from_success>
+        <Coroutine test_reflection_retrieval_in_context>
+        <Coroutine test_memory_scoring_v2>
+        <Coroutine test_inject_reflections_into_prompt>
+        <Coroutine test_end_to_end_reflection_flow>
+    <Dir llm>
+      <Module test_all_providers_integration.py>
+        <Class TestAllProvidersIntegration>
+          <Coroutine test_local_ollama_connectivity>
+          <Coroutine test_node1_ollama_connectivity>
+          <Coroutine test_anthropic_connectivity>
+          <Coroutine test_gemini_connectivity>
+          <Coroutine test_openai_connectivity>
+      <Module test_distributed_infrastructure.py>
+        <Class TestDistributedInfrastructure>
+          <Coroutine test_node1_connectivity>
+          <Coroutine test_anthropic_connectivity>
+      <Module test_llm_provider_contract.py>
+        <Coroutine test_basic_completion>
+        <Coroutine test_json_mode>
+        <Coroutine test_streaming>
+        <Coroutine test_token_usage>
+        <Coroutine test_temperature_control>
+        <Coroutine test_max_tokens>
+        <Coroutine test_provider_contract_hello_world[openai-gpt-3.5-turbo]>
+        <Coroutine test_provider_contract_hello_world[anthropic-claude-3-haiku-20240307]>
+        <Coroutine test_provider_contract_hello_world[gemini-gemini-1.5-flash]>
+    <Package performance>
+      <Module test_performance.py>
+        <Class TestMemoryOperationsPerformance>
+          <Function test_memory_query_performance>
+          <Function test_embedding_generation_performance>
+        <Class TestGraphOperationsPerformance>
+          <Function test_graph_traversal_performance>
+        <Function test_bulk_insert_performance>
+    <Dir repositories>
+      <Module test_graph_repository.py>
+        <Coroutine test_get_all_nodes>
+        <Coroutine test_get_all_edges>
+        <Coroutine test_update_node_label>
+        <Coroutine test_merge_node_edges>
+        <Coroutine test_delete_node_edges>
+        <Coroutine test_delete_node>
+        <Coroutine test_delete_node_not_found>
+        <Coroutine test_upsert_node_insert>
+        <Coroutine test_upsert_node_update>
+        <Coroutine test_create_node>
+        <Coroutine test_create_edge>
+        <Coroutine test_get_node_internal_id>
+        <Coroutine test_get_node_internal_id_not_found>
+        <Coroutine test_store_graph_triples>
+    <Package services>
+      <Package llm>
+        <Module test_providers.py>
+          <Coroutine test_openai_generate>
+      <Module test_budget_service.py>
+        <Coroutine test_check_budget>
+        <Coroutine test_check_budget_fail>
+      <Module test_community_detection.py>
+        <Coroutine test_load_graph_uses_repository>
+        <Coroutine test_load_graph_with_disconnected_edges>
+        <Coroutine test_store_super_node_uses_repository>
+        <Coroutine test_run_community_detection_insufficient_nodes>
+        <Coroutine test_generate_summary_llm_integration>
+        <Coroutine test_generate_summary_llm_failure>
+        <Coroutine test_process_community_workflow>
+        <Coroutine test_empty_graph_handling>
+      <Module test_context_cache.py>
+        <Function test_context_cache_flow>
+      <Module test_entity_resolution.py>
+        <Coroutine test_fetch_nodes_uses_repository>
+        <Coroutine test_merge_nodes_with_canonical_name>
+        <Coroutine test_merge_nodes_without_canonical_name>
+        <Coroutine test_merge_nodes_empty_list>
+        <Coroutine test_run_clustering_with_insufficient_nodes>
+        <Coroutine test_process_group_with_merge_approval>
+        <Coroutine test_process_group_with_merge_rejection>
+        <Coroutine test_run_clustering_success>
+        <Coroutine test_run_clustering_ml_failure>
+        <Coroutine test_ask_janitor_failure>
+      <Module test_reflection_engine.py>
+        <Coroutine test_reflection_flow>
+  <Module test_enterprise_features.py>
+    <Function test_decorator_import>
+    <Function test_decorator_basic_usage>
+    <Function test_reflection_engine_import>
+    <Function test_hierarchical_reflection_methods>
+    <Function test_llm_structured_outputs>
+    <Function test_pydantic_models>
+    <Function test_memory_client_async_methods>
+    <Function test_api_endpoint_exists>
+  <Dir benchmarking>
+    <Package performance>
+      <Module test_api_latency_benchmarks.py>
+        <Function test_api_latency_dummy_endpoint>
+      <Module test_embedding_speed_benchmarks.py>
+        <Function test_embedding_generation_speed>
+      <Module test_memory_usage_benchmarks.py>
+        <Function test_memory_allocation_list_creation>
+
+- generated xml file: /home/grzegorz-lesniowski/cloud/RAE-agentic-memory-agnostic-core/junit.xml -
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                                                            Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------------------------------------------
+apps/__init__.py                                                                    0      0   100%
+apps/llm/__init__.py                                                                4      0   100%
+apps/llm/broker/__init__.py                                                         2      0   100%
+apps/llm/broker/llm_router.py                                                     111     96    14%   58-61, 65-78, 82-136, 145-173, 189-236, 248-272
+apps/llm/broker/orchestrator.py                                                    84     70    17%   42-60, 64-79, 91-114, 120-124, 130-145, 149-181
+apps/llm/config/__init__.py                                                         0      0   100%
+apps/llm/models/__init__.py                                                         4      0   100%
+apps/llm/models/llm_error.py                                                       19      4    79%   18-21
+apps/llm/models/llm_request.py                                                     27      0   100%
+apps/llm/models/llm_response.py                                                    20      0   100%
+apps/llm/providers/__init__.py                                                     10      0   100%
+apps/llm/providers/anthropic_provider.py                                           80     68    15%   38-43, 52-62, 66-69, 99-192, 208-243
+apps/llm/providers/base.py                                                         10      0   100%
+apps/llm/providers/deepseek_provider.py                                            79     67    15%   42-47, 51, 62-65, 98-196, 212-256
+apps/llm/providers/delegated_provider.py                                           51     40    22%   21-26, 33-101, 107
+apps/llm/providers/gemini_provider.py                                             127    115     9%   39-82, 93-105, 109-113, 143-250, 266-324
+apps/llm/providers/grok_provider.py                                                86     73    15%   43-48, 52, 63-66, 85-91, 114-216, 232-282
+apps/llm/providers/ollama_provider.py                                              74     62    16%   36-42, 51-62, 83-142, 158-209
+apps/llm/providers/openai_provider.py                                              77     65    16%   44-49, 53, 64-67, 100-186, 202-246
+apps/llm/providers/qwen_provider.py                                               103     91    12%   44-51, 66-72, 80-83, 118-239, 255-324
+apps/memory_api/__init__.py                                                         0      0   100%
+apps/memory_api/api/__init__.py                                                     0      0   100%
+apps/memory_api/api/v1/__init__.py                                                  2      0   100%
+apps/memory_api/api/v1/agent.py                                                   110     88    20%   62-301
+apps/memory_api/api/v1/cache.py                                                     7      2    71%   14-15
+apps/memory_api/api/v1/compliance.py                                              330    229    31%   187-228, 244-280, 298-342, 363-414, 429-471, 486-507, 528-554, 571-608, 625-654, 681-704, 720-757, 776-805, 821-849
+apps/memory_api/api/v1/feedback.py                                                 17      5    71%   30-44
+apps/memory_api/api/v1/governance.py                                              168    116    31%   114-204, 228-360, 384-505
+apps/memory_api/api/v1/graph.py                                                   194    123    37%   153-195, 224-279, 303-366, 407-521, 550-600, 635-693, 725-795
+apps/memory_api/api/v1/health.py                                                  128    128     0%   7-353
+apps/memory_api/api/v1/memory.py                                                  191    157    18%   61-112, 127-176, 199-279, 294-356, 369-386, 394-404, 421-441, 483-553
+apps/memory_api/api/v1/system.py                                                   18      2    89%   29, 40
+apps/memory_api/api/v2/__init__.py                                                  0      0   100%
+apps/memory_api/api/v2/memory.py                                                   81     81     0%   7-264
+apps/memory_api/celery_app.py                                                       4      0   100%
+apps/memory_api/clients/rae_client.py                                             273    208    24%   84-88, 104-120, 151-161, 183-215, 219-235, 239-257, 261, 288-291, 297-302, 318-333, 353-358, 362-365, 369-371, 375-384, 451-501, 511-512, 516, 520, 556-608, 624-694, 702-719, 729, 735, 743, 749, 757-776, 780-788, 800-806
+apps/memory_api/config.py                                                         129     14    89%   46, 189-204, 213-216
+apps/memory_api/core/__init__.py                                                    3      0   100%
+apps/memory_api/core/action_executor.py                                           104    104     0%   33-390
+apps/memory_api/core/actions.py                                                   287    197    31%   137, 155, 159, 194-226, 229-249, 270-276, 279-282, 304-318, 321-332, 349-355, 358-361, 378-384, 387-390, 409-462, 465-505, 528, 532, 554-593, 596-631, 654, 658-669, 686-693, 696-698, 719-725, 728-740
+apps/memory_api/core/contract.py                                                   44      0   100%
+apps/memory_api/core/contract_definition.py                                         2      0   100%
+apps/memory_api/core/graph_operator.py                                            159    101    36%   99, 142, 182, 186, 195-211, 215-217, 221, 285-289, 317-392, 416-420, 445-523
+apps/memory_api/core/graph_transformations.py                                     113    113     0%   6-287
+apps/memory_api/core/information_bottleneck.py                                    150    123    18%   84, 107-196, 213-227, 245-268, 293-309, 328-336, 350-362, 378-394, 419-450, 471-476
+apps/memory_api/core/metrics.py                                                   167    113    32%   49, 78, 111, 151-171, 193-223, 243-268, 292-310, 321-338, 347, 367-380, 392-405, 414-459, 463-471
+apps/memory_api/core/reward.py                                                    137    108    21%   58, 105-107, 130-184, 209-256, 267-285, 299-320, 328-347, 362-378, 391-405
+apps/memory_api/core/state.py                                                     116     49    58%   70, 111, 146, 157, 188, 198, 230, 298, 329-368, 383-468, 477
+apps/memory_api/cost_model.py                                                       8      6    25%   53-61
+apps/memory_api/dependencies.py                                                    93     47    49%   66, 78, 85-87, 94-96, 117-119, 135-143, 158-163, 178-179, 192-193, 206-207, 220-221, 234-236, 249-251, 264-265, 278-279, 292-293, 306-307, 320-321, 334-335, 348-349, 362-363
+apps/memory_api/logging_config.py                                                  55     42    24%   30-31, 45-65, 72-80, 95-167
+apps/memory_api/main.py                                                           115     52    55%   60-167, 217, 232, 241-242, 278-289, 295-297
+apps/memory_api/metrics.py                                                         73      0   100%
+apps/memory_api/middleware/budget_enforcer.py                                      28     20    29%   26-76
+apps/memory_api/middleware/rate_limiter.py                                         51     31    39%   55-74, 106-114, 165-177, 200-211
+apps/memory_api/middleware/session.py                                               9      4    56%   8-13
+apps/memory_api/middleware/tenant.py                                                9      4    56%   8-13
+apps/memory_api/models.py                                                         108      4    96%   168-183
+apps/memory_api/models/__init__.py                                                 30      2    93%   24-26
+apps/memory_api/models/control_plane.py                                            51      0   100%
+apps/memory_api/models/dashboard_models.py                                        478      0   100%
+apps/memory_api/models/evaluation_models.py                                       256      0   100%
+apps/memory_api/models/event_models.py                                            244      0   100%
+apps/memory_api/models/federation_models.py                                        14      0   100%
+apps/memory_api/models/feedback.py                                                  7      0   100%
+apps/memory_api/models/graph.py                                                    18      0   100%
+apps/memory_api/models/graph_enhanced_models.py                                   254      0   100%
+apps/memory_api/models/hybrid_search_models.py                                    164      0   100%
+apps/memory_api/models/rbac.py                                                     77     26    66%   25-32, 36-71, 83, 120-122, 127-129, 134-142, 151, 157-165, 171
+apps/memory_api/models/reflection_models.py                                       169      1    99%   69
+apps/memory_api/models/reflection_v2_models.py                                    156     14    91%   134-135, 173-182, 245-246
+apps/memory_api/models/semantic_models.py                                         184      0   100%
+apps/memory_api/models/tenant.py                                                   94     25    73%   138-167, 186, 190-206, 210-215
+apps/memory_api/models/token_savings.py                                            20      0   100%
+apps/memory_api/observability/__init__.py                                           8      0   100%
+apps/memory_api/observability/health_checks.py                                     54     37    31%   17-29, 39-51, 60-73, 97-98, 122, 132
+apps/memory_api/observability/memory_tracing.py                                   170    126    26%   94-122, 142-149, 169-177, 195-201, 219-226, 247-255, 264-273, 282-291, 296-317, 323-356, 376, 387, 400, 413, 426
+apps/memory_api/observability/metrics.py                                            8      8     0%   7-19
+apps/memory_api/observability/opentelemetry_config.py                             134     87    35%   128-139, 146-205, 229-233, 250-281, 293, 296, 299, 302, 305, 308, 311, 318, 321, 338, 354-360, 374-380, 414-425, 430-433, 442-445, 450-453
+apps/memory_api/observability/pii_scrubber.py                                     105     84    20%   93-108, 125-144, 156-166, 178-185, 198-206, 221-223, 237, 250, 263, 281-303, 325-336, 394-442
+apps/memory_api/observability/rae_telemetry_schema.py                             164      3    98%   375, 380, 432
+apps/memory_api/observability/rae_tracing.py                                      275    221    20%   77-82, 88-98, 104-109, 115-123, 128, 133, 138-153, 186-226, 259-294, 326-362, 389-425, 437-438, 443-444, 449-452, 457-458, 470-477, 482-485, 511-595
+apps/memory_api/observability/telemetry_profiles.py                                90     45    50%   151-154, 158-174, 184, 196-204, 216, 228-243, 252, 273-275, 285, 303, 314-316, 325-342, 346, 350
+apps/memory_api/observability/traced_qdrant.py                                     91     65    29%   43-44, 61-89, 97-98, 102-103, 107-108, 112-113, 117-118, 132-138, 155-174, 184-190, 205-210, 226-246, 256-275, 290-312, 324, 345
+apps/memory_api/plugins/__init__.py                                                 2      0   100%
+apps/memory_api/plugins/base.py                                                   200    122    39%   75-83, 87, 114-116, 126-128, 138, 146, 154, 163, 186, 200, 216, 235, 246, 257, 273, 287, 302, 316, 337, 344-345, 354-371, 385-398, 402, 406, 418-419, 423-434, 438-444, 460-500, 509-548, 557-566, 576-578
+apps/memory_api/plugins/examples/__init__.py                                        4      4     0%   7-11
+apps/memory_api/plugins/examples/analytics_tracker.py                              68     68     0%   7-222
+apps/memory_api/plugins/examples/memory_validator.py                               81     81     0%   7-242
+apps/memory_api/plugins/examples/slack_notifier.py                                 61     61     0%   7-188
+apps/memory_api/repo_dependencies.py                                               12      6    50%   17-19, 26-28
+apps/memory_api/repositories/__init__.py                                            0      0   100%
+apps/memory_api/repositories/cost_logs_repository.py                              141     60    57%   176-242, 279-357, 374-382, 401-408, 425-433, 452-459, 493-543, 577-634, 657-685
+apps/memory_api/repositories/evaluation_repository.py                             201    176    12%   20, 43-73, 77-81, 92-120, 132-165, 184-210, 219-243, 247-251, 255-257, 264, 285-315, 319-323, 335-358, 362-373, 388-409, 429-495, 499-503, 515-547, 551-564, 568-572
+apps/memory_api/repositories/graph_repository.py                                  140    114    19%   34, 54-143, 166, 184-220, 236-257, 279-297, 323-342, 362-384, 407-430, 455-479, 495-506, 527-607, 624-634, 651-661, 676-687, 705-745, 760-776, 790-806, 832-868
+apps/memory_api/repositories/graph_repository_enhanced.py                         141    108    23%   62-66, 97-115, 121-134, 140-153, 169-194, 218-226, 270-307, 313-339, 345-360, 364-376, 382-396, 423-455, 490-553, 582-610, 637-650, 654-661, 667-679, 694-711, 730-762, 800-822, 830, 842, 863
+apps/memory_api/repositories/metrics_repository.py                                 60     41    32%   24-28, 55-67, 79-115, 129-167, 175-190, 203-225, 233-263, 269-273, 279-297, 311-330
+apps/memory_api/repositories/node_repository.py                                    38     28    26%   11, 16-37, 42-57, 60-68, 72-85
+apps/memory_api/repositories/reflection_repository.py                             158    140    11%   83-157, 174-185, 222-295, 312-333, 374-420, 443-471, 494-569, 591-600, 635-659, 669-689, 720
+apps/memory_api/repositories/task_repository.py                                    30     18    40%   12, 17-23, 26-28, 31-36, 41-57, 62-75
+apps/memory_api/repositories/token_savings_repository.py                           42     31    26%   18, 24-53, 69-120, 137-152
+apps/memory_api/repositories/trigger_repository.py                                111     88    21%   22, 65-101, 116-128, 151-180, 200-253, 266-278, 294-309, 352-389, 404-444, 465-492, 499, 536-568, 574-586, 597-626, 630-644
+apps/memory_api/routes/__init__.py                                                  1      0   100%
+apps/memory_api/routes/dashboard.py                                               345    293    15%   83, 90, 98-102, 139-188, 208-246, 269-369, 394-450, 470-499, 513-525, 548-570, 583, 594-660, 667-747, 754-824, 835-883, 895-910, 915-936, 941-964, 979, 1057-1100, 1120-1177, 1199-1245, 1268-1295, 1318-1345
+apps/memory_api/routes/evaluation.py                                              130     94    28%   46, 51, 56, 80-105, 115, 176-209, 219, 268-325, 340-397, 417-444, 454, 495-538, 552-581, 592, 615
+apps/memory_api/routes/event_triggers.py                                          194    145    25%   53, 58, 63, 86-116, 124-136, 155-192, 200-214, 220-231, 237-248, 264-280, 298-328, 338, 374-404, 429-448, 456-468, 479-492, 507, 526-543, 565-598, 609, 641
+apps/memory_api/routes/federation.py                                               35     23    34%   22, 35-86
+apps/memory_api/routes/graph_enhanced.py                                          224    178    21%   71-86, 101-117, 130-147, 166-202, 212-227, 237-248, 258-269, 279-294, 316-371, 389-430, 448-473, 492-523, 532-548, 559-570, 584-608, 626-645, 663-685, 698-740, 751
+apps/memory_api/routes/hybrid_search.py                                           109     80    27%   38, 60-96, 117-144, 155-179, 194-206, 221-240, 250-282, 300-387, 412-444, 455, 479
+apps/memory_api/routes/nodes.py                                                    53     28    47%   26-28, 39-44, 54-57, 68-71, 80-85, 97-100, 116-119, 129
+apps/memory_api/routes/reflections.py                                             100     71    29%   47, 87-108, 146-204, 229-251, 274-286, 320-356, 393-426, 453-459, 487-516
+apps/memory_api/routes/sync.py                                                      9      2    78%   18, 26
+apps/memory_api/routes/token_savings.py                                            26     14    46%   14-16, 29-40, 54-56
+apps/memory_api/security.py                                                        51     51     0%   3-129
+apps/memory_api/security/__init__.py                                                4      0   100%
+apps/memory_api/security/auth.py                                                  146    131    10%   39-57, 82-169, 186-189, 203-261, 282-380, 404-482
+apps/memory_api/security/dependencies.py                                           50     38    24%   34, 52-77, 99-105, 122-135, 157-199
+apps/memory_api/security/permissions.py                                            20     20     0%   6-52
+apps/memory_api/security/rate_limit.py                                             78     63    19%   31-32, 36-48, 63-77, 99-179, 189-191, 208-225
+apps/memory_api/security/validation.py                                             87     68    22%   40-56, 72-95, 111-150, 166-177, 193-203, 219-236, 252-269, 286-301
+apps/memory_api/services/__init__.py                                                0      0   100%
+apps/memory_api/services/analytics.py                                             201    122    39%   24-25, 40-75, 85-89, 107, 130-134, 152, 180, 199, 227, 248-256, 260-266, 271, 275, 279, 283, 287, 293, 297, 301, 305, 309, 315, 319, 323, 327, 333, 338, 343, 349-352, 356, 360, 364, 368, 372, 378, 382, 386, 390, 396, 402, 413, 419, 423, 427, 431, 437, 443, 449, 453, 457, 461, 467, 471, 475, 479, 483, 489, 493, 497, 501, 505, 509, 513, 517, 521, 525, 529-543, 547-560, 576-585, 590, 595, 603, 623-628
+apps/memory_api/services/budget_service.py                                         90     51    43%   75, 88, 96-142, 151-165, 174-216, 224-232, 254-256, 303-327
+apps/memory_api/services/community_detection.py                                    82     61    26%   52-55, 59-60, 74-105, 119-142, 147-170, 192-213, 231-259
+apps/memory_api/services/compliance_service.py                                    243    204    16%   126, 147-284, 298-397, 407-470, 476-548, 554-596, 602-657, 664-680, 700-742, 750-801, 808, 826-873, 888, 895, 900, 905, 909, 913, 917, 921-936, 941, 946, 955-986, 994-1011, 1015-1039, 1045-1072, 1078-1098, 1104-1123, 1129-1148, 1159-1197
+apps/memory_api/services/consistency_service.py                                    55     44    20%   18-19, 35-106, 112-129, 132-136
+apps/memory_api/services/context_builder.py                                       164    113    31%   106, 157-162, 187-267, 282-297, 311-402, 413-468, 479, 494-539, 560-584
+apps/memory_api/services/context_cache.py                                          62     42    32%   21, 31, 34, 39-49, 54-57, 63-102, 106
+apps/memory_api/services/context_provenance_service.py                            115     44    62%   134, 158-194, 230-264, 276-303, 315-342, 362, 367, 372-373, 378-379
+apps/memory_api/services/control_plane_service.py                                  45     29    36%   19-20, 26-34, 37-42, 46-55, 60-66, 71-73, 76, 79
+apps/memory_api/services/cost_controller.py                                        55     43    22%   79-146, 171-174, 194-200, 224-241, 260-261, 277-284, 309, 344-361
+apps/memory_api/services/dashboard_websocket.py                                   189    155    18%   54-62, 83-123, 132-150, 161-181, 190-191, 201-212, 234-249, 253-259, 263-277, 302, 313, 328-339, 352-363, 371-378, 392-402, 416-431, 445-457, 467-504, 520-637, 652-669, 677-718, 736-750
+apps/memory_api/services/drift_detector.py                                        108     89    18%   51, 84-165, 186-187, 207-228, 247-260, 291-310, 324-335, 351-373, 403-434, 445
+apps/memory_api/services/embedding.py                                             144    110    24%   19-21, 25-35, 42-74, 77-81, 88-119, 127-139, 146, 150-151, 155, 159-160, 167-168, 172-173, 177-184, 188, 195-197, 200-201, 209-258, 263, 271
+apps/memory_api/services/entity_resolution.py                                      75     55    27%   52-58, 70-108, 117-133, 138-162, 188-223, 241
+apps/memory_api/services/evaluation_service.py                                    139    122    12%   49, 74-205, 222-240, 254-278, 291-308, 321-344, 357-385, 408-442, 464-474
+apps/memory_api/services/evaluator.py                                             115     61    47%   105-106, 163-190, 224-225, 240-261, 279, 292-331, 336-338, 371-378, 397-405, 419-432
+apps/memory_api/services/feedback_service.py                                       23     16    30%   25, 46-73
+apps/memory_api/services/graph_algorithms.py                                      291    248    15%   22-25, 29, 33, 36, 50-54, 57, 64-66, 70, 74-76, 80, 84-85, 89, 93, 96, 109, 124-173, 199-248, 266-277, 285-296, 306-345, 362-397, 420-448, 465-500, 515-527, 531-542, 550-558, 566-582, 593-608, 620-629, 643-649, 663-669, 685-699, 711-732
+apps/memory_api/services/graph_extraction.py                                      137     96    30%   39-47, 100, 106, 115, 165-205, 258-260, 264-265, 301-410, 419-478, 496, 510-528, 547-558
+apps/memory_api/services/graph_topology_engine.py                                  62     62     0%   9-188
+apps/memory_api/services/human_approval_service.py                                113     54    52%   128, 169-243, 261-332, 347-361, 382, 391, 396, 407-408, 420
+apps/memory_api/services/hybrid_cache.py                                           90     71    21%   48-58, 82-105, 126-153, 176-185, 202-216, 225-236, 240-248, 257-260, 269, 283-285, 300-302
+apps/memory_api/services/hybrid_search.py                                         198    171    14%   81-84, 125-347, 371-514, 526-573, 583, 606-623, 648-653, 676-735, 747-758
+apps/memory_api/services/hybrid_search_service.py                                 229    208     9%   95-101, 150-360, 377-434, 445-502, 514-653, 665-709, 737-803, 823-877
+apps/memory_api/services/importance_scoring.py                                    152    115    24%   55-76, 101-116, 134-135, 150-195, 203-213, 222-241, 251-262, 270-276, 280-289, 304-318, 342, 355, 374-413, 426, 454-461, 478-495, 511-531, 547, 568-571, 609-631
+apps/memory_api/services/llm/__init__.py                                            7      2    71%   16-19
+apps/memory_api/services/llm/anthropic.py                                          30     30     0%   1-78
+apps/memory_api/services/llm/base.py                                               14      0   100%
+apps/memory_api/services/llm/gemini.py                                             40     40     0%   1-83
+apps/memory_api/services/llm/litellm_provider.py                                   20     20     0%   1-71
+apps/memory_api/services/llm/ollama.py                                             63     63     0%   1-127
+apps/memory_api/services/llm/openai.py                                             31     18    42%   18-21, 30-54, 65-77
+apps/memory_api/services/llm/orchestrator_adapter.py                               37     25    32%   32, 38-52, 69-100, 106-111
+apps/memory_api/services/memory_consolidation.py                                  189    156    17%   38-45, 49, 72-73, 91-124, 142-184, 207-247, 270-288, 296-328, 344-353, 374-422, 445, 470-501, 511-542, 565-601, 610-621, 638-686, 702, 728-743, 759-768
+apps/memory_api/services/memory_scoring_v2.py                                      20      8    60%   108-135, 176-199, 220
+apps/memory_api/services/memory_scoring_v3.py                                     109     73    33%   46-57, 108-182, 193-210, 219-252, 263-279, 283-285
+apps/memory_api/services/ml_service_client.py                                     129    104    19%   51-55, 59-60, 64-69, 77-91, 95, 128-133, 141, 162-207, 225-253, 271-297, 315-340, 359-367, 386-415, 426-439, 448-450
+apps/memory_api/services/pii_scrubber.py                                           26     19    27%   29-30, 40-45, 51-56, 71-92
+apps/memory_api/services/policy_versioning_service.py                             128     74    42%   130-168, 186-225, 237-243, 255, 270-325, 340-375
+apps/memory_api/services/query_analyzer.py                                         92     63    32%   128-129, 150-200, 219-244, 260-272, 286-315, 347, 366-386
+apps/memory_api/services/rae_core_service.py                                      228    173    24%   60-186, 190-194, 199-205, 210-214, 233-263, 269-274, 278-283, 296, 313, 326, 339-360, 369-380, 389, 404-462, 478-506, 516, 526, 535, 546-555, 559-567, 571-578, 582-586, 592-600, 606-620, 624, 630-635, 639-646, 652-669
+apps/memory_api/services/rbac_service.py                                           36     36     0%   7-259
+apps/memory_api/services/redis_client.py                                            5      2    60%   7-8
+apps/memory_api/services/reflection_engine.py                                     104     75    28%   88-92, 99-153, 165-181, 194, 225-257, 286-337, 353, 371-394, 406-418, 431-447
+apps/memory_api/services/reflection_engine_v2.py                                   67     49    27%   121-122, 143-202, 217-247, 262-280, 292-303, 327-372, 399-407
+apps/memory_api/services/reflection_pipeline.py                                   226    197    13%   129-131, 135-136, 154-292, 304-312, 334-454, 465-546, 552-631, 643-673, 682-690, 699-708
+apps/memory_api/services/reranking/__init__.py                                      5      0   100%
+apps/memory_api/services/reranking/base.py                                          6      1    83%   29
+apps/memory_api/services/reranking/factory.py                                      18      8    56%   24-39
+apps/memory_api/services/reranking/llm_strategy.py                                 45     35    22%   22, 30-68, 71-76, 90-102
+apps/memory_api/services/reranking/math_strategy.py                                59     50    15%   21-22, 30-56, 61-78, 90-129
+apps/memory_api/services/retention_service.py                                     164    114    30%   115-117, 128-162, 176-235, 242-285, 290-323, 328-355, 368-387, 422-523, 537-567
+apps/memory_api/services/rules_engine.py                                          202    173    14%   62, 74-108, 137-159, 174-197, 217-284, 297-306, 322-344, 356-365, 384-412, 439-525, 546-569, 579-582, 592-600, 606-609, 615-618, 624-629, 639-642, 648-651, 673
+apps/memory_api/services/scoring.py                                                28     28     0%   1-79
+apps/memory_api/services/semantic_extractor.py                                    126    105    17%   112-114, 137-238, 250-267, 277-281, 300-333, 349-424, 437-497, 501-509, 513-526
+apps/memory_api/services/semantic_search.py                                       113     95    16%   53-55, 90-152, 169-202, 219-263, 279-321, 330-349, 353-361, 372-386, 391-397
+apps/memory_api/services/smart_reranker.py                                         23     14    39%   33, 49-73
+apps/memory_api/services/source_trust_service.py                                  122    122     0%   20-358
+apps/memory_api/services/sync_service.py                                           10     10     0%   1-34
+apps/memory_api/services/temporal_graph.py                                        186    147    21%   43-46, 49, 65-71, 75, 86, 99-103, 122-142, 157-166, 178-183, 193-198, 226-243, 258, 274-292, 307-348, 364-375, 411-438, 444-449, 469-488, 514-521, 541-581, 596-612
+apps/memory_api/services/token_estimator.py                                         4      3    25%   8-10
+apps/memory_api/services/token_savings_service.py                                  23     11    52%   19, 38-63, 77, 82
+apps/memory_api/services/validation_service.py                                     41     32    22%   16, 19-49, 52-61
+apps/memory_api/services/vector_store/__init__.py                                  16      8    50%   17-28
+apps/memory_api/services/vector_store/base.py                                       6      0   100%
+apps/memory_api/services/vector_store/pgvector_store.py                            23     11    52%   17, 25-32, 46-55, 62
+apps/memory_api/services/vector_store/postgres_adapter.py                          55     55     0%   1-138
+apps/memory_api/services/vector_store/qdrant_store.py                              82     57    30%   42-48, 51-54, 57-92, 95-105, 115-117, 120-136, 148-150, 161-190, 204-206
+apps/memory_api/tasks/__init__.py                                                   0      0   100%
+apps/memory_api/tasks/background_tasks.py                                         274    209    24%   26, 39-60, 69-76, 85-99, 108-115, 125-136, 163-201, 229-282, 291, 312-365, 381-401, 411-416, 428-435, 459-571, 593-616, 628-662, 672-692, 701-751
+apps/memory_api/tests/__init__.py                                                   0      0   100%
+apps/memory_api/tests/adapters/memory/__init__.py                                   0      0   100%
+apps/memory_api/tests/adapters/memory/test_cache.py                               234    164    30%   16, 21-24, 29-30, 35-46, 51-55, 60-66, 71-72, 77-83, 88-99, 104-114, 119-131, 136-148, 153-164, 169-182, 187-191, 196-199, 204-205, 210-215, 220-224, 229-236, 241-251, 256-257, 262-268, 273-276, 281-284, 289-293, 298-305, 310-321, 326-333, 339-347, 355-365, 370-379, 384-393
+apps/memory_api/tests/adapters/memory/test_cache_coverage.py                       53     38    28%   14, 20-29, 34-43, 48-54, 59-68, 73-83
+apps/memory_api/tests/adapters/memory/test_coverage_gaps.py                       119     81    32%   13, 26-48, 53-67, 72-77, 86-94, 99-108, 113-124, 129-132, 139-147, 157-165, 170-178, 187-196, 201-207, 212-233
+apps/memory_api/tests/adapters/memory/test_storage.py                             231    166    28%   17, 22-30, 35-54, 59-60, 65-74, 79-93, 98-112, 117-130, 135-138, 143-154, 159-160, 166-177, 182-191, 196-205, 210-233, 239-256, 261-272, 277-290, 295-308, 313-314, 320-339, 345-357, 363-375, 380-399, 404-434, 439-469, 474-491, 496-523, 528-537, 542-554
+apps/memory_api/tests/adapters/memory/test_storage_coverage.py                    100     62    38%   16, 21-22, 27-29, 34-36, 41-49, 54-60, 65-66, 71-72, 77-78, 83-92, 97-98, 103-111, 116-123, 130, 135-145, 150-160, 165-166
+apps/memory_api/tests/adapters/memory/test_vector.py                              174    122    30%   18, 23, 28-35, 40-53, 58-59, 64-74, 79-97, 102-108, 113-125, 130-131, 137-162, 167-185, 190-207, 212-224, 229-235, 241-250, 255-267, 272-281, 287-303, 309-319, 325-333, 339-347, 394-411
+apps/memory_api/tests/adapters/memory/test_vector_extra.py                         16     11    31%   10-27
+apps/memory_api/tests/adapters/sqlite/__init__.py                                   0      0   100%
+apps/memory_api/tests/adapters/sqlite/test_graph.py                                78     58    26%   10-13, 20-30, 34-39, 43-65, 69-72, 76-82, 87-101, 105-112
+apps/memory_api/tests/adapters/sqlite/test_sqlite_extra.py                         49     35    29%   13, 18-38, 46-65, 75-86
+apps/memory_api/tests/adapters/sqlite/test_storage.py                             375    265    29%   19-23, 29-33, 39, 56-71, 76-77, 82-86, 91-105, 110-111, 116-131, 136-146, 151-152, 157-165, 175-185, 191-207, 213-229, 235-263, 269-288, 294-314, 320-336, 342-351, 357-388, 397-416, 421-430, 435-436, 446-472, 478-494, 500-510, 516-532, 537-545, 554-573, 580, 589-598, 603-612, 617-625, 630-636, 641-643, 648-660, 665-679, 684-708, 713-722, 727-739, 748-773, 778-791, 796-810, 819-841, 846-850, 859-876, 881-886
+apps/memory_api/tests/adapters/sqlite/test_storage_extra.py                        30     22    27%   8-12, 18-32, 38-50
+apps/memory_api/tests/adapters/sqlite/test_storage_search.py                       22     16    27%   8-11, 17-55
+apps/memory_api/tests/adapters/sqlite/test_vector.py                              255    180    29%   18-22, 28-32, 38, 53-71, 77-97, 102-122, 127-128, 133-142, 147-160, 165-166, 171-192, 197-202, 212-227, 235-259, 265-292, 298-312, 318-335, 341-374, 380-401, 407-411, 417-430, 439-454, 459-463, 468-479, 489-518, 523-524, 534-556, 561-565, 574-594, 603-612, 617-628, 633-635
+apps/memory_api/tests/adapters/test_postgres.py                                    88     56    36%   18-21, 26-29, 35-41, 46-57, 62-91, 96-99, 104-137, 142-149, 154-161, 166-172, 177-180, 185-188, 193-196
+apps/memory_api/tests/adapters/test_postgres_coverage.py                           72     53    26%   17-19, 25-28, 33-38, 43-63, 68-84, 89-95, 100-110
+apps/memory_api/tests/adapters/test_postgres_db.py                                 60     37    38%   11-19, 23, 27-30, 34-36, 40-43, 47-50, 54-57, 61-64, 67-68, 72-73
+apps/memory_api/tests/adapters/test_postgres_db_extended.py                        77     57    26%   15-23, 28-35, 40, 46-64, 70-88, 94-106, 111-112
+apps/memory_api/tests/adapters/test_postgres_extended.py                          105     74    30%   17-20, 25-28, 34-40, 45-60, 65-69, 74-85, 90-101, 106-109, 116-121, 127-141, 146-156, 161-174, 179-187
+apps/memory_api/tests/adapters/test_postgres_extra.py                             188    145    23%   12-27, 32-38, 43-49, 54-84, 89-110, 115-125, 131-140, 145-184, 189-195, 200-206, 211-223, 228-234, 239-245, 250-261, 266-272, 277-283, 288-294, 299-328, 333-338
+apps/memory_api/tests/adapters/test_qdrant.py                                     126     93    26%   22-23, 29-33, 38-49, 54-86, 91-98, 103-119, 124-135, 140-146, 151-158, 163-168, 173-180, 185-186, 191-231
+apps/memory_api/tests/adapters/test_qdrant_coverage.py                             65     48    26%   16-22, 27-35, 40-48, 53-67, 72-80, 85-95
+apps/memory_api/tests/adapters/test_qdrant_extra.py                               141    112    21%   11-12, 17-28, 33-62, 67-77, 82-95, 100-119, 125-127, 134-142, 147-158, 163-177, 182-193, 198-223, 227-234
+apps/memory_api/tests/adapters/test_qdrant_multivector.py                          50     40    20%   12-30, 36-56, 62-79
+apps/memory_api/tests/adapters/test_redis.py                                      117     75    36%   19-29, 35-40, 45-49, 54-57, 62-65, 70-73, 78-81, 86-88, 93-97, 102-106, 111-115, 120-124, 129-133, 138-142, 149-158, 165-172, 177-178, 183-184
+apps/memory_api/tests/adapters/test_redis_coverage.py                              88     60    32%   16-18, 23-27, 32-36, 41-45, 50-54, 59-63, 68-72, 77-83, 88-92, 97-101, 106-111, 116-121
+apps/memory_api/tests/adapters/test_redis_extra.py                                 71     56    21%   10-20, 25-36, 42-54, 59-83, 88-99, 104-117
+apps/memory_api/tests/api/__init__.py                                               0      0   100%
+apps/memory_api/tests/api/v1/test_federation.py                                    44     27    39%   21-36, 41-43, 51-68, 75-135
+apps/memory_api/tests/conftest.py                                                  83     55    34%   26-28, 34, 57, 62-65, 69, 73, 108-142, 161-178, 198-319, 334
+apps/memory_api/tests/core/__init__.py                                              0      0   100%
+apps/memory_api/tests/core/test_actions.py                                        201    140    30%   37-41, 47-53, 59-68, 74-82, 88-97, 103-111, 117-128, 134-144, 150-166, 172-181, 187-198, 204-214, 220-229, 235-243, 249-261, 267-279, 285-299, 305-315, 321-334, 340-353, 359-370, 376-388, 394-409, 415-423, 429-440, 446-460, 466-480, 486-495, 501-528
+apps/memory_api/tests/core/test_actions_coverage.py                                54     38    30%   25, 45-51, 56-65, 70-73, 78-84, 89-96, 101-109, 114-115, 120-125, 130-135, 140-145, 150-160
+apps/memory_api/tests/core/test_graph_operator.py                                 210    168    20%   34, 44, 94-102, 107-111, 121-134, 139-153, 158-162, 167-174, 179-186, 191-199, 204-213, 218-224, 234-253, 258-274, 279-288, 298-316, 321-341, 346-361, 372-389, 395-406, 416-431, 437-483, 488-498, 508-522, 527-537, 547-560, 565-575, 585-590, 596-606, 612-630, 636-667, 677-702, 712-713, 727-752, 758-777
+apps/memory_api/tests/core/test_graph_operator_coverage.py                         45     28    38%   20, 25, 31-37, 43-49, 55-64, 74-101, 108-117
+apps/memory_api/tests/core/test_ib_coverage.py                                     42     23    45%   16, 21, 37-58, 65-121, 127-128, 136-141, 147-152, 158-161
+apps/memory_api/tests/core/test_information_bottleneck.py                         143    108    24%   29, 35-36, 42-72, 82-86, 91-92, 102-114, 119-126, 132-156, 166-176, 183-193, 203-209, 214-218, 224-247, 258-266, 271-275, 281-288, 293-298, 303-305, 315-319, 324-329, 334-339, 350-355, 360-364, 369-374, 384-391, 396-403, 408-421, 431-448, 458-472
+apps/memory_api/tests/core/test_reward.py                                         190    162    15%   38, 44, 70-74, 79-83, 93-112, 117-141, 146-161, 166-178, 184-207, 217-228, 233-254, 259-276, 281-298, 308-312, 317-332, 337-357, 362-388, 393-410, 420-431, 436-448, 453-465
+apps/memory_api/tests/core/test_reward_coverage.py                                 37     25    32%   18, 30-36, 41-44, 49-52, 57-63, 68-76
+apps/memory_api/tests/core/test_state.py                                          159    115    28%   26-41, 47-62, 68-80, 87-107, 113-126, 132-141, 147-168, 174-180, 186-191, 197-226, 232-257, 263-266, 272-287, 293-299, 305-314, 320-332, 338-341, 347-353, 359-365, 371-376
+apps/memory_api/tests/observability/test_pii_scrubber.py                           89     62    30%   23-26, 31, 36-40, 44-47, 51-54, 92-95, 118-123, 141, 160, 167-175, 179-184, 188-192, 196-208, 245-250, 255-288
+apps/memory_api/tests/observability/test_rae_tracing.py                            78     61    22%   22-30, 35-44, 49-60, 68-75, 79-85, 89-95, 99-104, 109-120, 124-133, 138-148
+apps/memory_api/tests/repositories/test_cost_logs_repository.py                    74     50    32%   22-23, 28, 48, 67-80, 86-91, 98-113, 119-141, 148-179, 186-204, 211-240
+apps/memory_api/tests/repositories/test_enhanced_graph_repository_agnostic.py      54     35    35%   17-23, 26, 29, 32, 35, 38, 41, 45-57, 62, 68-70, 78-95
+apps/memory_api/tests/repositories/test_trigger_repository.py                      80     58    28%   11-45, 50, 55, 70-86, 92-109, 115-146, 152-170, 176-184, 190-197
+apps/memory_api/tests/services/llm/test_orchestrator_adapter.py                    38     22    42%   17-20, 25, 30-47, 52-71
+apps/memory_api/tests/services/test_analytics_service.py                           67     47    30%   11-14, 19, 25-41, 46-64, 69-73, 78-80, 85-90, 97-109
+apps/memory_api/tests/services/test_compliance_service.py                         100     76    24%   20-43, 48-56, 61, 73-92, 98-118, 126-131, 138-203, 218-238
+apps/memory_api/tests/services/test_context_builder_coverage.py                    56     32    43%   17, 22, 27, 32, 46-96, 102-113, 119-123, 129-137, 142-145, 151-162
+apps/memory_api/tests/services/test_context_builder_v3.py                          31     20    35%   12-14, 21-54, 60-96
+apps/memory_api/tests/services/test_control_plane_service.py                       51     31    39%   18, 23, 28, 33-58, 63-78, 83-86, 91-122
+apps/memory_api/tests/services/test_cost_controller_v2.py                          53     38    28%   17-18, 23-31, 36-43, 48-55, 60-66, 71-79, 84-90, 95-101, 106-110, 115-122, 127-134
+apps/memory_api/tests/services/test_feedback_service.py                            32     22    31%   11-24, 31-44, 51-59
+apps/memory_api/tests/services/test_graph_extraction_service_v2.py                 71     49    31%   16, 21, 26, 31-42, 50-92, 97-102, 110-124, 128-133, 137-149, 154-169
+apps/memory_api/tests/services/test_hybrid_search_service.py                      131     91    31%   19-22, 27-45, 50-52, 57-62, 67-78, 84-111, 118-159, 165-192, 198-240, 245-277, 282-299, 305-332, 338-366, 371-384, 391-412, 418-424, 430-448
+apps/memory_api/tests/services/test_importance_scoring_coverage.py                 71     40    44%   14-17, 22, 27, 45-48, 55-75, 81-87, 94-101, 107-112, 119-131, 137-138, 144-145, 151-152, 158-159
+apps/memory_api/tests/services/test_memory_consolidation.py                       165    118    28%   15, 20-22, 27, 35-70, 76-86, 92-115, 121-140, 146-170, 176-187, 193-217, 223-227, 233-241, 248-249, 254-255, 260-265, 271-275, 281-283, 289-298, 304-320, 325-345, 353-358, 364-371
+apps/memory_api/tests/services/test_memory_scoring_v2.py                           59     43    27%   17, 22, 29-30, 35-48, 54-71, 77-99, 104-117, 122-136, 141-146, 151-170, 176-188
+apps/memory_api/tests/services/test_memory_scoring_v3.py                           46     35    24%   14-32, 37-60, 66-73, 78-87
+apps/memory_api/tests/services/test_reflection_engine_v2.py                       103     71    31%   25, 30-33, 38-40, 45-47, 52, 75-95, 101-125, 131-148, 153-177, 183-198, 204-217, 223-236, 244-247
+apps/memory_api/tests/services/test_reflection_pipeline.py                        183    142    22%   22-44, 49-52, 57-73, 78-80, 86-100, 106-114, 129-144, 151-196, 202-235, 241-267, 273-310, 316-321, 326-336, 342-350, 363-383, 389-393, 399-431
+apps/memory_api/tests/services/test_retention_service.py                           93     61    34%   17-36, 41-49, 54, 59-65, 70-74, 80-97, 103-110, 116-122, 128-138, 144-151, 157-167, 173-183, 189-196
+apps/memory_api/tests/services/test_rules_engine.py                                96     70    27%   28, 33, 38, 57-128, 134-162, 169-210, 216-258, 264-296, 302-314
+apps/memory_api/tests/services/test_semantic_extractor.py                         142     97    32%   22-36, 41-62, 67-69, 74-83, 88-101, 106-108, 114-121, 130-153, 159-161, 167-181, 187-200, 207-214, 221-228, 234-240, 246-254, 261-296, 302-305, 311-314, 320-326
+apps/memory_api/tests/services/test_semantic_search_v2.py                         113     79    30%   13-15, 20-26, 31-34, 39-43, 48, 89-108, 116-134, 143-170, 176-196, 201-205, 213-227, 232-238, 244-287, 293-315
+apps/memory_api/tests/services/test_smart_reranker.py                              32     23    28%   9-17, 22-40, 45-56
+apps/memory_api/tests/test_adapters.py                                            170    137    19%   19-35, 40-51, 56-69, 74-78, 83-88, 93-107, 112-118, 123-129, 134-139, 144-168, 173-179, 184-221, 226-243, 248-276
+apps/memory_api/tests/test_analytics.py                                           128     90    30%   11-14, 19, 24-32, 37-60, 65-68, 73-76, 81-89, 94-96, 101-104, 109-111, 116-118, 123-132, 138-149, 154-171, 176-179, 184-186, 192-195
+apps/memory_api/tests/test_api_client.py                                          155    113    27%   31, 44, 49, 55-57, 62-64, 69-70, 75-76, 84-89, 96-105, 112-119, 126-143, 149-154, 159-160, 165-176, 181-187, 192-198, 205-221, 227-235, 241-252, 259-266, 273-282, 288-296, 302-312, 317-321
+apps/memory_api/tests/test_api_e2e.py                                              24     10    58%   27-29, 58, 72, 87, 98-105, 109-116, 120
+apps/memory_api/tests/test_background_tasks.py                                    184    141    23%   55-80, 90-107, 120-141, 151-169, 180-211, 217-235, 249-266, 277-292, 300-330, 334-355, 362-389, 401-426, 430
+apps/memory_api/tests/test_circuit_breaker.py                                     271    223    18%   22, 31-33, 38-47, 52-62, 67-79, 84-101, 106-132, 137-168, 173-201, 206-220, 225-245, 250-271, 276-297, 305-307, 311-317, 321-329, 333-340, 344-350, 354-362, 366-368, 376-380, 384-389, 393-398, 402-407, 411-414, 423-469
+apps/memory_api/tests/test_clustering_async_safety.py                              34     26    24%   18-97
+apps/memory_api/tests/test_consistency_service.py                                  41     29    29%   11-20, 25, 30-50, 55-75
+apps/memory_api/tests/test_context_provenance_service.py                          195    151    23%   22, 28, 37-69, 74-107, 112-124, 129-170, 175-197, 206-234, 241-265, 270-295, 304-346, 351-355, 364-379, 384-398, 403-417, 422-436, 444-460, 465-469
+apps/memory_api/tests/test_dashboard_websocket.py                                  96     61    36%   30, 35, 40, 45-48, 55-61, 67-73, 80-88, 95-101, 107-122, 129-152, 158-169, 176-180, 186-190, 197-209, 215-232
+apps/memory_api/tests/test_db_validation.py                                       100     81    19%   12-23, 28-34, 39-65, 70-79, 86-150, 156-172, 178-206
+apps/memory_api/tests/test_distributed_integration.py                              39     30    23%   13-43, 51-76
+apps/memory_api/tests/test_evaluation_suite.py                                     80     49    39%   31, 36, 41, 48-59, 65-77, 83-98, 105-111, 117-122, 129-138, 145-165, 173-186
+apps/memory_api/tests/test_evaluator_llm.py                                        43     33    23%   18-52, 59-91, 98-124
+apps/memory_api/tests/test_event_triggers.py                                       92     60    35%   33, 38, 43, 57-62, 69-76, 82-101, 107-126, 132-163, 170-190, 200-220, 226-246, 253-275, 282-351
+apps/memory_api/tests/test_graph_algorithms.py                                    241    194    20%   17-25, 30-35, 40-53, 58, 63-87, 92-115, 120-145, 150-185, 190-223, 228-245, 250-273, 278-313, 318-336, 341-358, 364-373, 379-383, 389-399, 405-409, 415-427, 433-444, 450-455
+apps/memory_api/tests/test_graph_extraction.py                                    135    102    24%   29-44, 51-62, 70-78, 83-99, 103-108, 112-114, 118-123, 127-131, 135-139, 147-151, 155-162, 171-184, 189-206, 210-232, 237-248, 253-271, 276-307, 311-326, 331-349, 361-413, 417
+apps/memory_api/tests/test_graph_extraction_integration.py                        121    117     3%   27-422
+apps/memory_api/tests/test_human_approval_service.py                              187    137    27%   25, 31-33, 39, 48-65, 70-85, 90-108, 113-133, 138-170, 179-207, 212-248, 253-278, 283-303, 308-327, 332-348, 357-368, 373-387, 392-398, 406, 410, 414, 418, 422
+apps/memory_api/tests/test_hybrid_search.py                                       242    238     2%   18-987
+apps/memory_api/tests/test_lite_mode_init.py                                       16     10    38%   12-28
+apps/memory_api/tests/test_openapi.py                                              10      6    40%   9-16
+apps/memory_api/tests/test_opentelemetry.py                                       174    106    39%   45-72, 84-90, 98-104, 109, 123-133, 141-147, 174-206, 219-227, 236-246, 255-265, 278-292, 301-305, 318-322, 331-332, 336-340, 345, 350, 355, 360, 373-391
+apps/memory_api/tests/test_phase2_models.py                                       158    124    22%   19-21, 25-29, 33-45, 49-55, 59-65, 69-76, 80-97, 101-109, 113-120, 124-133, 141-145, 149-153, 157-159, 163-166, 170-174, 178-181, 185-187, 191-192, 196-206, 211-234, 239-258, 262-267, 271-283, 287-290, 295-305, 310-316, 320
+apps/memory_api/tests/test_phase2_plugins.py                                      221    162    27%   23, 32-34, 39, 44-46, 55, 58, 61, 66, 71, 81, 89-100, 104-118, 127-132, 137-138, 143-148, 153-162, 167-176, 184-185, 189-195, 199-206, 210-217, 221-236, 241-248, 253-257, 262-277, 282-296, 301-308, 312-316, 324-329, 333-357, 365-377, 382-390, 399-418, 423-456, 460
+apps/memory_api/tests/test_pii_scrubber.py                                         75     73     3%   25-200
+apps/memory_api/tests/test_policy_versioning_service.py                           168    109    35%   21, 27, 36-52, 58-81, 86-98, 108-126, 132-158, 163-164, 169-180, 190-206, 212-224, 229-230, 240-257, 262-263, 273-292, 298-316, 321-339, 344-362, 367-385, 391-406, 416-445, 451-464, 469-470, 479-499
+apps/memory_api/tests/test_refactor_columns.py                                     54     47    13%   18-119
+apps/memory_api/tests/test_reflection_simple.py                                    54     47    13%   21-144
+apps/memory_api/tests/test_reflective_flags.py                                    156    156     0%   7-327
+apps/memory_api/tests/test_semantic_memory.py                                      71     66     7%   24-219
+apps/memory_api/tests/test_snapshot_restore.py                                     26     18    31%   14-39, 47-60
+apps/memory_api/tests/test_summarization_worker.py                                 49     36    27%   18-22, 29-81, 88-114
+apps/memory_api/tests/test_temporal_graph.py                                      176    140    20%   22, 27-31, 36-43, 48-71, 76-85, 90-102, 107-137, 142-150, 155-190, 195-226, 231-245, 250-264, 269-296, 301-325, 330-344
+apps/memory_api/tests/test_token_savings.py                                        32     17    47%   12, 17, 23-42, 48-57, 62-73
+apps/memory_api/tests/test_validation_integration.py                               21     12    43%   27-51
+apps/memory_api/tests/test_validation_service.py                                   81     50    38%   18, 21, 24, 27, 32, 35, 38, 50, 55, 58, 61, 64, 69-75, 80-88, 93-102, 107-115, 120-127
+apps/memory_api/tests/test_vector_store.py                                         75     72     4%   26-212
+apps/memory_api/tests/test_workers.py                                             152    115    24%   20-31, 36-48, 54-64, 72-87, 94-106, 111-114, 122-155, 162-171, 176-183, 188-205, 213-237, 242-246, 253-259, 267-283, 290-300
+apps/memory_api/utils/circuit_breaker.py                                          107     59    45%   107-151, 155-162, 166-175, 179-182, 192-197, 205-208, 217, 237-243, 265-269, 278-291, 295, 299
+apps/memory_api/utils/cost_tracker.py                                              19     13    32%   29-64
+apps/memory_api/utils/datetime_utils.py                                             4      1    75%   6
+apps/memory_api/workers/__init__.py                                                 2      0   100%
+apps/memory_api/workers/memory_maintenance.py                                     185    145    22%   71-72, 93-150, 154, 173-174, 196-273, 280-317, 336-376, 397-398, 425-523, 540-543, 551-563, 583-662, 666-676, 691-719, 723
+apps/ml_service/__init__.py                                                         1      1     0%   7
+apps/ml_service/main.py                                                            40     40     0%   8-88
+apps/ml_service/services/__init__.py                                                0      0   100%
+apps/ml_service/services/embedding_service.py                                      43     43     0%   8-89
+apps/ml_service/services/entity_resolution.py                                      56     56     0%   11-158
+apps/ml_service/services/nlp_service.py                                            72     72     0%   8-209
+apps/ml_service/services/triple_extraction.py                                     118    118     0%   8-318
+apps/ml_service/tests/__init__.py                                                   0      0   100%
+apps/ml_service/tests/conftest.py                                                  32     32     0%   1-52
+apps/ml_service/tests/test_api.py                                                 107    107     0%   1-181
+apps/ml_service/tests/test_api_integration.py                                      86     86     0%   1-143
+apps/ml_service/tests/test_embedding_service.py                                    47     47     0%   1-86
+apps/ml_service/tests/test_entity_resolution_service.py                            52     52     0%   1-122
+apps/ml_service/tests/test_nlp_service.py                                         124    124     0%   1-257
+apps/ml_service/tests/test_triple_extraction_service.py                           165    165     0%   1-386
+apps/reranker_service/__init__.py                                                   0      0   100%
+apps/reranker_service/config.py                                                     6      6     0%   1-17
+apps/reranker_service/main.py                                                      32     32     0%   1-67
+apps/reranker_service/tests/__init__.py                                             0      0   100%
+apps/reranker_service/tests/conftest.py                                             9      9     0%   1-17
+apps/reranker_service/tests/test_main.py                                           39     39     0%   1-81
+apps/trigger_consolidation.py                                                      32     32     0%   2-59
+apps/verify_llm.py                                                                 36     36     0%   1-50
+-------------------------------------------------------------------------------------------------------------
+TOTAL                                                                           29388  20303    31%
+Coverage HTML written to dir htmlcov
+Coverage XML written to file coverage.xml
+[31m[1mFAIL Required test coverage of 65% not reached. Total coverage: 30.91%
+[0m[32m======================== [32m1263 tests collected[0m[32m in 19.60s[0m[32m ========================[0m

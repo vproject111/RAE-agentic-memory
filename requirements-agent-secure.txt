@@ -1,0 +1,7 @@
+# RAE SECURE AGENT REQUIREMENTS
+# STRICTLY FORBIDDEN: openai, anthropic, google-generativeai, langchain, llama-index
+# ONLY ALLOWED: Transport and Data Validation
+
+requests==2.31.0
+pydantic==2.5.3
+# rae-sdk (local install would happen here in real build)

@@ -1,0 +1,22 @@
+{
+  "test_name": "math_reasoning_should_continue",
+  "inputs": {
+    "case_ok": {
+      "depth": 5,
+      "unc": 0.8,
+      "tokens": 100
+    },
+    "case_stop": {
+      "depth": 15,
+      "unc": 0.8,
+      "tokens": 100
+    }
+  },
+  "output": {
+    "case_ok": false,
+    "case_stop": false
+  },
+  "metadata": {
+    "component": "ReasoningController"
+  }
+}

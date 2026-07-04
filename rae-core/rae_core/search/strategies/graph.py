@@ -49,6 +49,8 @@ class GraphTraversalStrategy(SearchStrategy):
         visited = set(seeds)
         to_visit = list(seeds)
         results: dict[UUID, float] = {}
+        decay_factor = 0.6  # Confidence decay per hop
+        min_score_threshold = 0.05
 
         # Simple BFS traversal
         depth = 0

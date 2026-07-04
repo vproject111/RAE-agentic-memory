@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rae-adapters"
+version = "0.1.0"
+description = "Database adapters for RAE"
+authors = [{name = "Grzegorz Leśniowski", email = "contact@dreamsoft.pro"}]
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+dependencies = [
+    "rae-core>=0.6.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+postgres = ["asyncpg>=0.29"]
+redis = ["redis>=5.0"]
+qdrant = ["qdrant-client>=1.7"]
+all = ["asyncpg>=0.29", "redis>=5.0", "qdrant-client>=1.7"]
+
+[tool.setuptools]
+packages = ["rae_adapters"]
+
+[tool.setuptools.package-dir]
+rae_adapters = "."

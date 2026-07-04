@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rae-memory.fullname" . }}-ml-service
+  labels:
+    {{- include "rae-memory.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-service
+spec:
+  {{- if not .Values.mlService.autoscaling.enabled }}
+  replicas: {{ .Values.mlService.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rae-memory.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ml-service
+  template:
+    metadata:
+      labels:
+        {{- include "rae-memory.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ml-service
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: ml-service
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.mlService.image.repository }}:{{ .Values.mlService.image.tag }}"
+        imagePullPolicy: {{ .Values.mlService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.mlService.resources | nindent 12 }}
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: model-cache
+          mountPath: /root/.cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: model-cache
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rae-memory.fullname" . }}-ml-service
+  labels:
+    {{- include "rae-memory.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-service
+spec:
+  type: {{ .Values.mlService.service.type }}
+  ports:
+    - port: {{ .Values.mlService.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "rae-memory.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-service

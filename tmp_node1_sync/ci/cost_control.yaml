@@ -1,0 +1,152 @@
+# Cost control for Auto-Healing CI
+# Limits API usage to prevent runaway costs
+#
+# Part of RAE CI Quality Implementation - Iteration 4: Auto-Healing CI
+#
+# This configuration controls how much the AI-powered fix generation
+# can spend on API calls. Adjust these limits based on your budget.
+
+# Usage limits to prevent excessive API calls
+limits:
+  # Maximum number of auto-fix attempts per day across all workflows
+  max_fixes_per_day: 10
+
+  # Maximum number of fixes to attempt per single PR/failure
+  max_fixes_per_pr: 3
+
+  # Maximum tokens allowed per fix generation request
+  max_tokens_per_fix: 4000
+
+  # Maximum retries for a single fix attempt
+  max_retries_per_fix: 2
+
+  # Cooldown period (minutes) between fix attempts for same file
+  cooldown_minutes: 30
+
+# LLM Provider Configuration
+providers:
+  anthropic:
+    # Model to use for fix generation
+    model: "claude-sonnet-4-5-20241022"
+
+    # Alternative cheaper model for simple fixes
+    model_simple: "claude-3-haiku-20240307"
+
+    # Maximum monthly budget in USD
+    max_cost_per_month_usd: 50
+
+    # Per-request cost limit (fail if estimate exceeds)
+    max_cost_per_request_usd: 2
+
+    # Estimated cost per 1K tokens (for budgeting)
+    cost_per_1k_input_tokens: 0.003
+    cost_per_1k_output_tokens: 0.015
+
+  openai:
+    # Model to use for fix generation
+    model: "gpt-4o-mini"
+
+    # Alternative model for complex fixes (more expensive)
+    model_complex: "gpt-4o"
+
+    # Maximum monthly budget in USD
+    max_cost_per_month_usd: 20
+
+    # Per-request cost limit
+    max_cost_per_request_usd: 1
+
+    # Estimated cost per 1K tokens
+    cost_per_1k_input_tokens: 0.00015
+    cost_per_1k_output_tokens: 0.0006
+
+# Alert thresholds for notifications
+alert_thresholds:
+  # Alert if more than N fixes in a single day
+  daily_fixes: 5
+
+  # Alert if monthly cost approaches budget (percentage)
+  monthly_cost_warning_percent: 60
+
+  # Alert if monthly cost is critical (percentage)
+  monthly_cost_critical_percent: 80
+
+  # Alert if single fix costs more than (USD)
+  single_fix_cost_usd: 1
+
+  # Alert if fix success rate drops below (percentage)
+  fix_success_rate_percent: 50
+
+# Fix types configuration
+fix_types:
+  # High confidence fixes - auto-create PR
+  high_confidence:
+    - warning
+    - lint
+    - import_error
+
+  # Medium confidence - create draft PR requiring review
+  medium_confidence:
+    - type_error
+    - flaky_test
+
+  # Never auto-fix these - always require human intervention
+  exclude:
+    - drift
+    - unknown
+    - security
+
+# Rate limiting for API calls
+rate_limits:
+  # Maximum requests per minute
+  requests_per_minute: 10
+
+  # Maximum requests per hour
+  requests_per_hour: 60
+
+  # Backoff multiplier for rate limit errors
+  backoff_multiplier: 2
+
+  # Maximum backoff time (seconds)
+  max_backoff_seconds: 300
+
+# Caching configuration to reduce API calls
+caching:
+  # Enable response caching
+  enabled: true
+
+  # Cache TTL in hours
+  ttl_hours: 24
+
+  # Cache similar failures (similarity threshold)
+  similarity_threshold: 0.9
+
+# Reporting configuration
+reporting:
+  # Save cost reports to this directory
+  reports_dir: "ci/reports/auto-fix"
+
+  # Generate daily summary
+  daily_summary: true
+
+  # Generate weekly report
+  weekly_report: true
+
+  # Slack webhook for alerts (set via environment variable)
+  slack_webhook_env: "SLACK_WEBHOOK_CI_ALERTS"
+
+# Feature flags
+features:
+  # Enable auto-fix functionality
+  enabled: true
+
+  # Create PRs automatically (false = dry run mode)
+  auto_create_pr: true
+
+  # Require human approval before merge
+  require_human_approval: true
+
+  # Add AI disclaimer to PRs
+  add_ai_disclaimer: true
+
+  # Run tests on generated fix before creating PR
+  validate_fix: true

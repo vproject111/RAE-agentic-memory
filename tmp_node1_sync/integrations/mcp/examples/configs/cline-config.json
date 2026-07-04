@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "rae-memory": {
+      "command": "rae-mcp-server",
+      "env": {
+        "RAE_API_URL": "http://localhost:8000",
+        "RAE_API_KEY": "your-rae-api-key-here",
+        "RAE_PROJECT_ID": "my-project",
+        "RAE_TENANT_ID": "default-tenant"
+      }
+    }
+  }
+}

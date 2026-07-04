@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+"""
+Docs Automator - Self-Documenting Codebase Tool
+Generates/Updates CHANGELOG.md, TODO.md, STATUS.md, and TESTING_STATUS.md.
+"""
+
+import os
+import re
+import subprocess
+import xml.etree.ElementTree as ET
+from datetime import datetime
+from typing import Dict, List, Optional
+
+# --- Configuration ---
+PROJECT_ROOT = "."
+EXCLUDE_DIRS = {".git", ".venv", "__pycache__", "node_modules", "htmlcov", "site", "alembic"}
+CHANGELOG_FILE = "CHANGELOG.md"
+TODO_FILE = "TODO.md"
+STATUS_FILE = "STATUS.md"
+TESTING_FILE = "docs/TESTING_STATUS.md"
+COVERAGE_FILE = "coverage.xml"
+JUNIT_FILE = "junit.xml"
+
+def run_command(cmd: List[str]) -> str:
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return ""
+
+# --- Helpers ---
+
+def get_file_content(path: str) -> str:
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return f.read()
+    return ""
+
+def write_file_content(path: str, content: str):
+    with open(path, "w") as f:
+        f.write(content)
+
+# --- Data Providers ---
+
+def get_coverage_stats() -> Optional[float]:
+    """Parses coverage.xml to get line coverage percentage."""
+    if not os.path.exists(COVERAGE_FILE):
+        return None
+    try:
+        tree = ET.parse(COVERAGE_FILE)
+        root = tree.getroot()
+        return float(root.attrib.get("line-rate", 0)) * 100
+    except Exception:
+        return None
+
+def get_test_stats() -> Dict[str, int]:
+    """Parses junit.xml to get test results."""
+    stats = {"total": 0, "failures": 0, "errors": 0, "skipped": 0}
+    if not os.path.exists(JUNIT_FILE):
+        return stats
+    try:
+        tree = ET.parse(JUNIT_FILE)
+        root = tree.getroot()
+        # JUnit XML structure varies, usually root is testsuites or testsuite
+        if root.tag == "testsuites":
+            for suite in root:
+                stats["total"] += int(suite.attrib.get("tests", 0))
+                stats["failures"] += int(suite.attrib.get("failures", 0))
+                stats["errors"] += int(suite.attrib.get("errors", 0))
+                stats["skipped"] += int(suite.attrib.get("skipped", 0))
+        elif root.tag == "testsuite":
+            stats["total"] += int(root.attrib.get("tests", 0))
+            stats["failures"] += int(root.attrib.get("failures", 0))
+            stats["errors"] += int(root.attrib.get("errors", 0))
+            stats["skipped"] += int(root.attrib.get("skipped", 0))
+    except Exception:
+        pass
+    return stats
+
+def get_git_branch() -> str:
+    return run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"]) or "unknown"
+
+def get_git_hash() -> str:
+    return run_command(["git", "rev-parse", "--short", "HEAD"]) or "unknown"
+
+def get_recent_commits(limit: int = 50) -> List[Dict[str, str]]:
+    """Get recent commits with type, scope, and description."""
+    # Try to get commits since last tag, or last 50 commits
+    last_tag = run_command(["git", "describe", "--tags", "--abbrev=0"])
+    if last_tag:
+        commit_range = f"{last_tag}..HEAD"
+    else:
+        commit_range = f"HEAD~{limit}..HEAD"
+
+    # Get commit log: hash + subject
+    log_output = run_command(["git", "log", commit_range, "--pretty=format:%h|%s|%ad", "--date=short"])
+
+    commits = []
+    for line in log_output.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("|", 2)
+        if len(parts) < 3:
+            continue
+
+        hash_short, subject, date = parts
+
+        # Skip auto-generated docs commits
+        if "[skip ci]" in subject or "Auto-update" in subject:
+            continue
+
+        # Parse Conventional Commits format: type(scope): description
+        match = re.match(r"^(\w+)(?:\(([^)]+)\))?:\s*(.+)$", subject)
+        if match:
+            commit_type, scope, description = match.groups()
+            commits.append({
+                "hash": hash_short,
+                "type": commit_type,
+                "scope": scope or "",
+                "description": description,
+                "date": date
+            })
+        else:
+            # Non-conventional commit
+            commits.append({
+                "hash": hash_short,
+                "type": "other",
+                "scope": "",
+                "description": subject,
+                "date": date
+            })
+
+    return commits
+
+# --- Generators ---
+
+def update_todo():
+    print(f"Updating {TODO_FILE}...")
+    current_content = get_file_content(TODO_FILE)
+    
+    # Scan for TODOs in code
+    todos = []
+    for root, dirs, files in os.walk(PROJECT_ROOT):
+        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+        for file in files:
+            if not file.endswith((".py", ".md", ".js", ".ts", ".yml", ".yaml", ".sh")):
+                continue
+            file_path = os.path.join(root, file)
+            if file_path == os.path.join(PROJECT_ROOT, TODO_FILE): continue
+            
+            try:
+                with open(file_path, "r", errors="ignore") as f:
+                    for i, line in enumerate(f, 1):
+                        if "TODO" in line or "FIXME" in line:
+                            clean_line = line.strip().replace("#", "").replace("//", "").strip()
+                            clean_line = re.sub(r"^(TODO|FIXME)[:\s]*", "", clean_line)
+                            # Format: - [ ] **file:line** - text
+                            rel_path = os.path.relpath(file_path, PROJECT_ROOT)
+                            todos.append(f"- [ ] **{rel_path}:{i}** - {clean_line}")
+            except Exception:
+                continue
+
+    tech_debt_section = "## Technical Debt (Auto-generated from code)\n" + \
+                        (f"*Last scan: {datetime.now().strftime('%Y-%m-%d %H:%M')}*\n\n" if todos else "\n") + \
+                        "\n".join(todos) if todos else "No TODOs found in code."
+
+    # Inject into TODO.md
+    marker = "## Technical Debt (Auto-generated from code)"
+    
+    if marker in current_content:
+        # Replace everything after the marker
+        parts = current_content.split(marker)
+        new_content = parts[0] + tech_debt_section
+    else:
+        # Append to end
+        new_content = current_content + "\n\n" + tech_debt_section
+        
+    write_file_content(TODO_FILE, new_content)
+
+def update_status():
+    print(f"Updating {STATUS_FILE}...")
+    content = get_file_content(STATUS_FILE)
+    
+    # Metrics
+    cov = get_coverage_stats()
+    tests = get_test_stats()
+    branch = get_git_branch()
+    commit = get_git_hash()
+    
+    # Basic replacement logic (regex would be better but let's keep it simple for now)
+    # We will look for specific rows to update or append a "Live Metrics" section
+    
+    cov_str = f"{cov:.1f}%" if cov is not None else "N/A"
+    test_pass_rate = 0
+    if tests["total"] > 0:
+        test_pass_rate = ((tests["total"] - tests["failures"] - tests["errors"]) / tests["total"]) * 100
+    
+    metrics_md = f"""
+## Live Metrics (Auto-generated)
+| Metric | Value |
+|--------|-------|
+| **Branch** | `{branch}` |
+| **Commit** | `{commit}` |
+| **Coverage** | {cov_str} |
+| **Tests** | {tests['total']} total, {tests['failures']} failed, {tests['skipped']} skipped |
+| **Pass Rate** | {test_pass_rate:.1f}% |
+| **Last Update** | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} |
+"""
+    
+    marker = "## Live Metrics (Auto-generated)"
+    if marker in content:
+        parts = content.split(marker)
+        # Try to find the next section start (##) to preserve footer if any
+        rest = parts[1]
+        next_section_match = re.search(r"\n## ", rest)
+        if next_section_match:
+            footer = rest[next_section_match.start():]
+            new_content = parts[0] + metrics_md + footer
+        else:
+            new_content = parts[0] + metrics_md
+    else:
+        # Insert before "Quick Links" if exists, else append
+        if "## Quick Links" in content:
+            new_content = content.replace("## Quick Links", metrics_md + "\n## Quick Links")
+        else:
+            new_content = content + "\n" + metrics_md
+            
+    write_file_content(STATUS_FILE, new_content)
+
+def update_testing_status():
+    print(f"Updating {TESTING_FILE}...")
+    tests = get_test_stats()
+    cov = get_coverage_stats()
+
+    if not tests["total"] and not cov:
+        print("No test data found. Skipping TESTING_STATUS update.")
+        return
+
+    content = f"""# Testing Status
+
+**Last Run:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Commit:** {get_git_hash()}
+
+## Summary
+- **Total Tests:** {tests['total']}
+- **Passed:** {tests['total'] - tests['failures'] - tests['errors']}
+- **Failed:** {tests['failures']}
+- **Errors:** {tests['errors']}
+- **Skipped:** {tests['skipped']}
+- **Coverage:** {f"{cov:.2f}%" if cov else "N/A"}
+
+## Coverage Report
+See `htmlcov/index.html` for detailed report.
+
+## Test Suite Health
+{'🟢 Excellent' if tests['failures'] == 0 and (cov or 0) > 80 else '🟡 Good' if tests['failures'] == 0 else '🔴 Failing'}
+"""
+    # Check if dir exists
+    os.makedirs(os.path.dirname(TESTING_FILE), exist_ok=True)
+    write_file_content(TESTING_FILE, content)
+
+def update_changelog():
+    print(f"Updating {CHANGELOG_FILE}...")
+    current_content = get_file_content(CHANGELOG_FILE)
+
+    commits = get_recent_commits(limit=50)
+
+    if not commits:
+        print("No recent commits found. Skipping CHANGELOG update.")
+        return
+
+    # Group commits by type
+    type_labels = {
+        "feat": "✨ Features",
+        "fix": "🐛 Bug Fixes",
+        "docs": "📚 Documentation",
+        "test": "🧪 Tests",
+        "refactor": "♻️ Refactoring",
+        "perf": "⚡ Performance",
+        "chore": "🔧 Chore",
+        "ci": "👷 CI/CD",
+        "style": "💄 Style",
+        "other": "📦 Other"
+    }
+
+    grouped = {}
+    for commit in commits:
+        commit_type = commit["type"]
+        if commit_type not in grouped:
+            grouped[commit_type] = []
+        grouped[commit_type].append(commit)
+
+    # Generate markdown
+    changelog_section = f"""## Recent Changes (Auto-generated)
+
+*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')} • Branch: {get_git_branch()} • Commit: {get_git_hash()}*
+
+"""
+
+    # Order types by importance
+    type_order = ["feat", "fix", "perf", "refactor", "docs", "test", "ci", "chore", "style", "other"]
+
+    for commit_type in type_order:
+        if commit_type not in grouped:
+            continue
+
+        label = type_labels.get(commit_type, "Other")
+        changelog_section += f"### {label}\n\n"
+
+        for commit in grouped[commit_type]:
+            scope_str = f"**{commit['scope']}**: " if commit['scope'] else ""
+            changelog_section += f"- {scope_str}{commit['description']} ([`{commit['hash']}`](../../commit/{commit['hash']}))\n"
+
+        changelog_section += "\n"
+
+    changelog_section += "---\n\n"
+
+    # Insert after "## [Unreleased]" section
+    marker = "## [Unreleased]"
+
+    if marker in current_content:
+        # Find the end of Unreleased section (next ##)
+        parts = current_content.split(marker, 1)
+        header = parts[0] + marker
+        rest = parts[1]
+
+        # Find the next release section or "---"
+        next_section = re.search(r"\n(---|\n## \[)", rest)
+        if next_section:
+            unreleased_content = rest[:next_section.start()]
+            remaining = rest[next_section.start():]
+
+            # Check if auto-generated section exists
+            if "## Recent Changes (Auto-generated)" in remaining:
+                # Replace existing auto-generated section
+                parts_remaining = remaining.split("## Recent Changes (Auto-generated)", 1)
+                # Find end of auto-generated section (next --- or ##)
+                after_autogen = parts_remaining[1]
+                end_autogen = re.search(r"\n(---|\n## )", after_autogen)
+                if end_autogen:
+                    # Skip to end of section including the separator
+                    tail_start = end_autogen.end() - 1  # Keep the \n before next section
+                    final_content = header + unreleased_content + "\n\n" + changelog_section + after_autogen[tail_start:]
+                else:
+                    final_content = header + unreleased_content + "\n\n" + changelog_section
+            else:
+                # Insert new auto-generated section
+                final_content = header + unreleased_content + "\n\n" + changelog_section + remaining
+        else:
+            # No next section found, append at end
+            final_content = header + rest + "\n\n" + changelog_section
+    else:
+        # No Unreleased section, append at top after header
+        lines = current_content.split("\n")
+        # Find first ## heading
+        insert_pos = 0
+        for i, line in enumerate(lines):
+            if line.startswith("## "):
+                insert_pos = i
+                break
+
+        if insert_pos > 0:
+            header_content = "\n".join(lines[:insert_pos])
+            rest_content = "\n".join(lines[insert_pos:])
+            final_content = header_content + "\n\n" + changelog_section + rest_content
+        else:
+            final_content = changelog_section + current_content
+
+    write_file_content(CHANGELOG_FILE, final_content)
+
+def main():
+    print("🤖 Docs Automator - Starting...")
+    try:
+        update_todo()
+        update_status()
+        update_testing_status()
+        update_changelog()
+        print("✅ Documentation updated successfully.")
+    except Exception as e:
+        print(f"❌ Error updating documentation: {e}")
+        exit(1)
+
+if __name__ == "__main__":
+    main()

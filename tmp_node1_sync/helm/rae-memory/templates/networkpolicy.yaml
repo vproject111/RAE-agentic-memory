@@ -1,0 +1,107 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "rae-memory.fullname" . }}-api
+  labels:
+    {{- include "rae-memory.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "rae-memory.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  policyTypes:
+  {{- toYaml .Values.networkPolicy.policyTypes | nindent 2 }}
+  ingress:
+  # Allow ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow from same namespace (ml-service, reranker, celery)
+  - from:
+    - podSelector:
+        matchLabels:
+          {{- include "rae-memory.selectorLabels" . | nindent 10 }}
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow PostgreSQL, Redis, Qdrant
+  - to:
+    - podSelector:
+        matchLabels:
+          {{- include "rae-memory.selectorLabels" . | nindent 10 }}
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 6333  # Qdrant
+  # Allow ML Service & Reranker
+  - to:
+    - podSelector:
+        matchLabels:
+          {{- include "rae-memory.selectorLabels" . | nindent 10 }}
+    ports:
+    - protocol: TCP
+      port: 8001  # ML Service
+    - protocol: TCP
+      port: 8002  # Reranker
+  # Allow outbound HTTPS for LLM APIs
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "rae-memory.fullname" . }}-ml-service
+  labels:
+    {{- include "rae-memory.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "rae-memory.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ml-service
+  policyTypes:
+  {{- toYaml .Values.networkPolicy.policyTypes | nindent 2 }}
+  ingress:
+  # Only allow from API and Celery Worker
+  - from:
+    - podSelector:
+        matchLabels:
+          {{- include "rae-memory.selectorLabels" . | nindent 10 }}
+    ports:
+    - protocol: TCP
+      port: 8001
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow outbound HTTPS (for model downloads)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+{{- end }}

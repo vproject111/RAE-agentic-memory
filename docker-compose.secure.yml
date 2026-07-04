@@ -1,0 +1,24 @@
+services:
+  # The Secure Agent - Real Implementation
+  # Connected to the REAL RAE API (Kernel)
+  rae-agent-secure:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent_secure
+    volumes:
+      - .:/app # Developer Mode: Mount code for editing
+      - /app/.venv # Prevent local venv from leaking in (use container's env)
+      - /app/__pycache__
+    networks:
+      - rae_default # Connect to the main RAE network to see rae-api-dev
+    environment:
+      - RAE_KERNEL_URL=http://rae-api-dev:8000
+      - RAE_AGENT_MODE=secure
+      # Pass the SESSION_ID if needed, or let it bootstrap
+    command: ["python", "-m", "rae_agent.main"]
+
+# We reuse the existing network from the main compose file
+networks:
+  rae_default:
+    external: true
+    name: rae-agentic-memory-agnostic-core_rae-network

@@ -1,0 +1,46 @@
+{
+  "test_name": "math_reasoning_pruning",
+  "inputs": {
+    "paths": [
+      {
+        "steps": [
+          "Alice is 30"
+        ]
+      },
+      {
+        "steps": [
+          "Charlie is 50"
+        ]
+      },
+      {
+        "steps": [
+          "Bob is 40"
+        ]
+      }
+    ],
+    "episodic": [
+      {
+        "content": "Alice"
+      }
+    ],
+    "semantic": [
+      {
+        "content": "Charlie"
+      }
+    ]
+  },
+  "output": {
+    "pruned_count": 1,
+    "remaining_steps": [
+      [
+        "Alice is 30"
+      ],
+      [
+        "Charlie is 50"
+      ]
+    ]
+  },
+  "metadata": {
+    "component": "ReasoningController"
+  }
+}

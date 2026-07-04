@@ -25,12 +25,15 @@ class PostgreSQLStorage(IMemoryStorage):
             if not self.dsn and not self._pool:
                 raise ValueError("Either dsn or pool must be provided")
             self._pool = await asyncpg.create_pool(self.dsn, **self._pool_kwargs)
-        return self._pool
+        return cast("asyncpg.Pool", self._pool)
 
     async def store_memory(self, **kwargs: Any) -> UUID:
         pool = await self._get_pool()
         m_id = uuid4()
         async with pool.acquire() as conn:
+            # Convert embedding to string for pgvector compatibility if using asyncpg without codec
+            embedding_val = str(embedding) if embedding is not None else None
+
             await conn.execute(
                 "INSERT INTO memories (id, content, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
                 m_id,

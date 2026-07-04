@@ -275,6 +275,9 @@ class SQLiteStorage(IMemoryStorage):
         params.append(limit)
         sql = f"SELECT * FROM memories WHERE {' AND '.join(where_clauses)} LIMIT ?"
 
+        if not query or not tenant_id:
+            return []
+
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             async with db.execute(sql, params) as cursor:

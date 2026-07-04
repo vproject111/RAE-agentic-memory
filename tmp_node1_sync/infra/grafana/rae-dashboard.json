@@ -1,0 +1,107 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "8.5.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "LLM Cost (USD)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "expr": "sum(rate(llm_cost_usd_total[5m])) by (tenant_id, project)",
+          "legendFormat": "{{tenant_id}} - {{project}}"
+        }
+      ]
+    },
+    {
+      "title": "Cache Hit/Miss Ratio",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "expr": "sum(rate(cache_hit_total[5m])) / (sum(rate(cache_hit_total[5m])) + sum(rate(cache_miss_total[5m])))",
+          "legendFormat": "Hit Ratio"
+        }
+      ]
+    },
+    {
+      "title": "Embedding Generation Time (p95)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(embedding_time_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "title": "Vector Query Time (p95)",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(vector_query_time_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 35,
+  "style": "dark",
+  "tags": ["rae"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "RAE Observability Dashboard",
+  "uid": "rae-dashboard-1"
+}

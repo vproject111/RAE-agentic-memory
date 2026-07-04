@@ -1,0 +1,179 @@
+# Orchestrator task definitions
+# Each task is automatically routed to appropriate models based on risk/area
+
+tasks:
+  # Example low-risk documentation task
+  - id: TEST-001
+    goal: "Add comprehensive docstrings to ContextBuilder class"
+    risk: low
+    area: docs
+    repo: RAE-agentic-memory
+    context_files:
+      - rae-core/rae_core/context/builder.py
+    constraints:
+      - ZERO-WARNINGS
+      - Follow Google docstring format
+      - No functional changes to code
+
+  # Example medium-risk test task
+  - id: TEST-002
+    goal: "Add missing unit tests for SQLite vector store edge cases"
+    risk: medium
+    area: tests
+    repo: RAE-agentic-memory
+    context_files:
+      - rae-core/rae_core/adapters/sqlite/vector.py
+      - rae-core/tests/unit/adapters/sqlite/test_vector.py
+    constraints:
+      - ZERO-WARNINGS
+      - 90%+ coverage for new tests
+      - Test edge cases: empty vectors, dimension mismatches, large batches
+
+
+  # Example API integration task
+  - id: RAE-API-001
+    goal: "Add RESTful endpoint for hybrid search with pagination"
+    risk: medium
+    area: api
+    repo: RAE-agentic-memory
+    context_files:
+      - rae_core_service.py
+      - docs/API_SPEC.md
+    constraints:
+      - ZERO-WARNINGS
+      - OpenAPI documentation
+      - Input validation
+      - Rate limiting
+      - Integration tests
+
+  # Twoje pierwsze zadanie - bardzo proste!
+  - id: DEMO-001
+    goal: "Create a simple Python function that returns current timestamp"
+    risk: low
+    area: test
+    repo: RAE-agentic-memory
+    constraints:
+      - Add docstring
+      - Add type hints
+      - Use datetime module
+      - Return ISO format string
+
+  # ===================================================================
+  # ZADANIA UŻYTKOWNIKA - 2025-12-10
+  # Rozbite na małe kawałki dla Gemini CLI (małe prompty!)
+  # ===================================================================
+
+  # TEST: Absolutnie najprostsze zadanie
+  - id: TEST-SIMPLE
+    goal: "Check if file exists: rae-core/rae_core/context/builder.py"
+    risk: low
+    area: docs
+    repo: RAE-agentic-memory
+    constraints:
+      - Read file rae-core/rae_core/context/builder.py
+      - Report if file exists or not
+      - Output: YES or NO
+
+  # Zadanie 1: Naprawić dokumentację Phase 1
+  - id: RAE-DOC-001
+    goal: "Update RAE_PHASE1_COMPLETION_PLAN.md: check ContextBuilder implementation status"
+    risk: low
+    area: docs
+    repo: RAE-agentic-memory
+    context_files:
+      - docs/RAE_PHASE1_COMPLETION_PLAN.md
+      - rae-core/rae_core/context/builder.py
+    constraints:
+      - ZERO-WARNINGS
+      - Check if ContextBuilder exists and is implemented
+      - Update Task 1 status in the document (line 58)
+      - If implemented mark as DONE, if not mark TODO
+      - Keep document structure unchanged
+      - Only update completion percentage if changed
+
+  # Zadanie 2: Sprawdź SQLite adapters
+  - id: RAE-DOC-002
+    goal: "Update RAE_PHASE1_COMPLETION_PLAN.md: check SQLite adapters status"
+    risk: low
+    area: docs
+    repo: RAE-agentic-memory
+    context_files:
+      - docs/RAE_PHASE1_COMPLETION_PLAN.md
+      - rae-core/rae_core/adapters/sqlite/
+    constraints:
+      - ZERO-WARNINGS
+      - Check if SQLite adapters exist (storage, vector, graph)
+      - Update Task 2 status in the document
+      - List what exists and what is missing
+      - Keep document structure unchanged
+
+  # Zadanie 3: Sprawdź In-Memory adapters
+  - id: RAE-DOC-003
+    goal: "Update RAE_PHASE1_COMPLETION_PLAN.md: check In-Memory adapters status"
+    risk: low
+    area: docs
+    repo: RAE-agentic-memory
+    context_files:
+      - docs/RAE_PHASE1_COMPLETION_PLAN.md
+      - rae-core/rae_core/adapters/memory/
+    constraints:
+      - ZERO-WARNINGS
+      - Check if In-Memory adapters exist
+      - Update Task 3 status in the document
+      - List what exists and what is missing
+      - Keep document structure unchanged
+
+  # ===================================================================
+  # PHASE 2: Rozbite na małe zadania (po 1 adapter = 1 zadanie)
+  # ===================================================================
+
+  # Week 5, Day 1: PostgreSQL Storage Adapter
+  - id: RAE-PHASE2-001
+    goal: "Implement PostgresMemoryStorage adapter for IMemoryStorage interface"
+    risk: medium
+    area: core
+    repo: RAE-agentic-memory
+    context_files:
+      - rae-core/rae_core/interfaces/storage.py
+      - apps/memory_api/repositories/memory_repository.py
+    constraints:
+      - ZERO-WARNINGS
+      - Implement all methods from IMemoryStorage interface
+      - Use existing PostgreSQL schema from memory_repository
+      - Add comprehensive docstrings
+      - Create unit tests (5+ test cases)
+      - File location rae-core/rae_core/adapters/postgres/storage.py
+
+  # Week 5, Day 1: Qdrant Vector Adapter
+  - id: RAE-PHASE2-002
+    goal: "Implement QdrantVectorStore adapter for IVectorStore interface"
+    risk: medium
+    area: core
+    repo: RAE-agentic-memory
+    context_files:
+      - rae-core/rae_core/interfaces/vector.py
+      - apps/memory_api/services/qdrant_service.py
+    constraints:
+      - ZERO-WARNINGS
+      - Implement all methods from IVectorStore interface
+      - Use existing Qdrant client code
+      - Add comprehensive docstrings
+      - Create unit tests (5+ test cases)
+      - File location rae-core/rae_core/adapters/qdrant/vector.py
+
+  # Week 5, Day 2: Redis Cache Adapter
+  - id: RAE-PHASE2-003
+    goal: "Implement RedisCacheProvider adapter for ICacheProvider interface"
+    risk: low
+    area: core
+    repo: RAE-agentic-memory
+    context_files:
+      - rae-core/rae_core/interfaces/cache.py
+      - apps/memory_api/core/cache.py
+    constraints:
+      - ZERO-WARNINGS
+      - Implement all methods from ICacheProvider interface
+      - Use existing Redis client code
+      - Add comprehensive docstrings
+      - Create unit tests (5+ test cases)
+      - File location rae-core/rae_core/adapters/redis/cache.py

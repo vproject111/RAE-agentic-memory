@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  rae-api-lite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rae-memory:latest
+    ports:
+      - "8010:8000"
+    environment:
+      - RAE_PROFILE=lite
+      - RAE_DB_MODE=migrate
+      - DATABASE_URL=postgresql://rae:rae@postgres-lite:5432/rae
+      - QDRANT_HOST=qdrant-lite
+      - REDIS_HOST=redis-lite
+      - REDIS_URL=redis://redis-lite:6379/0
+      - CELERY_BROKER_URL=redis://redis-lite:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-lite:6379/0
+      - X_API_KEY=secret
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      - postgres-lite
+      - qdrant-lite
+      - redis-lite
+
+  postgres-lite:
+    image: ankane/pgvector:latest
+    ports:
+      - "5440:5432"
+    environment:
+      - POSTGRES_USER=rae
+      - POSTGRES_PASSWORD=rae
+      - POSTGRES_DB=rae
+    volumes:
+      - ./infra/db-init:/docker-entrypoint-initdb.d:ro
+
+  qdrant-lite:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6340:6333"
+
+  redis-lite:
+    image: redis:7-alpine
+    ports:
+      - "6390:6379"

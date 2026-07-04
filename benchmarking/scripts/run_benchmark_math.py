@@ -238,6 +238,8 @@ class MathBenchmarkRunner(RAEBenchmarkRunner):
         # System 3.2: Base class doesn't have save_results anymore
         assert self.benchmark_data is not None
 
+        assert self.benchmark_data is not None
+
         # Save mathematical metrics separately
         if self.enable_math and "math" in metrics:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

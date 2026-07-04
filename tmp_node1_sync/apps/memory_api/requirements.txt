@@ -1,0 +1,19 @@
+# RAE Memory API - Main Requirements File
+#
+# This file now references split requirements for better Docker image optimization
+#
+# Installation options:
+# 1. Lightweight (recommended): pip install -r requirements-base.txt
+# 2. Full ML capabilities: pip install -r requirements-base.txt -r requirements-ml.txt
+# 3. Development: pip install -r requirements-base.txt -r requirements-test.txt
+
+# Include base requirements (lightweight API)
+-r requirements-base.txt
+
+# OPTIONAL: Include ML requirements for local embeddings/NLP/Graph analysis
+# Uncomment the line below ONLY if you need local ML capabilities
+# Otherwise, use external APIs or dedicated microservices
+# -r requirements-ml.txt
+
+# For development, also install:
+# -r requirements-test.txt

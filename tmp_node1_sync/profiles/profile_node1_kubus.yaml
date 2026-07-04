@@ -1,0 +1,32 @@
+# Profile: Node1 KUBUS (RTX 4080)
+# Use case: Heavy ML benchmarks, deep reasoning, high-concurrency experiments
+# Priority: Maximum throughput and reasoning depth
+
+name: "Node1 KUBUS"
+config_id: "cfg_node1_kubus"
+description: "Optimized for Node1 computing power (RTX 4080)"
+
+parameters:
+  math_level: 4  # Full reasoning
+  batch_size: 100  # High throughput for GPU
+  cache_enabled: true
+
+memory_config:
+  context_window: 32000  # Large context
+  layers: ["episodic", "working", "semantic", "ltm", "reflective"]
+  vector_similarity_threshold: 0.90
+
+reasoning:
+  depth: 15
+  timeout_ms: 3000  # Faster timeout because of GPU
+  strategy: "comprehensive"
+
+tradeoffs:
+  latency: "low"  # Target low latency via GPU
+  quality: "maximum"
+  cost: "medium"  # Optimized for local execution
+
+use_cases:
+  - "Distributed benchmarks"
+  - "Deep search analysis"
+  - "High-performance reasoning"

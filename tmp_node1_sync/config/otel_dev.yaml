@@ -1,0 +1,160 @@
+# RAE OpenTelemetry Configuration - Development Profile
+#
+# This profile is optimized for local development and debugging:
+# - Full tracing (100% sampling)
+# - Detailed attributes including prompts and responses
+# - No PII scrubbing (safe for dev environment)
+# - Short retention (7 days)
+# - Console exporter for immediate visibility
+#
+# Usage:
+#   export RAE_TELEMETRY_PROFILE=dev
+#   export OTEL_CONFIG_FILE=config/otel_dev.yaml
+
+# Profile identification
+profile:
+  name: "Development"
+  environment: "development"
+  version: "1.0"
+
+# Service configuration
+service:
+  name: "rae-memory-api"
+  version: "${OTEL_SERVICE_VERSION:-dev}"
+  namespace: "rae"
+
+# Sampling configuration
+sampling:
+  # Trace everything in development
+  rate: 1.0
+
+  # Always trace these operations
+  always_on:
+    - "memory.*.create"
+    - "memory.*.search"
+    - "llm.*"
+    - "safety.*"
+    - "human.approval"
+
+  # Never sample these (even in dev)
+  always_off: []
+
+# Attribute filtering
+attributes:
+  # Include sensitive data in dev (prompts, responses)
+  include_sensitive: true
+
+  # Maximum attribute value length
+  max_length: 10000
+
+  # Attributes to always exclude (none in dev)
+  excluded: []
+
+  # Attributes to always include
+  included:
+    - "rae.*"
+    - "memory.*"
+    - "llm.*"
+    - "agent.*"
+    - "reasoning.*"
+
+# PII scrubbing
+pii:
+  enabled: false
+  preserve_structure: false
+  patterns:
+    - "email"
+    - "phone"
+    - "ssn"
+    - "credit_card"
+
+# Data retention
+retention:
+  days: 7
+  auto_cleanup: true
+
+# Export configuration
+export:
+  # Primary exporter
+  primary:
+    type: "otlp"
+    endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+    protocol: "grpc"
+    compression: "gzip"
+    timeout_ms: 10000
+
+  # Console exporter for debugging
+  console:
+    enabled: true
+    pretty_print: true
+    include_timestamp: true
+
+  # Additional exporters (optional)
+  additional: []
+
+# Metrics configuration
+metrics:
+  enabled: true
+  export_interval_ms: 10000
+
+  # Metric types to collect
+  collect:
+    - "memory.operations"
+    - "llm.tokens"
+    - "llm.cost"
+    - "reasoning.iterations"
+    - "agent.operations"
+
+# Logging instrumentation
+logging:
+  enabled: true
+  level: "DEBUG"
+
+  # Log integration
+  inject_trace_context: true
+  log_span_events: true
+
+# Resource attributes
+resource:
+  # Automatically detected
+  auto_detect:
+    - "host.name"
+    - "os.type"
+    - "process.pid"
+
+  # Custom attributes
+  custom:
+    deployment.environment: "development"
+    team: "rae-dev"
+
+# Performance tuning
+performance:
+  # Batch span processor
+  batch:
+    max_queue_size: 2048
+    schedule_delay_ms: 5000
+    export_timeout_ms: 30000
+    max_export_batch_size: 512
+
+  # Memory limits
+  memory:
+    max_attributes_per_span: 128
+    max_events_per_span: 128
+    max_links_per_span: 128
+
+# Feature flags
+features:
+  enable_trace_response: true
+  enable_db_statement_capture: true
+  enable_http_client_trace: true
+  enable_http_server_trace: true
+  enable_redis_trace: true
+  enable_celery_trace: true
+  enable_qdrant_trace: true
+
+# Debug options
+debug:
+  enabled: true
+  log_spans: true
+  log_attributes: true
+  validate_schema: true

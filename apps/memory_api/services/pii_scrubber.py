@@ -12,6 +12,8 @@ def scrub_text(text: str | None) -> str:
     """
     Scrub PII from text using the observability scrubber.
 
+    If Presidio is not available, returns the original text.
+
     Args:
         text: Input text
 
