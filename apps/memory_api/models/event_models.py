@@ -488,6 +488,8 @@ class EmitEventResponse(BaseModel):
     triggers_matched: int = Field(0, ge=0)
     actions_queued: int = Field(0, ge=0)
     message: str = "Event emitted successfully"
+    target_response: Optional[Dict[str, Any]] = Field(default=None, description="Response payload from target agent")
+
 
 
 class BridgeInteractionRequest(BaseModel):
