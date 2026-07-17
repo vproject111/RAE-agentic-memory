@@ -9,20 +9,33 @@ from utils.api_client import RAESuiteClient
 from apps.oracle import OracleApp
 from apps.wizard import ProceduralWizard
 from apps.mozilla import MozillaApp
+from apps.mission_control import MissionControlApp
+from apps.search_console import SearchConsoleApp
+from apps.decay_retention import DecayRetentionApp
+from apps.evolution_lab import EvolutionLabApp
 
 # --- Initialization ---
 client = RAESuiteClient()
 oracle_app = OracleApp(client)
 wizard_app = ProceduralWizard(client)
 mozilla_app = MozillaApp(client)
+mission_control_app = MissionControlApp(client)
+search_console_app = SearchConsoleApp(client)
+decay_retention_app = DecayRetentionApp(client)
+evolution_lab_app = EvolutionLabApp(client)
 
 class RAESuitePortal:
     def __init__(self):
-        self.current_page = "oracle"
+        self.current_page = "mission_control"
         self.system_profile = "Detecting..."
         
         # Models Categorized by $ cost, versions and hardware warnings
-        self.model_options = {'local_qwen_optimized': 'Local: QWEN 3.5 9B [Best]', 'local_phi': 'Local: Phi-3 Mini (Fast)', 'premium_openai': '$ GPT-4o-mini (Stable)', 'premium_anthropic': '284352 Claude 3.5 Sonnet'}
+        self.model_options = {
+            'local_qwen_optimized': 'Local: QWEN 3.5 9B [Best]',
+            'local_phi': 'Local: Phi-3 Mini (Fast)',
+            'premium_openai': '$ GPT-4o-mini (Stable)',
+            'premium_anthropic': '284352 Claude 3.5 Sonnet'
+        }
         
     async def detect_system(self):
         stats = await client.get_stats()
@@ -62,8 +75,18 @@ class RAESuitePortal:
                 ).classes("w-64").props('dark dense outlined color=white')
 
         with ui.left_drawer(value=True).classes('bg-slate-50 border-r p-6'):
-            ui.label('CAPABILITIES').classes('text-xs font-bold text-slate-400 mb-6 uppercase tracking-widest')
-            
+            ui.label('SUITE DASHBOARD').classes('text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest')
+            with ui.column().classes('w-full gap-2 mb-6'):
+                ui.button('Mission Control', icon='dashboard', 
+                          on_click=lambda: self.set_page('mission_control')).props(f'flat align=left {"color=indigo" if self.current_page=="mission_control" else ""}').classes('w-full')
+                ui.button('Search Console', icon='search', 
+                          on_click=lambda: self.set_page('search_console')).props(f'flat align=left {"color=sky" if self.current_page=="search_console" else ""}').classes('w-full')
+                ui.button('Decay & Retention', icon='hourglass_empty', 
+                          on_click=lambda: self.set_page('decay_retention')).props(f'flat align=left {"color=teal" if self.current_page=="decay_retention" else ""}').classes('w-full')
+                ui.button('Evolution Lab', icon='science', 
+                          on_click=lambda: self.set_page('evolution_lab')).props(f'flat align=left {"color=purple" if self.current_page=="evolution_lab" else ""}').classes('w-full')
+
+            ui.label('CAPABILITIES').classes('text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest')
             with ui.column().classes('w-full gap-2'):
                 ui.button('Industrial Oracle', icon='psychology', 
                           on_click=lambda: self.set_page('oracle')).props(f'flat align=left {"color=blue" if self.current_page=="oracle" else ""}').classes('w-full')
@@ -79,7 +102,15 @@ class RAESuitePortal:
 
         @ui.refreshable
         def content_router():
-            if self.current_page == "oracle":
+            if self.current_page == "mission_control":
+                mission_control_app.render()
+            elif self.current_page == "search_console":
+                search_console_app.render()
+            elif self.current_page == "decay_retention":
+                decay_retention_app.render()
+            elif self.current_page == "evolution_lab":
+                evolution_lab_app.render()
+            elif self.current_page == "oracle":
                 oracle_app.render(self.model_select, self.source_select)
             elif self.current_page == "wizard":
                 wizard_app.render(self.model_select)
