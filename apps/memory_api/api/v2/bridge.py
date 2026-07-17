@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from typing import Any, Dict, Optional
-from uuid import uuid4, UUID
+import json
+from typing import Any, Dict
+from uuid import uuid4
+
 import structlog
+from fastapi import APIRouter, HTTPException, Request
+
 from apps.memory_api.models.event_models import (
+    BridgeInteractionRequest,
+    EmitEventResponse,
     Event,
     EventType,
-    EmitEventResponse,
-    BridgeInteractionRequest,
 )
 from apps.memory_api.services.rae_core_service import RAECoreService
 
@@ -54,28 +57,32 @@ async def agent_interaction(
 
     # SYSTEM 95.2: Human-Centric Labeling
     # Check payload for intelligence FIRST
-    payload_data = payload.get("payload", payload)  # Support both nested and flat payload
+    payload_data = payload.get(
+        "payload", payload
+    )  # Support both nested and flat payload
     action_name = payload_data.get("action", "interaction").replace("_", " ").title()
 
     # Check agents
     s_agent = request_data.source_agent
     t_agent = request_data.target_agent
 
-    human_label = (
-        request_data.human_label or f"{action_name} ({s_agent} -> {t_agent})"
-    )
+    human_label = request_data.human_label or f"{action_name} ({s_agent} -> {t_agent})"
 
     event_id = uuid4()
     correlation_id = request_data.correlation_id or event_id
 
     # 1. Create the Event
-    event = Event(
+    Event(
         event_id=event_id,
         event_type=EventType.AGENT_INTERACTION,
         tenant_id=tenant_id,
         project=project,
         source_service=s_agent,
-        payload={"target_agent": t_agent, "interaction_data": payload, "strategy": request_data.strategy},
+        payload={
+            "target_agent": t_agent,
+            "interaction_data": payload,
+            "strategy": request_data.strategy,
+        },
         session_id=request_data.session_id,
         correlation_id=correlation_id,
         metadata={"a2a": True, "protocol": "mcp-bridge-v1"},
@@ -100,6 +107,8 @@ async def agent_interaction(
                 "full_payload": payload,
                 "human_label": human_label,
                 "strategy": request_data.strategy,
+                "autonomy_state": request_data.autonomy_state,
+                "autonomy_journal": request_data.autonomy_journal,
             },
         )
     except Exception as e:
@@ -108,8 +117,9 @@ async def agent_interaction(
 
     # 3. Active A2A Bridge Routing
     target_response = None
-    routing_msg = f"A2A Interaction captured in memory (no active routing mapped for '{t_agent}')"
-
+    routing_msg = (
+        f"A2A Interaction captured in memory (no active routing mapped for '{t_agent}')"
+    )
 
     AGENT_ROUTING_MAP = {
         "rae-quality": "http://rae-quality:8010",
@@ -123,7 +133,7 @@ async def agent_interaction(
         base_url = AGENT_ROUTING_MAP[t_agent]
         route_url = f"{base_url}/v2/bridge/interact"
         forward_payload = payload
-        
+
         intent = payload.get("intent")
         if t_agent == "rae-phoenix":
             if intent in ["REFACTOR_CODE", "CODE_REFACTORING_REQUEST"]:
@@ -131,8 +141,10 @@ async def agent_interaction(
                 forward_payload = {
                     "project": payload.get("project") or project,
                     "code": payload.get("faulty_code") or payload.get("code") or "",
-                    "reason": payload.get("tribunal_reasoning") or payload.get("reason") or "Quality standards not met",
-                    "file_path": payload.get("file_path", "unknown.py")
+                    "reason": payload.get("tribunal_reasoning")
+                    or payload.get("reason")
+                    or "Quality standards not met",
+                    "file_path": payload.get("file_path", "unknown.py"),
                 }
             elif intent in ["CREATE_CODE", "CREATE_TASK"]:
                 route_url = f"{base_url}/v2/phoenix/create"
@@ -140,7 +152,9 @@ async def agent_interaction(
                     "project": payload.get("project") or project,
                     "objective": payload.get("objective") or "",
                     "target_path": payload.get("target_path") or "",
-                    "architecture_style": payload.get("architecture_style", "Clean Architecture")
+                    "architecture_style": payload.get(
+                        "architecture_style", "Clean Architecture"
+                    ),
                 }
         elif t_agent == "rae-quality":
             if intent in ["AUDIT_CODE", "RUN_AUDIT"]:
@@ -148,24 +162,52 @@ async def agent_interaction(
                 forward_payload = {
                     "code": payload.get("code") or payload.get("faulty_code") or "",
                     "project": payload.get("project") or project,
-                    "importance": payload.get("importance", "medium")
+                    "importance": payload.get("importance", "medium"),
                 }
 
         logger.info("routing_a2a_interaction", target_agent=t_agent, url=route_url)
         try:
             import httpx
+
             async with httpx.AsyncClient() as client:
                 headers = {"X-Tenant-Id": tenant_id}
                 if project:
                     headers["X-Project-Id"] = project
-                
-                resp = await client.post(route_url, json=forward_payload, headers=headers, timeout=60.0)
+                if request_data.autonomy_state:
+                    # Sanitize to prevent HTTP header injection
+                    sanitized_state = request_data.autonomy_state.replace(
+                        "\r", ""
+                    ).replace("\n", "")[:50]
+                    headers["X-Autonomy-State"] = sanitized_state
+                if request_data.autonomy_journal:
+                    # Sanitize list elements to prevent injection and DoS
+                    sanitized_journal = []
+                    for item in request_data.autonomy_journal[:100]:
+                        if isinstance(item, str):
+                            sanitized_journal.append(
+                                item.replace("\r", "").replace("\n", "")[:50]
+                            )
+                    try:
+                        headers["X-Autonomy-Journal"] = json.dumps(sanitized_journal)
+                    except (TypeError, ValueError) as json_err:
+                        logger.error(
+                            "bridge_journal_serialization_failed", error=str(json_err)
+                        )
+
+                resp = await client.post(
+                    route_url, json=forward_payload, headers=headers, timeout=60.0
+                )
                 if resp.status_code in [200, 201]:
                     target_response = resp.json()
                     routing_msg = f"A2A Interaction routed to {t_agent} successfully"
                 else:
                     routing_msg = f"A2A Routing to {t_agent} failed with status {resp.status_code}"
-                    logger.error("routing_a2a_failed_status", target=t_agent, status=resp.status_code, body=resp.text)
+                    logger.error(
+                        "routing_a2a_failed_status",
+                        target=t_agent,
+                        status=resp.status_code,
+                        body=resp.text,
+                    )
         except Exception as e:
             routing_msg = f"A2A Routing to {t_agent} raised exception: {str(e)}"
             logger.error("routing_a2a_exception", target=t_agent, error=str(e))
@@ -175,14 +217,15 @@ async def agent_interaction(
         triggers_matched=0,
         actions_queued=0,
         message=routing_msg,
-        target_response=target_response
+        target_response=target_response,
+        autonomy_state=request_data.autonomy_state,
+        autonomy_journal=request_data.autonomy_journal,
     )
+
 
 @router.post("/audit")
 async def semantic_audit(
-    payload: Dict[str, Any],
-    request: Request,
-    source_agent: str = "open-claw"
+    payload: Dict[str, Any], request: Request, source_agent: str = "open-claw"
 ):
     """
     Phase 3 Hard Frames: Semantic Firewall.
@@ -190,7 +233,7 @@ async def semantic_audit(
     """
     service: RAECoreService = request.app.state.rae_core_service
     prompt = payload.get("prompt", "")
-    context = payload.get("context", "no_context")
+    payload.get("context", "no_context")
 
     # 1. Intent Analysis via Reflective Layer
     is_safe = True
@@ -208,10 +251,12 @@ async def semantic_audit(
         content=f"PHASE 3 AUDIT: {source_agent} prompt audit -> {is_safe}. Reason: {reason}",
         layer="reflective",
         tags=["phase3_audit", "firewall"],
-        metadata={"prompt_snippet": prompt[:100], "safe": is_safe, "reason": reason}
+        metadata={"prompt_snippet": prompt[:100], "safe": is_safe, "reason": reason},
     )
 
     if not is_safe:
-        raise HTTPException(status_code=403, detail=f"Semantic Firewall Block: {reason}")
+        raise HTTPException(
+            status_code=403, detail=f"Semantic Firewall Block: {reason}"
+        )
 
     return {"status": "approved", "audit_id": str(uuid4()), "reason": reason}
