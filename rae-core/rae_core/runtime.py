@@ -1,4 +1,5 @@
 import os
+
 import structlog
 
 from rae_core.interfaces.agent import BaseAgent
@@ -27,9 +28,9 @@ class RAERuntime:
         if not self.agent:
             raise RuntimeError("No agent configured for Runtime")
 
+        from rae_core.exceptions.base import ContractViolationError
         from rae_core.governance.frame_enforcer import HardFrameEnforcer
         from rae_core.models.contracts import AutonomyState
-        from rae_core.exceptions.base import ContractViolationError
 
         autonomy_mode = os.getenv("RAE_AUTONOMY_MODE", "hard")
         enforcer = HardFrameEnforcer(mode=autonomy_mode)
@@ -37,15 +38,17 @@ class RAERuntime:
         try:
             # 1. INTENT_DECLARED
             enforcer.transition_to(AutonomyState.INTENT_DECLARED)
-            
+
             # 2. RISK_ASSESSED
             # Perform risk classification check
             # If the request contains RESTRICTED class of info but target layer is not "working", block it
             info_class = input_payload.context.get("info_class")
             target_layer = input_payload.context.get("target_layer")
             if info_class == "RESTRICTED" and target_layer != "working":
-                raise ContractViolationError("Security Gate: RESTRICTED data is strictly forbidden outside the Working layer.")
-            
+                raise ContractViolationError(
+                    "Security Gate: RESTRICTED data is strictly forbidden outside the Working layer."
+                )
+
             enforcer.transition_to(AutonomyState.RISK_ASSESSED)
 
             # 3. CAPABILITY_GRANTED
@@ -59,7 +62,7 @@ class RAERuntime:
             # 5. Execute Agent & DRY_RUN_PASSED
             logger.info("rae_runtime_start", request_id=str(input_payload.request_id))
             action = await self.agent.run(input_payload)
-            
+
             # Validation (Architecture Enforcement)
             if not isinstance(action, AgentAction):
                 raise TypeError(
@@ -81,13 +84,13 @@ class RAERuntime:
             # 9. MEMORY_COMMITTED
             # Transition to MEMORY_COMMITTED first, then write memory
             enforcer.transition_to(AutonomyState.MEMORY_COMMITTED)
-            
+
             base_metadata = {
                 "request_id": str(input_payload.request_id),
                 "confidence": action.confidence,
                 "reasoning": action.reasoning,
                 "input_preview": input_payload.content[:100],
-                "autonomy_journal": enforcer.get_journal()
+                "autonomy_journal": enforcer.get_journal(),
             }
             # Memory Hook (The "Side Effect")
             await self._handle_memory_policy(input_payload, action, base_metadata)
@@ -127,18 +130,21 @@ class RAERuntime:
             # SYSTEM 92.4: Fallback isolation in Runtime
             is_fallback = "fallback" in action.signals
             target_layer = "working" if is_fallback else "episodic"
-            
-            logger.info("memory_policy_triggered", 
-                        rule="final_answer_store", 
-                        is_fallback=is_fallback,
-                        layer=target_layer)
-                        
+
+            logger.info(
+                "memory_policy_triggered",
+                rule="final_answer_store",
+                is_fallback=is_fallback,
+                layer=target_layer,
+            )
+
             await self.storage.store_memory(
                 content=str(action.content),
                 layer=target_layer,
                 tenant_id=input_payload.tenant_id,
                 agent_id=agent_id,
-                tags=base_tags + (["final_answer"] if not is_fallback else ["operational_fallback"]),
+                tags=base_tags
+                + (["final_answer"] if not is_fallback else ["operational_fallback"]),
                 metadata=base_metadata,
                 project=project,
                 session_id=session_id,

@@ -1,8 +1,10 @@
 import logging
-from rae_core.models.contracts import AutonomyState
+
 from rae_core.exceptions.base import ContractViolationError
+from rae_core.models.contracts import AutonomyState
 
 logger = logging.getLogger("rae_core.governance.frame_enforcer")
+
 
 class HardFrameEnforcer:
     """
@@ -23,7 +25,9 @@ class HardFrameEnforcer:
         """Transitions the agent to a target state, verifying compliance."""
         if self.mode != "hard":
             # Ordinary Mode: log transitions but do not enforce them strictly in code
-            logger.info(f"ordinary_transition: from_state={self._current_state.value}, to_state={target_state.value}")
+            logger.info(
+                f"ordinary_transition: from_state={self._current_state.value}, to_state={target_state.value}"
+            )
             self._current_state = target_state
             self._journal.append(target_state)
             return
@@ -43,7 +47,9 @@ class HardFrameEnforcer:
 
         # Any state can transition to ROLLBACK_TRIGGERED on failure/error
         if target_state == AutonomyState.ROLLBACK_TRIGGERED:
-            logger.warning(f"rollback_triggered: current_state={self._current_state.value}")
+            logger.warning(
+                f"rollback_triggered: current_state={self._current_state.value}"
+            )
             self._current_state = target_state
             self._journal.append(target_state)
             return
@@ -56,10 +62,14 @@ class HardFrameEnforcer:
                 f"Allowed target states are: {[s.value for s in allowed]}. "
                 f"Flow Sequence MUST follow the Sequence of Autonomy contract."
             )
-            logger.error(f"hard_frame_violation: from_state={self._current_state.value}, to_state={target_state.value}")
+            logger.error(
+                f"hard_frame_violation: from_state={self._current_state.value}, to_state={target_state.value}"
+            )
             raise ContractViolationError(err_msg)
 
-        logger.info(f"hard_frame_transition: from_state={self._current_state.value}, to_state={target_state.value}")
+        logger.info(
+            f"hard_frame_transition: from_state={self._current_state.value}, to_state={target_state.value}"
+        )
         self._current_state = target_state
         self._journal.append(target_state)
 
