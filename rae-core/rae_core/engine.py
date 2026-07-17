@@ -26,6 +26,7 @@ class RAEEngine:
         search_engine: Any = None,
         math_controller: Any = None,
         resonance_engine: Any = None,
+        graph_store: Any = None,
     ):
         self.memory_storage = memory_storage
         self.vector_store = vector_store
@@ -33,6 +34,7 @@ class RAEEngine:
         self.llm_provider = llm_provider
         self.settings = settings
         self.cache_provider = cache_provider
+        self.graph_store = graph_store
 
         # Initialize Math Layer Controller (The Brain)
         from rae_core.math.controller import MathLayerController
@@ -52,7 +54,11 @@ class RAEEngine:
         strategies = {
             "fulltext": self._init_fulltext_strategy(),
             "anchor": self._init_anchor_strategy(),
+            "sparse": self._init_sparse_strategy(),
         }
+
+        if self.graph_store:
+            strategies["graph"] = self._init_graph_strategy()
 
         # Dynamic Multi-Vector Registration
         from rae_core.embedding.manager import EmbeddingManager
@@ -79,6 +85,7 @@ class RAEEngine:
                 strategies=strategies,
                 embedding_provider=self.embedding_provider,
                 memory_storage=self.memory_storage,
+                graph_store=self.graph_store,
             )
 
     def _init_anchor_strategy(self):
@@ -107,6 +114,16 @@ class RAEEngine:
         from rae_core.search.strategies.fulltext import FullTextStrategy
 
         return FullTextStrategy(self.memory_storage)
+
+    def _init_sparse_strategy(self):
+        from rae_core.search.strategies.sparse import SparseVectorStrategy
+
+        return SparseVectorStrategy(self.memory_storage)
+
+    def _init_graph_strategy(self):
+        from rae_core.search.strategies.graph import GraphTraversalStrategy
+
+        return GraphTraversalStrategy(self.graph_store)
 
     async def search_memories(
         self,

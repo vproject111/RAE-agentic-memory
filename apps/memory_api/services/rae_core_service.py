@@ -278,7 +278,9 @@ class RAECoreService:
 
         # Search Engine
         from rae_core.search.engine import HybridSearchEngine
+        from rae_core.search.strategies.anchor import AnchorStrategy
         from rae_core.search.strategies.fulltext import FullTextStrategy
+        from rae_core.search.strategies.sparse import SparseVectorStrategy
         from rae_core.search.strategies.vector import VectorSearchStrategy
 
         search_strategies = {
@@ -287,6 +289,8 @@ class RAECoreService:
                 embedding_provider=self.embedding_provider,
             ),
             "fulltext": FullTextStrategy(memory_storage=self.postgres_adapter),
+            "sparse": SparseVectorStrategy(memory_storage=self.postgres_adapter),
+            "anchor": AnchorStrategy(memory_storage=self.postgres_adapter),
         }
 
         # SYSTEM 40.15: Optional Graph Store for Lite Mode
@@ -296,6 +300,11 @@ class RAECoreService:
                 graph_repo = self.enhanced_graph_repo
             except Exception as e:
                 logger.warning("graph_repo_init_skipped", reason=str(e))
+
+        if graph_repo:
+            from rae_core.search.strategies.graph import GraphTraversalStrategy
+
+            search_strategies["graph"] = GraphTraversalStrategy(graph_store=graph_repo)
 
         search_engine = HybridSearchEngine(
             strategies=search_strategies,
