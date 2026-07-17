@@ -32,3 +32,18 @@ class ContractValidationResult(BaseModel):
     level: int = 1 # 1: Structural, 2: Semantic, 3: Epistemic
     errors: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class AutonomyState(str, Enum):
+    """Immutable steps of RAE Sequence of Autonomy under Hard Frames mode."""
+    INIT = "INIT"
+    INTENT_DECLARED = "INTENT_DECLARED"
+    RISK_ASSESSED = "RISK_ASSESSED"
+    CAPABILITY_GRANTED = "CAPABILITY_GRANTED"
+    SANDBOX_READY = "SANDBOX_READY"
+    DRY_RUN_PASSED = "DRY_RUN_PASSED"
+    QUALITY_GATE_PASSED = "QUALITY_GATE_PASSED"
+    EVIDENCE_PACKED = "EVIDENCE_PACKED"
+    DECISION_RECORDED = "DECISION_RECORDED"
+    MEMORY_COMMITTED = "MEMORY_COMMITTED"
+    ROLLBACK_TRIGGERED = "ROLLBACK_TRIGGERED"
+
