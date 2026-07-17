@@ -20,7 +20,9 @@ class _RAEAPIClient:
         try:
             with httpx.Client() as client:
                 response = client.post(
-                    f"{self.base_url}/v2/memories/query", json=payload, headers=self.headers
+                    f"{self.base_url}/v2/memories/query",
+                    json=payload,
+                    headers=self.headers,
                 )
                 response.raise_for_status()
 

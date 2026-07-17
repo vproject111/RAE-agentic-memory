@@ -15,9 +15,9 @@ Includes:
 - LLM-based re-ranking
 """
 
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-import json
 
 import structlog
 
@@ -426,13 +426,15 @@ class HybridSearchService:
                     except Exception:
                         meta = {}
 
-                results.append({
-                    "memory_id": record["id"],
-                    "content": record["content"],
-                    "score": float(record["similarity"]),
-                    "metadata": meta or {},
-                    "created_at": record["created_at"],
-                })
+                results.append(
+                    {
+                        "memory_id": record["id"],
+                        "content": record["content"],
+                        "score": float(record["similarity"]),
+                        "metadata": meta or {},
+                        "created_at": record["created_at"],
+                    }
+                )
 
             logger.info("vector_search_complete", results=len(results))
             return results
@@ -468,9 +470,7 @@ class HybridSearchService:
                 LIMIT $4
             """
 
-            records = await self.rae_service.db.fetch(
-                sql, tenant_id, project, query, k
-            )
+            records = await self.rae_service.db.fetch(sql, tenant_id, project, query, k)
 
             # Expand to source memories
             results = []

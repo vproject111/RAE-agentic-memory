@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Protocol, runtime_checkable
 
+
 @runtime_checkable
 class IClock(Protocol):
     """Interface for time-keeping."""
@@ -11,12 +12,14 @@ class IClock(Protocol):
         """Get current time."""
         ...
 
+
 class SystemClock:
     """Standard system clock."""
 
     def now(self) -> datetime:
         """Get current UTC time from system."""
         return datetime.now(timezone.utc)
+
 
 class DeterministicClock:
     """Fixed or incrementing clock for deterministic testing."""
@@ -41,5 +44,6 @@ class DeterministicClock:
         current = self._current
         if self._step_ms > 0:
             from datetime import timedelta
+
             self._current += timedelta(milliseconds=self._step_ms)
         return current

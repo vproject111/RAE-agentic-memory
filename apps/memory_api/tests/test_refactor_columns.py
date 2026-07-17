@@ -18,6 +18,7 @@ async def test_store_memory_canonical_fields(mock_pool):
     service = RAECoreService(postgres_pool=mock_pool)
 
     from uuid import uuid4
+
     mock_pool._test_conn.fetchrow.return_value = {"id": uuid4()}
 
     # Mock engine's internal components if needed, but we are testing integration
@@ -47,7 +48,10 @@ async def test_store_memory_canonical_fields(mock_pool):
 
     # 3. Verify DB execution
     # Get all execute and fetchrow calls
-    calls = mock_pool._test_conn.execute.call_args_list + mock_pool._test_conn.fetchrow.call_args_list
+    calls = (
+        mock_pool._test_conn.execute.call_args_list
+        + mock_pool._test_conn.fetchrow.call_args_list
+    )
 
     # Find the call for INSERT INTO memories
     insert_call = None
@@ -93,15 +97,23 @@ async def test_store_memory_canonical_fields(mock_pool):
 
     # Verify expires_at is set (ttl was provided)
     # It should be a datetime object in the future
-    from datetime import timezone, timedelta
-    datetimes = [arg for arg in args if hasattr(arg, "isoformat") and not isinstance(arg, str)]
+    from datetime import timedelta, timezone
+
+    datetimes = [
+        arg for arg in args if hasattr(arg, "isoformat") and not isinstance(arg, str)
+    ]
     future_dts = [
-        dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt 
-        for dt in datetimes
+        dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt for dt in datetimes
     ]
     # Filter to find the one in the future (expires_at)
-    expires_at_dt = [dt for dt in future_dts if dt > datetime.now(timezone.utc) + timedelta(seconds=10)]
-    assert len(expires_at_dt) > 0, "No future expires_at datetime found in query arguments"
+    expires_at_dt = [
+        dt
+        for dt in future_dts
+        if dt > datetime.now(timezone.utc) + timedelta(seconds=10)
+    ]
+    assert (
+        len(expires_at_dt) > 0
+    ), "No future expires_at datetime found in query arguments"
 
     # 6. Verify Metadata (Phase 1 Requirement)
     metadata_arg = None

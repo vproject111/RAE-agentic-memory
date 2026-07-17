@@ -6,4 +6,4 @@ def test_version_info():
     assert isinstance(__author__, str)
     assert isinstance(__email__, str)
     assert isinstance(__license__, str)
-    assert "3.6.1" in __version__
+    assert "3.7.0" in __version__

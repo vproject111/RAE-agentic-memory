@@ -49,7 +49,9 @@ async def test_sqlite_storage_extra(db_path):
 
     future = datetime.now(timezone.utc) + timedelta(days=1)
 
-    mid = await storage.store_memory("c", "l", "t", "a", expires_at=future)
+    mid = await storage.store_memory(
+        content="c", layer="l", tenant_id="t", agent_id="a", expires_at=future
+    )
     await storage.update_memory(mid, "t", {"tags": ["t1"], "metadata": {"m": 1}})
 
     # search_memories with empty query

@@ -1,6 +1,7 @@
 import os
 import socket
 from pathlib import Path
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,22 +30,22 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
-    
+
     # --- Intelligence & Determinism Stack ---
     # RAE_EMBEDDING_BACKEND: "onnx" ensures 100% deterministic vectors using local models (22MB/130MB)
-    RAE_EMBEDDING_BACKEND: str = "onnx"  
-    
+    RAE_EMBEDDING_BACKEND: str = "onnx"
+
     # RAE_LLM_MODEL_DEFAULT: Using Qwen 3.5 9B for high-quality synthesis.
     RAE_LLM_MODEL_DEFAULT: str = "ollama/qwen2.5:1.5b"
-    
-    # RAE_REFLECTION_STRATEGY: 
+
+    # RAE_REFLECTION_STRATEGY:
     # "math" - Purely deterministic L1-L3 reflections
     # "hybrid" - Math for validation + LLM for "Lessons Learned" generation
     RAE_REFLECTION_STRATEGY: str = "hybrid"
 
     OLLAMA_API_BASE: str | None = None
     OLLAMA_API_URL: str | None = "http://ollama-dev:11434"
-    
+
     # Ollama Configuration
     OLLAMA_HOSTS: list[str] = [
         "http://ollama-dev:11434",
@@ -155,9 +156,11 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_sandbox_mode(self):
         if self.RAE_PROFILE == "lite":
+
             def is_port_in_use(port):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     return s.connect_ex(("localhost", port)) == 0
+
             if is_port_in_use(8000):
                 if self.MEMORY_API_URL == "http://localhost:8000":
                     self.MEMORY_API_URL = "http://localhost:8010"
@@ -204,7 +207,13 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_file=[".env", str(Path(__file__).parent.parent.parent / "rae-core" / ".env"), str(Path("/app/rae_core/.env"))], env_file_encoding="utf-8", extra="ignore"
+        env_file=[
+            ".env",
+            str(Path(__file__).parent.parent.parent / "rae-core" / ".env"),
+            str(Path("/app/rae_core/.env")),
+        ],
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 

@@ -1,6 +1,6 @@
 """RAE Ingestion Package."""
 
-from .pipeline import UniversalIngestPipeline
 from .interfaces import ContentSignature, IngestChunk
+from .pipeline import UniversalIngestPipeline
 
 __all__ = ["UniversalIngestPipeline", "ContentSignature", "IngestChunk"]

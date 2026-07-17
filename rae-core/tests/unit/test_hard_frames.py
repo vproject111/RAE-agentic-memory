@@ -98,3 +98,142 @@ async def test_runtime_valid_autonomy_journey():
 
     assert "INIT" in autonomy_journal
     assert "MEMORY_COMMITTED" in autonomy_journal
+
+
+class SimpleWriteAgent(BaseAgent):
+    async def run(self, input_payload: RAEInput) -> AgentAction:
+        return AgentAction(
+            type=AgentActionType.TOOL_CALL,
+            content="write_file('out.py')",
+            confidence=0.9,
+            reasoning="Write mock",
+            signals=["write"],
+            metadata={"tool_name": "write_file", "code_content": "print('ok')"},
+        )
+
+
+class SyntaxErrorAgent(BaseAgent):
+    async def run(self, input_payload: RAEInput) -> AgentAction:
+        return AgentAction(
+            type=AgentActionType.TOOL_CALL,
+            content="write_file('out.py')",
+            confidence=0.9,
+            reasoning="Write syntax error mock",
+            signals=["write"],
+            metadata={"tool_name": "write_file", "code_content": "def test_err(:"},
+        )
+
+
+class AbsolutePathAgent(BaseAgent):
+    async def run(self, input_payload: RAEInput) -> AgentAction:
+        return AgentAction(
+            type=AgentActionType.TOOL_CALL,
+            content="write_file('/etc/passwd')",
+            confidence=0.9,
+            reasoning="Write absolute path mock",
+            signals=["write"],
+            metadata={"tool_name": "write_file", "code_content": "passwd_info"},
+        )
+
+
+@pytest.mark.asyncio
+async def test_runtime_sandbox_write_gate_blocks_when_not_ready(monkeypatch):
+    monkeypatch.setenv("RAE_AUTONOMY_MODE", "hard")
+    storage = MagicMock(spec=IMemoryStorage)
+    agent = SimpleWriteAgent()
+    runtime = RAERuntime(storage, agent)
+
+    payload = RAEInput(
+        request_id=uuid4(),
+        tenant_id="t1",
+        content="Normal text",
+        context={"info_class": "PUBLIC", "target_layer": "episodic"},
+    )
+
+    from rae_core.governance.frame_enforcer import HardFrameEnforcer
+
+    original_transition = HardFrameEnforcer.transition_to
+
+    def transition_without_sandbox(self, target_state):
+        if target_state == AutonomyState.SANDBOX_READY:
+            return
+        original_transition(self, target_state)
+
+    monkeypatch.setattr(HardFrameEnforcer, "transition_to", transition_without_sandbox)
+
+    with pytest.raises(ContractViolationError) as exc:
+        await runtime.process(payload)
+
+    assert "Filesystem write operations are strictly forbidden" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_runtime_dry_run_syntax_validation_blocks(monkeypatch):
+    monkeypatch.setenv("RAE_AUTONOMY_MODE", "hard")
+    storage = MagicMock(spec=IMemoryStorage)
+    agent = SyntaxErrorAgent()
+    runtime = RAERuntime(storage, agent)
+
+    payload = RAEInput(
+        request_id=uuid4(),
+        tenant_id="t1",
+        content="Normal text",
+        context={"info_class": "PUBLIC", "target_layer": "episodic"},
+    )
+
+    with pytest.raises(ContractViolationError) as exc:
+        await runtime.process(payload)
+
+    assert "Proposed Python code contains syntax errors" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_runtime_dry_run_absolute_path_validation_blocks(monkeypatch):
+    monkeypatch.setenv("RAE_AUTONOMY_MODE", "hard")
+    storage = MagicMock(spec=IMemoryStorage)
+    agent = AbsolutePathAgent()
+    runtime = RAERuntime(storage, agent)
+
+    payload = RAEInput(
+        request_id=uuid4(),
+        tenant_id="t1",
+        content="Normal text",
+        context={"info_class": "PUBLIC", "target_layer": "episodic"},
+    )
+
+    with pytest.raises(ContractViolationError) as exc:
+        await runtime.process(payload)
+
+    assert "is an absolute filesystem path" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_runtime_automatic_rollback_triggered_on_failure(monkeypatch):
+    monkeypatch.setenv("RAE_AUTONOMY_MODE", "hard")
+    storage = MagicMock(spec=IMemoryStorage)
+    agent = SyntaxErrorAgent()
+    runtime = RAERuntime(storage, agent)
+
+    payload = RAEInput(
+        request_id=uuid4(),
+        tenant_id="t1",
+        content="Normal text",
+        context={
+            "info_class": "PUBLIC",
+            "target_layer": "episodic",
+            "project_dir": ".",
+        },
+    )
+
+    rollback_called = False
+
+    def mock_rollback(payload_arg):
+        nonlocal rollback_called
+        rollback_called = True
+
+    monkeypatch.setattr(runtime, "_perform_git_rollback", mock_rollback)
+
+    with pytest.raises(ContractViolationError):
+        await runtime.process(payload)
+
+    assert rollback_called is True

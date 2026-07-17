@@ -223,8 +223,7 @@ async def db_pool(postgres_container):
 
             # Create minimal schema for tests
             # In production, this should be replaced with proper Alembic migrations
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                     tenant_id VARCHAR(255) NOT NULL,
@@ -247,11 +246,9 @@ async def db_pool(postgres_container):
                     qdrant_point_id TEXT,
                     embedding vector(384)
                 );
-            """
-            )
+            """)
 
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS token_savings_log (
                     id SERIAL PRIMARY KEY,
                     tenant_id VARCHAR(255) NOT NULL,
@@ -265,11 +262,9 @@ async def db_pool(postgres_container):
                     model VARCHAR(100),
                     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
-            """
-            )
+            """)
 
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS budgets (
                     id SERIAL PRIMARY KEY,
                     tenant_id VARCHAR(255) UNIQUE NOT NULL,
@@ -278,11 +273,9 @@ async def db_pool(postgres_container):
                     last_reset_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT TRUE
                 );
-            """
-            )
+            """)
 
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_graph_nodes (
                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                     tenant_id VARCHAR(255) NOT NULL,
@@ -293,11 +286,9 @@ async def db_pool(postgres_container):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(tenant_id, project, node_id)
                 );
-            """
-            )
+            """)
 
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_graph_edges (
                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                     tenant_id VARCHAR(255) NOT NULL,
@@ -309,8 +300,7 @@ async def db_pool(postgres_container):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(tenant_id, project, source_node_id, target_node_id, relation)
                 );
-            """
-            )
+            """)
 
         yield pool
 

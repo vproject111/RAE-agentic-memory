@@ -41,7 +41,10 @@ class VectorSearchStrategy(SearchStrategy):
         )
 
         results = await self.vector_store.search_similar(
-            query_embedding=query_embedding, tenant_id=tenant_id, limit=limit, **search_kwargs
+            query_embedding=query_embedding,
+            tenant_id=tenant_id,
+            limit=limit,
+            **search_kwargs,
         )
 
         # Convert to 3-tuple (id, score, importance)

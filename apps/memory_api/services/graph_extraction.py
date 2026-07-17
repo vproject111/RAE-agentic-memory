@@ -404,9 +404,7 @@ class GraphExtractionService:
             )
 
         except Exception as e:
-            logger.exception(
-                "graph_extraction_failed", project=project, error=str(e)
-            )
+            logger.exception("graph_extraction_failed", project=project, error=str(e))
             raise RuntimeError(f"Graph extraction failed: {e}")
 
     async def _filter_factual_memories(

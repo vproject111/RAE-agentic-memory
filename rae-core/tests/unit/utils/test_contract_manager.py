@@ -1,7 +1,7 @@
+from unittest.mock import mock_open, patch
 
-import pytest
-from unittest.mock import patch, mock_open
 from rae_core.utils.contract_manager import ContractManager
+
 
 def test_contract_manager_init_no_path():
     with patch("os.path.exists") as mock_exists:
@@ -10,26 +10,31 @@ def test_contract_manager_init_no_path():
         assert cm.contracts_path == "/non/existent"
         assert cm.rules == {}
 
+
 def test_contract_manager_load_contracts():
-    with patch("os.path.exists") as mock_exists, \
-         patch("os.listdir") as mock_listdir, \
-         patch("builtins.open", mock_open(read_data="binary_content")) as mock_file:
-        
+    with (
+        patch("os.path.exists") as mock_exists,
+        patch("os.listdir") as mock_listdir,
+        patch("builtins.open", mock_open(read_data="binary_content")) as mock_file,
+    ):
+
         mock_exists.return_value = True
         mock_listdir.return_value = ["rule1.bin", "not_a_rule.txt"]
-        
+
         cm = ContractManager(contracts_path="/fake/path")
-        
+
         assert "rule1.bin" in cm.rules
         assert cm.rules["rule1.bin"] == "binary_content"
         assert "not_a_rule.txt" not in cm.rules
-        mock_file.assert_called_once_with("/fake/path/rule1.bin", "r")
+        mock_file.assert_called_once_with("/fake/path/rule1.bin")
+
 
 def test_verify_operation_valid():
     cm = ContractManager(contracts_path="/fake/path")
     success, message = cm.verify_operation("test_op", "low", "internal")
     assert success is True
     assert message == "OK"
+
 
 def test_verify_operation_invalid():
     cm = ContractManager(contracts_path="/fake/path")
@@ -46,17 +51,20 @@ def test_verify_operation_invalid():
     assert success is True
     assert message == "OK"
 
+
 def test_get_bootstrap_summary():
-    with patch("os.path.exists") as mock_exists, \
-         patch("os.listdir") as mock_listdir, \
-         patch("builtins.open", mock_open(read_data="Rule content")) as mock_file:
-        
+    with (
+        patch("os.path.exists") as mock_exists,
+        patch("os.listdir") as mock_listdir,
+        patch("builtins.open", mock_open(read_data="Rule content")) as mock_file,
+    ):
+
         mock_exists.return_value = True
         mock_listdir.return_value = ["SECURITY.bin"]
-        
+
         cm = ContractManager(contracts_path="/fake/path")
         summary = cm.get_bootstrap_summary()
-        
+
         assert "--- MANDATORY HARD CONTRACTS LOADED ---" in summary
         assert "[SECURITY.bin]:" in summary
         assert "Rule content" in summary

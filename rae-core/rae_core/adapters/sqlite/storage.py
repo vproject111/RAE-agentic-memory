@@ -23,8 +23,7 @@ class SQLiteStorage(IMemoryStorage):
 
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("PRAGMA journal_mode=WAL")
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY,
                     content TEXT NOT NULL,
@@ -42,11 +41,9 @@ class SQLiteStorage(IMemoryStorage):
                     expires_at TEXT,
                     project TEXT
                 )
-            """
-            )
+            """)
             # Support for embeddings table used in tests
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS memory_embeddings (
                     memory_id TEXT NOT NULL,
                     model_name TEXT NOT NULL,
@@ -54,13 +51,12 @@ class SQLiteStorage(IMemoryStorage):
                     created_at TEXT NOT NULL,
                     PRIMARY KEY (memory_id, model_name)
                 )
-            """
-            )
+            """)
             # FTS5 virtual table for lightning-fast keyword search
             await db.execute(
                 "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(content, content='memories')"
             )
-            
+
             # Triggers to keep FTS index synced with main table
             await db.execute("""
                 CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
@@ -78,7 +74,7 @@ class SQLiteStorage(IMemoryStorage):
                     INSERT INTO memories_fts(rowid, content) VALUES (new.rowid, new.content);
                 END;
             """)
-            
+
             await db.commit()
         self._initialized = True
 
@@ -306,7 +302,7 @@ class SQLiteStorage(IMemoryStorage):
             # Use FTS5 MATCH for high precision search
             # We join with the main memories table to get the tenant_id filtering and full metadata
             sql = """
-                SELECT m.* 
+                SELECT m.*
                 FROM memories m
                 JOIN memories_fts f ON m.rowid = f.rowid
                 WHERE m.tenant_id = ? AND memories_fts MATCH ?
@@ -319,7 +315,9 @@ class SQLiteStorage(IMemoryStorage):
             except aiosqlite.OperationalError:
                 # Fallback to LIKE if MATCH fails (e.g. invalid syntax or FTS table missing)
                 sql_fallback = "SELECT * FROM memories WHERE tenant_id = ? AND content LIKE ? LIMIT ?"
-                async with db.execute(sql_fallback, (tenant_id, f"%{search_term}%", limit)) as cursor:
+                async with db.execute(
+                    sql_fallback, (tenant_id, f"%{search_term}%", limit)
+                ) as cursor:
                     rows = await cursor.fetchall()
                     return [self._row_to_dict(r) for r in rows]
 

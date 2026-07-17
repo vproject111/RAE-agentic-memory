@@ -70,6 +70,16 @@ class RAERuntime:
                     "Direct string return is FORBIDDEN."
                 )
 
+            # Bind filesystem execution tools to verify state is SANDBOX_READY
+            if self._is_write_operation(action):
+                if enforcer.current_state != AutonomyState.SANDBOX_READY:
+                    raise ContractViolationError(
+                        "Hard Gating Violation: Filesystem write operations are strictly forbidden unless current state is SANDBOX_READY."
+                    )
+
+            # Implement dry-run tool mocks that run automatically before changes are applied
+            self._run_dry_run_mocks(action)
+
             enforcer.transition_to(AutonomyState.DRY_RUN_PASSED)
 
             # 6. QUALITY_GATE_PASSED
@@ -85,22 +95,30 @@ class RAERuntime:
             # Transition to MEMORY_COMMITTED first, then write memory
             enforcer.transition_to(AutonomyState.MEMORY_COMMITTED)
 
+            # Calculate cryptographic Evidence Pack Hash for ISO auditability
+            import hashlib
+
+            evidence_data = f"{input_payload.request_id}:{input_payload.content}:{action.type}:{action.content}:{action.reasoning}"
+            evidence_hash = hashlib.sha256(evidence_data.encode("utf-8")).hexdigest()
+
             base_metadata = {
                 "request_id": str(input_payload.request_id),
                 "confidence": action.confidence,
                 "reasoning": action.reasoning,
                 "input_preview": input_payload.content[:100],
                 "autonomy_journal": enforcer.get_journal(),
+                "evidence_pack_hash": evidence_hash,
             }
             # Memory Hook (The "Side Effect")
             await self._handle_memory_policy(input_payload, action, base_metadata)
 
         except Exception as e:
-            # Trigger ROLLBACK state on enforcer
+            # Trigger ROLLBACK state on enforcer and execute automatic git-worktree rollback
             try:
                 enforcer.transition_to(AutonomyState.ROLLBACK_TRIGGERED)
-            except Exception:
-                pass
+                self._perform_git_rollback(input_payload)
+            except Exception as rollback_err:
+                logger.error("rollback_execution_failed", error=str(rollback_err))
             logger.error("hard_frame_execution_failed_rollback", error=str(e))
             raise
 
@@ -180,3 +198,112 @@ class RAERuntime:
                 session_id=session_id,
                 source="RAERuntime",
             )
+
+    def _is_write_operation(self, action: AgentAction) -> bool:
+        if action.type != AgentActionType.TOOL_CALL:
+            return False
+        tool_name = str(action.metadata.get("tool_name", "")).lower()
+        content_str = str(action.content).lower()
+        write_keywords = [
+            "write_file",
+            "replace_content",
+            "write_to_file",
+            "replace_file_content",
+            "multi_replace_file_content",
+            "patch",
+            "modify_file",
+        ]
+        return any(kw in tool_name or kw in content_str for kw in write_keywords)
+
+    def _run_dry_run_mocks(self, action: AgentAction) -> None:
+        """
+        Runs dry-run validation checks on proposed actions before transition to DRY_RUN_PASSED.
+        """
+        logger.info("running_dry_run_mocks", action_type=action.type)
+        from rae_core.exceptions.base import ContractViolationError
+
+        # 1. Path Safety Check: Ensure no absolute paths are targeted
+        content_str = str(action.content)
+        import re
+
+        # Match paths starting with / or drive letters, following whitespace, quotes, parenthesis or start of string
+        abs_path_pattern = r"(?:^|['\"(\s])(/[^'\"()\s,]+)|([a-zA-Z]:\\[^'\"()\s,]+)"
+        matches = re.findall(abs_path_pattern, content_str)
+        if matches:
+            for unix_path, win_path in matches:
+                path_to_check = unix_path or win_path
+                if path_to_check and not any(
+                    p in path_to_check for p in ["/dev/null", "/dev/urandom", "/tmp"]
+                ):
+                    raise ContractViolationError(
+                        f"Dry-Run Gate: Target path '{path_to_check}' is an absolute filesystem path. "
+                        "Only relative project paths are allowed by RAE Core rules."
+                    )
+
+        # 2. Syntax check for code modifications
+        if action.type == AgentActionType.TOOL_CALL and any(
+            kw in str(action.metadata.get("tool_name", "")).lower()
+            for kw in ["write", "replace"]
+        ):
+            code_candidate = action.metadata.get("code_content") or action.metadata.get(
+                "replacement_content"
+            )
+            if not code_candidate and isinstance(action.content, dict):
+                code_candidate = (
+                    action.content.get("code")
+                    or action.content.get("content")
+                    or action.content.get("ReplacementContent")
+                    or action.content.get("CodeContent")
+                )
+
+            if (
+                code_candidate
+                and isinstance(code_candidate, str)
+                and (
+                    "def " in code_candidate
+                    or "import " in code_candidate
+                    or "class " in code_candidate
+                )
+            ):
+                try:
+                    import ast
+
+                    ast.parse(code_candidate)
+                    logger.info("dry_run_syntax_validation_passed")
+                except SyntaxError as syntax_err:
+                    raise ContractViolationError(
+                        f"Dry-Run Gate: Proposed Python code contains syntax errors: {syntax_err}"
+                    )
+
+    def _perform_git_rollback(self, input_payload: RAEInput) -> None:
+        """
+        Rolls back the workspace on failure by discarding all uncommitted files.
+        """
+        import os
+
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            logger.info("git_rollback_skipped_during_test_run")
+            return
+
+        import subprocess
+
+        project_dir = input_payload.context.get("project_dir") or "."
+        logger.warning("git_rollback_triggered_automatically", project_dir=project_dir)
+        try:
+            # 1. Reset worktree modifications
+            subprocess.run(
+                ["git", "reset", "--hard", "HEAD"],
+                cwd=project_dir,
+                capture_output=True,
+                check=False,
+            )
+            # 2. Clean untracked files
+            subprocess.run(
+                ["git", "clean", "-fd"],
+                cwd=project_dir,
+                capture_output=True,
+                check=False,
+            )
+            logger.info("git_rollback_completed_successfully")
+        except Exception as rollback_err:
+            logger.error("git_rollback_failed", error=str(rollback_err))

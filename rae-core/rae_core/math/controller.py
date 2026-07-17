@@ -5,7 +5,6 @@ Manages the selection of mathematical strategies (L1/L2/L3) and weights using Mu
 
 from typing import Any
 
-import numpy as np
 import structlog
 
 from rae_core.math.bandit.arm import Arm
@@ -35,7 +34,7 @@ class MathLayerController:
         else:
             # Fallback for generic objects (e.g. SimpleNamespace or Mocks)
             self.config = vars(raw_config) if hasattr(raw_config, "__dict__") else {}
-            
+
         self.feature_extractor = FeatureExtractorV2()
 
         # Initialize Bandit with 'Spectrum' Arms
@@ -56,7 +55,9 @@ class MathLayerController:
             ratio = i / 10.0
             weights = {
                 "fulltext": round(1.0 - ratio, 2) * 10,
-                "vector": max(0.5, round(ratio, 2) * 10), # Floor at 0.5 to keep semantic search alive
+                "vector": max(
+                    0.5, round(ratio, 2) * 10
+                ),  # Floor at 0.5 to keep semantic search alive
                 "anchor": 1000.0,
             }
             params = {"resonance_factor": 0.2, "rerank_gate": 0.5, "rerank_limit": 300}
@@ -92,37 +93,53 @@ class MathLayerController:
             arms.append(create_arm(f"abstract_{i}", weights, params))
 
         bandit_conf = self.config.get("bandit", {})
-        
+
         # Safe initialization of BanditConfig
         if isinstance(bandit_conf, dict):
             # Filter out keys that are not in BanditConfig dataclass
-            valid_keys = {"c", "context_bonus", "exploration_rate", "max_exploration_rate", 
-                          "degradation_threshold", "min_pulls_for_confidence", "save_frequency", "persistence_path"}
+            valid_keys = {
+                "c",
+                "context_bonus",
+                "exploration_rate",
+                "max_exploration_rate",
+                "degradation_threshold",
+                "min_pulls_for_confidence",
+                "save_frequency",
+                "persistence_path",
+            }
             filtered_conf = {k: v for k, v in bandit_conf.items() if k in valid_keys}
             conf_obj = BanditConfig(**filtered_conf)
         elif isinstance(bandit_conf, BanditConfig):
             conf_obj = bandit_conf
         else:
             conf_obj = BanditConfig()
-            
+
         return MultiArmedBandit(config=conf_obj, arms=arms)
 
     def compute_similarity(self, v1: list[float], v2: list[float]) -> float:
-        """Helper for legacy tests."""
-        from rae_core.math.structure import cosine_similarity
-        return cosine_similarity(v1, v2)
+        """Helper for legacy tests with fallback logic."""
+        try:
+            return cosine_similarity(v1, v2)
+        except Exception:
+            from rae_core.math.structure import (
+                cosine_similarity as real_cosine_similarity,
+            )
+
+            return real_cosine_similarity(v1, v2)
 
     def apply_decay(self, age_hours: float, usage_count: int) -> float:
         """Helper for legacy tests."""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
+
         from rae_core.math.dynamics import calculate_recency_score
+
         now = datetime.now(timezone.utc)
         created_at = now - timedelta(hours=age_hours)
         score, _, _ = calculate_recency_score(
             last_accessed_at=None,
             created_at=created_at,
             access_count=usage_count,
-            now=now
+            now=now,
         )
         return score
 
@@ -158,27 +175,29 @@ class MathLayerController:
         result["_arm_id"] = selected_arm.arm_id
         return result
 
-    def get_scoring_params(self, query: str, default_limit: int = 300) -> dict[str, Any]:
+    def get_scoring_params(
+        self, query: str, default_limit: int = 300
+    ) -> dict[str, Any]:
         """
         Selects scoring params based on query context.
         Similar to get_retrieval_weights but specifically for scoring.
         """
         features = self.feature_extractor.extract(query)
-        
+
         # Support for legacy tests that mock .select
         if hasattr(self.bandit, "select"):
-             selected_arm = self.bandit.select(features)
+            selected_arm = self.bandit.select(features)
         else:
-             selected_arm, _ = self.bandit.select_arm(features)
-             
+            selected_arm, _ = self.bandit.select_arm(features)
+
         self._last_selected_arm = selected_arm
-        
+
         result = selected_arm.config["weights"].copy()
         result["_params"] = selected_arm.config["params"].copy()
-        
+
         if "rerank_limit" not in result["_params"]:
             result["_params"]["rerank_limit"] = default_limit
-            
+
         result["_arm_id"] = selected_arm.arm_id
         return result
 
@@ -192,7 +211,7 @@ class MathLayerController:
         alpha, beta, gamma = 0.4, 0.3, 0.3
         if weights:
             alpha, beta, gamma = weights.alpha, weights.beta, weights.gamma
-        
+
         # SYSTEM 4.16: Anchor Protection
         # If query_similarity is an Oracle score, let it dominate.
         if query_similarity >= 100.0:

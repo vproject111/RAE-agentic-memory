@@ -31,6 +31,7 @@ class GraphTraversalStrategy(SearchStrategy):
         """Traverse graph from seeds and return neighbors."""
         search_filters = filters or {}
         seed_ids = kwargs.get("seed_ids") or search_filters.get("seed_ids", [])
+        edge_type = kwargs.get("edge_type") or search_filters.get("edge_type")
 
         if not seed_ids:
             return []
@@ -49,12 +50,10 @@ class GraphTraversalStrategy(SearchStrategy):
         visited = set(seeds)
         to_visit = list(seeds)
         results: dict[UUID, float] = {}
-        decay_factor = 0.6  # Confidence decay per hop
-        min_score_threshold = 0.05
 
         # Simple BFS traversal
         depth = 0
-        max_depth = 2
+        max_depth = search_filters.get("max_depth", 2)
 
         while to_visit and depth < max_depth:
             current_layer = to_visit
@@ -62,7 +61,9 @@ class GraphTraversalStrategy(SearchStrategy):
             depth += 1
 
             for node_id in current_layer:
-                neighbors = await self.graph_store.get_neighbors(node_id, tenant_id)
+                neighbors = await self.graph_store.get_neighbors(
+                    node_id, tenant_id, edge_type=edge_type
+                )
                 for neighbor_id in neighbors:
                     if neighbor_id not in visited:
                         visited.add(neighbor_id)

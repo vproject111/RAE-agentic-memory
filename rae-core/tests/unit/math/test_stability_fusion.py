@@ -1,5 +1,7 @@
 from uuid import uuid4
+
 import pytest
+
 from rae_core.math.fusion import Legacy416Strategy
 
 

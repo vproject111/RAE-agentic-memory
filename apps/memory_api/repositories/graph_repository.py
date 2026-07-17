@@ -606,9 +606,7 @@ class GraphRepository:
 
         return {"nodes_created": nodes_created, "edges_created": edges_created}
 
-    async def get_all_nodes(
-        self, tenant_id: str, project: str
-    ) -> List[Dict[str, Any]]:
+    async def get_all_nodes(self, tenant_id: str, project: str) -> List[Dict[str, Any]]:
         """
         Retrieve all nodes for a project.
 
@@ -633,9 +631,7 @@ class GraphRepository:
             )
             return [dict(r) for r in records]
 
-    async def get_all_edges(
-        self, tenant_id: str, project: str
-    ) -> List[Dict[str, Any]]:
+    async def get_all_edges(self, tenant_id: str, project: str) -> List[Dict[str, Any]]:
         """
         Retrieve all edges for a project.
 

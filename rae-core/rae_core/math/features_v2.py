@@ -251,8 +251,10 @@ class FeatureExtractorV2:
         for token in tokens:
             token_clean = token.strip(".,!?()[]{}'\"")
             # If token has digits and letters, or hyphens/underscores between chars
-            if (any(c.isdigit() for c in token_clean) and any(c.isalpha() for c in token_clean)) or \
-               (re.search(r"[a-z0-9]+[-_][a-z0-9]+", token_clean.lower())):
+            if (
+                any(c.isdigit() for c in token_clean)
+                and any(c.isalpha() for c in token_clean)
+            ) or (re.search(r"[a-z0-9]+[-_][a-z0-9]+", token_clean.lower())):
                 symbols.append(token_clean.lower())
 
         # Hex codes

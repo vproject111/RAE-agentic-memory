@@ -71,9 +71,7 @@ class LatencyProfiler:
         for i in range(num_runs):
             # Measure embedding generation
             embed_start = time.perf_counter()
-            query_embedding = self.embedding_service.generate_embeddings([query])[
-                0
-            ]
+            query_embedding = self.embedding_service.generate_embeddings([query])[0]
             embed_time = time.perf_counter() - embed_start
             embedding_times.append(embed_time * 1000)  # Convert to ms
 

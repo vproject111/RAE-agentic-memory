@@ -1,17 +1,18 @@
-
-import pytest
 from rae_core.utils.chunking import ProceduralChunker
+
 
 def test_chunk_empty_text():
     chunker = ProceduralChunker()
     assert chunker.chunk_text("") == []
     assert chunker.chunk_text(None) == []
 
+
 def test_chunk_small_text():
     chunker = ProceduralChunker(chunk_size=100)
     text = "Short text."
     chunks = chunker.chunk_text(text)
     assert chunks == ["Short text."]
+
 
 def test_chunk_procedural_split():
     chunker = ProceduralChunker(chunk_size=50)
@@ -27,6 +28,7 @@ def test_chunk_procedural_split():
     assert "Step 2" in chunks[0]
     assert "Step 3" in chunks[1]
 
+
 def test_chunk_paragraph_split():
     chunker = ProceduralChunker(chunk_size=20, overlap=0)
     text = "Para 1.\n\nPara 2.\n\nPara 3."
@@ -35,6 +37,7 @@ def test_chunk_paragraph_split():
     # 14 + Para 3. (7) = 21 > 20.
     # So we get ["Para 1.\n\nPara 2.", "Para 3."]
     assert chunks == ["Para 1.\n\nPara 2.", "Para 3."]
+
 
 def test_chunk_sentence_split():
     # Force a very small chunk size to trigger sentence split
@@ -45,13 +48,15 @@ def test_chunk_sentence_split():
     # So: ["Sentence one.", "Sentence two.", "Sentence three."]
     assert chunks == ["Sentence one.", "Sentence two.", "Sentence three."]
 
+
 def test_chunk_krok_split():
     chunker = ProceduralChunker(chunk_size=50)
     text = "Krok 1: Pierwszy krok.\nKrok 2: Drugi krok."
     chunks = chunker.chunk_text(text)
-    assert len(chunks) == 1 # 21 + 19 = 40 < 50
+    assert len(chunks) == 1  # 21 + 19 = 40 < 50
     assert "Krok 1" in chunks[0]
     assert "Krok 2" in chunks[0]
+
 
 def test_chunk_numbered_split():
     chunker = ProceduralChunker(chunk_size=50)
@@ -61,9 +66,10 @@ def test_chunk_numbered_split():
     assert "1. First point." in chunks[0]
     assert "2. Second point." in chunks[0]
 
+
 def test_chunk_large_block_no_delimiters():
     chunker = ProceduralChunker(chunk_size=10)
-    text = "A" * 25 # 25 characters, no spaces, no newlines
+    text = "A" * 25  # 25 characters, no spaces, no newlines
     chunks = chunker.chunk_text(text)
     # Since there are no spaces or newlines, the sentence split re.split(r'(?<=[.!?])\s+', ...)
     # will not find anything to split.

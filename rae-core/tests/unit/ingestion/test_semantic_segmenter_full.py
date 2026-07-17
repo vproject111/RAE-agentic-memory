@@ -1,15 +1,23 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
-import numpy as np
-from unittest.mock import MagicMock, patch, AsyncMock
-from rae_core.ingestion.semantic_segmenter import SemanticRecursiveSegmenter, _calculate_similarity_scores
-from rae_core.ingestion.interfaces import ContentSignature, IngestChunk, IngestAudit
+
+from rae_core.ingestion.interfaces import ContentSignature
+from rae_core.ingestion.semantic_segmenter import (
+    SemanticRecursiveSegmenter,
+)
+
 
 class TestSemanticSegmenterFull:
     @pytest.fixture
     def mock_embedder(self):
-        with patch('rae_core.ingestion.semantic_segmenter.NativeEmbeddingProvider') as mock:
+        with patch(
+            "rae_core.ingestion.semantic_segmenter.NativeEmbeddingProvider"
+        ) as mock:
             mock_inst = mock.return_value
-            mock_inst.embed_batch = AsyncMock(return_value=[[0.1]*384, [0.1]*384, [0.1]*384])
+            mock_inst.embed_batch = AsyncMock(
+                return_value=[[0.1] * 384, [0.1] * 384, [0.1] * 384]
+            )
             yield mock
 
     def test_init_defaults(self, mock_embedder):
@@ -27,9 +35,9 @@ class TestSemanticSegmenterFull:
         mock_inst = mock_embedder.return_value
         # We provide 3 embeddings -> 2 similarities
         mock_inst.embed_batch.return_value = [
-            [1.0, 0.0], # s1
-            [0.9, 0.0], # s2 (similar to s1)
-            [0.0, 1.0]  # s3 (different from s2)
+            [1.0, 0.0],  # s1
+            [0.9, 0.0],  # s2 (similar to s1)
+            [0.0, 1.0],  # s3 (different from s2)
         ]
         text = "Sentence one. Sentence two. Sentence three."
         chunks = await segmenter._semantic_split(text)
@@ -47,12 +55,14 @@ class TestSemanticSegmenterFull:
     async def test_segment_integration(self, mock_embedder):
         segmenter = SemanticRecursiveSegmenter(chunk_size=50)
         mock_inst = mock_embedder.return_value
-        mock_inst.embed_batch.return_value = [[0.1]*384]*10
-        
+        mock_inst.embed_batch.return_value = [[0.1] * 384] * 10
+
         text = "Part 1. Part 2. Part 3. Part 4. Part 5. Part 6. Part 7. Part 8."
-        signature = ContentSignature(struct={"type":"test"}, dist={}, stab={})
-        
-        chunks, audit = await segmenter.segment(text, policy="custom_policy", signature=signature)
+        signature = ContentSignature(struct={"type": "test"}, dist={}, stab={})
+
+        chunks, audit = await segmenter.segment(
+            text, policy="custom_policy", signature=signature
+        )
         assert len(chunks) > 0
 
     def test_perform_structural_split_empty_parts(self, mock_embedder):

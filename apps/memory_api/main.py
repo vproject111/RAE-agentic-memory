@@ -5,10 +5,13 @@ from contextlib import asynccontextmanager
 # Enforce Git Flow & SemVer Branch Guard Validation
 try:
     from rae_core.governance.versioning import VersioningValidator
+
     VersioningValidator(
-        project_path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        project_path=os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ),
         module_name="rae-agentic-memory",
-        config={"strategy": "git-flow", "strict": True}
+        config={"strategy": "git-flow", "strict": True},
     ).validate()
 except Exception as e:
     print(f"❌ Git Flow Validation failed: {e}", file=sys.stderr)
@@ -42,7 +45,6 @@ from apps.memory_api.observability import (
     setup_opentelemetry,
 )
 from apps.memory_api.routes import (
-    procedural,
     dashboard,
     evaluation,
     event_triggers,
@@ -50,6 +52,7 @@ from apps.memory_api.routes import (
     graph_enhanced,
     hybrid_search,
     nodes,
+    procedural,
     reflections,
     sync,
     token_savings,
@@ -227,14 +230,20 @@ Instrumentator().instrument(app).expose(app)
 
 
 # --- Exception Handlers ---
-from rae_core.exceptions.base import RAEError, ContractViolationError, InfrastructureError, SecurityPolicyViolationError
+from rae_core.exceptions.base import (
+    ContractViolationError,
+    InfrastructureError,
+    RAEError,
+    SecurityPolicyViolationError,
+)
+
 
 @app.exception_handler(RAEError)
 async def rae_exception_handler(request: Request, exc: RAEError):
     """Handle domain-specific RAE errors and log them to memory."""
     logger = structlog.get_logger("apps.memory_api.errors")
     logger.error("rae_domain_error", type=type(exc).__name__, message=exc.message)
-    
+
     # SYSTEM 93.5: Autonomous Error Logging
     # We try to record the incident in RAE for Kaizen analysis
     try:
@@ -245,19 +254,30 @@ async def rae_exception_handler(request: Request, exc: RAEError):
             content=f"INCIDENT: {type(exc).__name__} - {exc.message}",
             layer="reflective",
             tags=["incident", "error_audit", type(exc).__name__.lower()],
-            metadata={"error_type": type(exc).__name__, "path": request.url.path}
+            metadata={"error_type": type(exc).__name__, "path": request.url.path},
         )
-    except Exception: pass # Prevent infinite loop if RAE is down
+    except Exception:
+        pass  # Prevent infinite loop if RAE is down
 
     status_code = 400
-    if isinstance(exc, ContractViolationError): status_code = 422
-    elif isinstance(exc, InfrastructureError): status_code = 503
-    elif isinstance(exc, SecurityPolicyViolationError): status_code = 403
+    if isinstance(exc, ContractViolationError):
+        status_code = 422
+    elif isinstance(exc, InfrastructureError):
+        status_code = 503
+    elif isinstance(exc, SecurityPolicyViolationError):
+        status_code = 403
 
     return JSONResponse(
         status_code=status_code,
-        content={"error": {"code": str(status_code), "type": type(exc).__name__, "message": exc.message}},
+        content={
+            "error": {
+                "code": str(status_code),
+                "type": type(exc).__name__,
+                "message": exc.message,
+            }
+        },
     )
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -305,7 +325,7 @@ app.include_router(bridge_v2.router)  # /v2/bridge
 app.include_router(feedback_v2.router)  # /v2/feedback
 app.include_router(compliance_v2.router)  # /v2/compliance
 app.include_router(mesh_v2.router)  # /v2/mesh
-app.include_router(procedural.router) # /procedural
+app.include_router(procedural.router)  # /procedural
 
 # Helper Services (Migrated to V2 prefix)
 app.include_router(dashboard.router, prefix="/v2/dashboard", tags=["Dashboard"])

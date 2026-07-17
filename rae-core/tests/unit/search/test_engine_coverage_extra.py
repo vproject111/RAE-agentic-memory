@@ -5,6 +5,7 @@ import pytest
 
 from rae_core.search.engine import EmeraldReranker, HybridSearchEngine
 
+
 class TestSearchEngineCoverage:
     @pytest.mark.asyncio
     async def test_emerald_reranker_missing_deps(self):
@@ -22,24 +23,26 @@ class TestSearchEngineCoverage:
     @pytest.mark.asyncio
     async def test_hybrid_search_batch_fetch_failure(self):
         mock_storage = MagicMock()
-        mock_storage.get_memories_batch = AsyncMock(side_effect=Exception("Batch failure"))
-        
+        mock_storage.get_memories_batch = AsyncMock(
+            side_effect=Exception("Batch failure")
+        )
+
         mock_strategy = MagicMock()
         mock_strategy.search = AsyncMock(return_value=[(uuid4(), 1.0, 0.5)])
-        
+
         mock_provider = MagicMock()
-        
+
         engine = HybridSearchEngine(
             strategies={"vector": mock_strategy},
             embedding_provider=mock_provider,
             memory_storage=mock_storage,
-            math_controller=MagicMock()
+            math_controller=MagicMock(),
         )
-        
+
         # We need to make sure fusion_strategy.fuse works
         engine.fusion_strategy = MagicMock()
         engine.fusion_strategy.fuse = AsyncMock(return_value=[(uuid4(), 1.0, 0.5)])
-        
+
         results = await engine.search("query", "t1")
         assert len(results) == 1
         # The exception should be caught and logged, not raised

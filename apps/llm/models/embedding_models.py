@@ -16,7 +16,7 @@ class EmbeddingRequest:
     model: str
     input: List[str]
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     # Optional parameters for specific providers (e.g. Ollama api_base)
     api_base: Optional[str] = None
 

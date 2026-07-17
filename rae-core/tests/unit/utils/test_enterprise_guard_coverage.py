@@ -1,11 +1,19 @@
+from unittest.mock import MagicMock
+
 import pytest
-import asyncio
-from rae_core.utils.enterprise_guard import audited_operation, RAE_Enterprise_Foundation, FatalEnterpriseError
-from unittest.mock import MagicMock, AsyncMock
+
+from rae_core.utils.enterprise_guard import (
+    FatalEnterpriseError,
+    RAE_Enterprise_Foundation,
+    audited_operation,
+)
+
 
 class MockModule:
     def __init__(self):
-        self.enterprise_foundation = RAE_Enterprise_Foundation(module_name="test-module")
+        self.enterprise_foundation = RAE_Enterprise_Foundation(
+            module_name="test-module"
+        )
 
     @audited_operation(operation_name="test_async_op", impact_level="high")
     async def test_async_method(self, arg):
@@ -14,6 +22,7 @@ class MockModule:
     @audited_operation(operation_name="test_sync_op")
     def test_sync_method(self, arg):
         return f"sync-{arg}"
+
 
 class TestEnterpriseGuard:
     def test_foundation_init(self):
@@ -25,9 +34,9 @@ class TestEnterpriseGuard:
     async def test_audited_operation_async(self):
         obj = MockModule()
         obj.enterprise_foundation.bridge.save_event = MagicMock()
-        
+
         result = await obj.test_async_method("data")
-        
+
         assert result == "async-data"
         assert obj.enterprise_foundation.bridge.save_event.call_count >= 2
 
@@ -35,12 +44,12 @@ class TestEnterpriseGuard:
     async def test_audited_operation_sync(self):
         obj = MockModule()
         obj.enterprise_foundation.bridge.save_event = MagicMock()
-        
-        # In our implementation, sync methods decorated with audited_operation 
+
+        # In our implementation, sync methods decorated with audited_operation
         # return a coroutine because the internal audit is async.
         coro = obj.test_sync_method("data")
         result = await coro
-        
+
         assert result == "sync-data"
         assert obj.enterprise_foundation.bridge.save_event.call_count >= 2
 

@@ -53,7 +53,7 @@ class RAEEngine:
             "fulltext": self._init_fulltext_strategy(),
             "anchor": self._init_anchor_strategy(),
         }
-        
+
         # Dynamic Multi-Vector Registration
         from rae_core.embedding.manager import EmbeddingManager
         from rae_core.search.strategies.vector import VectorSearchStrategy
@@ -231,12 +231,12 @@ class RAEEngine:
                 math_score = self.math_ctrl.score_memory(
                     memory, query_similarity=sim_score, weights=scoring_weights
                 )
-                
-                # Silicon Oracle: If audit_log contains SIC (Symbolic Information Content), 
+
+                # Silicon Oracle: If audit_log contains SIC (Symbolic Information Content),
                 # we use the fused sim_score directly as it already contains the SIC multiplier.
                 if audit_log.get("sic_boost"):
                     math_score = sim_score
-                
+
                 if isinstance(memory, object) and hasattr(memory, "to_dict"):
                     memory_dict = memory.to_dict()
                 elif not isinstance(memory, dict):
@@ -247,24 +247,33 @@ class RAEEngine:
 
                 memory_dict["math_score"] = math_score
                 memory_dict["search_score"] = sim_score
-                memory_dict["importance"] = importance or memory_dict.get("importance", 0.5)
+                memory_dict["importance"] = importance or memory_dict.get(
+                    "importance", 0.5
+                )
                 memory_dict["audit_trail"] = audit_log
-                
+
                 # Explicitly log the winning feature for auditability
                 if math_score > 0.8:
                     win_feature = "unknown"
-                    if audit_log.get("sic_boost"): win_feature = "symbolic_hard_lock"
-                    elif audit_log.get("hard_lock"): win_feature = "symbolic_hard_lock"
-                    elif audit_log.get("anchor_hit"): win_feature = "anchor_match"
-                    elif audit_log.get("cat_boost"): win_feature = "category_match"
-                    elif audit_log.get("quant_boost"): win_feature = "quantitative_resonance"
-                    
-                    logger.info("memory_selection_proof", 
-                                 id=str(m_id), 
-                                 score=math_score, 
-                                 feature=win_feature,
-                                 audit=audit_log)
-                
+                    if audit_log.get("sic_boost"):
+                        win_feature = "symbolic_hard_lock"
+                    elif audit_log.get("hard_lock"):
+                        win_feature = "symbolic_hard_lock"
+                    elif audit_log.get("anchor_hit"):
+                        win_feature = "anchor_match"
+                    elif audit_log.get("cat_boost"):
+                        win_feature = "category_match"
+                    elif audit_log.get("quant_boost"):
+                        win_feature = "quantitative_resonance"
+
+                    logger.info(
+                        "memory_selection_proof",
+                        id=str(m_id),
+                        score=math_score,
+                        feature=win_feature,
+                        audit=audit_log,
+                    )
+
                 memories.append(memory_dict)
 
         # 3. SEMANTIC RESONANCE
@@ -299,7 +308,9 @@ class RAEEngine:
                                 UUID(mid_str), tenant_id
                             )
                             if induced_mem:
-                                if isinstance(induced_mem, object) and hasattr(induced_mem, "to_dict"):
+                                if isinstance(induced_mem, object) and hasattr(
+                                    induced_mem, "to_dict"
+                                ):
                                     induced_mem_dict = induced_mem.to_dict()
                                 elif not isinstance(induced_mem, dict):
                                     induced_mem_dict = dict(induced_mem)
@@ -318,18 +329,29 @@ class RAEEngine:
                             continue
 
         # SYSTEM 40.17: Guaranteed Tier Isolation
-        memories.sort(key=lambda x: (x.get("audit_trail", {}).get("tier", 2), -x.get("math_score", 0.0)))
+        memories.sort(
+            key=lambda x: (
+                x.get("audit_trail", {}).get("tier", 2),
+                -x.get("math_score", 0.0),
+            )
+        )
 
         # 4. ACTIVE SZUBAR LOOP (System 52.0 - Neighbor Recruitment)
         # "Success from Failure": If confidence is low, explore the graph for missing links.
         top_score = memories[0].get("math_score", 0.0) if memories else 0.0
 
-        if top_score < 0.75 and not kwargs.get("_is_retry") and hasattr(self.memory_storage, "get_neighbors_batch"):
-            logger.info("active_szubar_expansion_triggered", query=query, top_score=top_score)
+        if (
+            top_score < 0.75
+            and not kwargs.get("_is_retry")
+            and hasattr(self.memory_storage, "get_neighbors_batch")
+        ):
+            logger.info(
+                "active_szubar_expansion_triggered", query=query, top_score=top_score
+            )
 
             # 1. Identify seed anchors (Top candidates that almost made it)
             seed_ids = [m["id"] for m in memories[:10]]
-            
+
             # 2. Fetch adjacency list from Knowledge Graph
             edges = await self.memory_storage.get_neighbors_batch(seed_ids, tenant_id)
             if edges:
@@ -338,56 +360,81 @@ class RAEEngine:
                 recruited_ids = []
                 for _, neighbors in edges.items():
                     for n_id, _ in neighbors:
-                        if n_id not in current_ids: recruited_ids.append(n_id)
-                
+                        if n_id not in current_ids:
+                            recruited_ids.append(n_id)
+
                 if recruited_ids:
                     # 4. Fetch full content for deep verification
                     new_mems_data = await self.memory_storage.get_memories_batch(
                         recruited_ids[:30], tenant_id
                     )
-                    
+
                     if new_mems_data:
-                        logger.info("szubar_neighbor_recruitment", count=len(new_mems_data))
-                        
+                        logger.info(
+                            "szubar_neighbor_recruitment", count=len(new_mems_data)
+                        )
+
                         # 5. RE-SCORING: Run recruited neighbors through the same logic
                         # We simulate a "mini-search" for these specific items
                         recruited_results = []
                         for m in new_mems_data:
                             # Re-run Math + Neural logic for the new candidate
                             # We use LogicGateway directly if available
-                            multiplier, audit = self.search_engine.fusion_strategy.gateway._apply_mathematical_logic(
-                                query, m["content"], m.get("metadata", {})
+                            multiplier, audit = (
+                                self.search_engine.fusion_strategy.gateway._apply_mathematical_logic(
+                                    query, m["content"], m.get("metadata", {})
+                                )
                             )
-                            
+
                             # Probabilistic score for the newcomer
                             # We treat it as if it was found at a baseline rank
-                            base_p = 0.5 # Neutral prior for recruited node
-                            final_logit = math.log(base_p / (1.0 - base_p)) + math.log(max(multiplier, 1e-9))
-                            
+                            base_p = 0.5  # Neutral prior for recruited node
+                            final_logit = math.log(base_p / (1.0 - base_p)) + math.log(
+                                max(multiplier, 1e-9)
+                            )
+
                             # Neural Verification if enabled
-                            if kwargs.get("enable_reranking") and self.search_engine.fusion_strategy.gateway.reranker:
+                            if (
+                                kwargs.get("enable_reranking")
+                                and self.search_engine.fusion_strategy.gateway.reranker
+                            ):
                                 pair = (query, f"[CONTENT] {m['content']}")
-                                logit = self.search_engine.fusion_strategy.gateway.reranker.predict([pair])[0]
+                                logit = self.search_engine.fusion_strategy.gateway.reranker.predict(
+                                    [pair]
+                                )[
+                                    0
+                                ]
                                 final_logit += logit
                                 audit["neural_logit"] = logit
 
                             m_dict = dict(m) if not isinstance(m, dict) else m
-                            m_dict["math_score"] = self.search_engine.fusion_strategy.gateway.sigmoid(final_logit)
+                            m_dict["math_score"] = (
+                                self.search_engine.fusion_strategy.gateway.sigmoid(
+                                    final_logit
+                                )
+                            )
                             m_dict["audit_trail"] = audit
                             m_dict["audit_trail"]["szubar_recruited"] = True
                             recruited_results.append(m_dict)
-                        
+
                         # Inject and re-sort
                         memories.extend(recruited_results)
-                        memories.sort(key=lambda x: (x.get("audit_trail", {}).get("tier", 2), -x.get("math_score", 0.0)))
-                        
+                        memories.sort(
+                            key=lambda x: (
+                                x.get("audit_trail", {}).get("tier", 2),
+                                -x.get("math_score", 0.0),
+                            )
+                        )
+
                         # Check if Szubar saved the day
                         new_top_score = memories[0].get("math_score", 0.0)
                         if new_top_score > top_score:
-                            logger.info("szubar_recovery_success", 
-                                        old_score=top_score, 
-                                        new_score=new_top_score,
-                                        recovered_id=str(memories[0]["id"]))
+                            logger.info(
+                                "szubar_recovery_success",
+                                old_score=top_score,
+                                new_score=new_top_score,
+                                recovered_id=str(memories[0]["id"]),
+                            )
 
         return memories[:top_k]
 
@@ -402,21 +449,29 @@ class RAEEngine:
         content = kwargs.get("content", "")
         tenant_id = kwargs.get("tenant_id")
         project = kwargs.get("project", "default")
-        
+
         # SYSTEM 92.4: Quality Guard at Ingestion (Autonomous Firewall)
         if kwargs.get("validate") and content.strip():
             logger.info("ingestion_quality_guard_active", project=project)
             try:
+                import httpx
+
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    q_resp = await client.post(f"{self.settings.QUALITY_API_URL}/v2/quality/audit", json={
-                        "code": content,
-                        "project": project,
-                        "importance": "medium"
-                    })
+                    q_resp = await client.post(
+                        f"{self.settings.QUALITY_API_URL}/v2/quality/audit",
+                        json={
+                            "code": content,
+                            "project": project,
+                            "importance": "medium",
+                        },
+                    )
                     if q_resp.status_code == 200:
                         verdict = q_resp.json()
                         if verdict.get("verdict") == "REJECTED":
-                            logger.error("ingestion_rejected_by_quality_guard", reasoning=verdict.get("reasoning"))
+                            logger.error(
+                                "ingestion_rejected_by_quality_guard",
+                                reasoning=verdict.get("reasoning"),
+                            )
                             return None
             except Exception as e:
                 logger.warning("quality_guard_bypass_due_to_error", error=str(e))
@@ -427,14 +482,14 @@ class RAEEngine:
 
         # SYSTEM 40.14: Universal Ingest Pipeline (UICTC)
         from rae_core.ingestion.pipeline import UniversalIngestPipeline
+
         pipeline = UniversalIngestPipeline()
-        
+
         # Process text through the 5-stage pipeline
         chunks, signature, audit_trail, policy = await pipeline.process(
-            content, 
-            metadata=kwargs.get("metadata")
+            content, metadata=kwargs.get("metadata")
         )
-        
+
         if not chunks:
             return None
 
@@ -443,63 +498,83 @@ class RAEEngine:
             agent_id = kwargs.get("agent_id", "default")
             project = kwargs.get("project", "default")
             text_hash = chunks[0].metadata.get("content_hash")
-            
+
             cache_key = f"last_mem_hash:{project}:{agent_id}"
             last_hash = await self.cache_provider.get(cache_key)
-            
+
             if last_hash == text_hash:
-                logger.info("skipping_duplicate_memory_write", project=project, agent_id=agent_id)
+                logger.info(
+                    "skipping_duplicate_memory_write",
+                    project=project,
+                    agent_id=agent_id,
+                )
                 return None
-            
-            await self.cache_provider.set(cache_key, text_hash, ttl=300) # 5 min protection
+
+            await self.cache_provider.set(
+                cache_key, text_hash, ttl=300
+            )  # 5 min protection
 
         # SYSTEM 92.3: Operational State Isolation
         # If it's a fallback, we don't want it to be highly retrievable or vectorized
-        is_operational = (policy == "POLICY_FALLBACK")
-        
+        is_operational = policy == "POLICY_FALLBACK"
+
         import uuid
+
         parent_id = str(uuid.uuid4())
         memory_ids = []
-        
+
         # Store chunks with full provenance
         for i, chunk in enumerate(chunks):
             chunk_kwargs = kwargs.copy()
             chunk_kwargs["content"] = chunk.content
             chunk_kwargs["metadata"] = kwargs.get("metadata", {}).copy()
             chunk_kwargs["metadata"].update(chunk.metadata)
-            chunk_kwargs["metadata"].update({
-                "parent_id": parent_id,
-                "chunk_index": i,
-                "total_chunks": len(chunks),
-                "is_chunk": True,
-                "ingest_audit": [a.__dict__ for a in audit_trail] if audit_trail else [],
-                "is_operational": is_operational
-            })
-            
+            chunk_kwargs["metadata"].update(
+                {
+                    "parent_id": parent_id,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks),
+                    "is_chunk": True,
+                    "ingest_audit": (
+                        [a.__dict__ for a in audit_trail] if audit_trail else []
+                    ),
+                    "is_operational": is_operational,
+                }
+            )
+
             # Use original source if provided, otherwise default to chunk index
             base_source = kwargs.get("source", "universal_ingest")
             chunk_kwargs["source"] = f"{base_source} [p{i+1}/{len(chunks)}]"
-            
+
             # Operational data has zero importance for semantic retrieval
             if is_operational:
                 chunk_kwargs["importance"] = 0.0
-                chunk_kwargs["tags"] = chunk_kwargs.get("tags", []) + ["operational", "non_retrievable"]
-            
+                chunk_kwargs["tags"] = chunk_kwargs.get("tags", []) + [
+                    "operational",
+                    "non_retrievable",
+                ]
+
             m_id = await self.memory_storage.store_memory(**chunk_kwargs)
-            
+
             # Skip vector store for operational/fallback data (Anti-Echo)
             if not is_operational:
                 # Embed and store vector
                 embed_kwargs = chunk_kwargs.copy()
-                if "content" in embed_kwargs: del embed_kwargs["content"]
-                if "tenant_id" in embed_kwargs: del embed_kwargs["tenant_id"]
-                
-                await self._embed_and_store_vector(m_id, chunk.content, tenant_id, **embed_kwargs)
+                if "content" in embed_kwargs:
+                    del embed_kwargs["content"]
+                if "tenant_id" in embed_kwargs:
+                    del embed_kwargs["tenant_id"]
+
+                await self._embed_and_store_vector(
+                    m_id, chunk.content, tenant_id, **embed_kwargs
+                )
             else:
-                logger.info("skipping_vector_store_for_operational_data", memory_id=str(m_id))
-                
+                logger.info(
+                    "skipping_vector_store_for_operational_data", memory_id=str(m_id)
+                )
+
             memory_ids.append(m_id)
-            
+
         return memory_ids[0]
 
     async def _embed_and_store_vector(self, m_id, content, tenant_id, **kwargs):
@@ -531,20 +606,22 @@ class RAEEngine:
     async def get_statistics(self, tenant_id: str = "local") -> dict[str, Any]:
         """Get memory statistics."""
         stats = {"total_count": 0, "layer_counts": {}}
-        
+
         if hasattr(self.memory_storage, "count_memories"):
             try:
                 # Count total
                 total = await self.memory_storage.count_memories(tenant_id=tenant_id)
                 stats["total_count"] = total
-                
+
                 # Count per layer
                 for layer in ["working", "semantic", "episodic"]:
-                    count = await self.memory_storage.count_memories(tenant_id=tenant_id, layer=layer)
+                    count = await self.memory_storage.count_memories(
+                        tenant_id=tenant_id, layer=layer
+                    )
                     stats["layer_counts"][layer] = count
             except Exception as e:
                 logger.warning("get_statistics_failed", error=str(e))
-        
+
         return stats
 
     async def run_reflection_cycle(self, **kwargs) -> dict[str, Any]:

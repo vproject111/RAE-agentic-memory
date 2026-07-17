@@ -488,10 +488,11 @@ class EmitEventResponse(BaseModel):
     triggers_matched: int = Field(0, ge=0)
     actions_queued: int = Field(0, ge=0)
     message: str = "Event emitted successfully"
-    target_response: Optional[Dict[str, Any]] = Field(default=None, description="Response payload from target agent")
+    target_response: Optional[Dict[str, Any]] = Field(
+        default=None, description="Response payload from target agent"
+    )
     autonomy_state: Optional[str] = Field(None, max_length=50)
     autonomy_journal: Optional[List[str]] = Field(None, max_length=100)
-
 
 
 class BridgeInteractionRequest(BaseModel):

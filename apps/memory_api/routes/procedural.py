@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional, Any
+from typing import Optional
+
 import structlog
-import re
-import json
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
 from apps.memory_api.dependencies import get_rae_core_service
-from apps.memory_api.services.rae_core_service import RAECoreService
 from apps.memory_api.industrial_bridge import ScreenWatcherBridge
+from apps.memory_api.services.rae_core_service import RAECoreService
 
 router = APIRouter(prefix="/procedural", tags=["Procedural Oracle"])
 logger = structlog.get_logger(__name__)
+
 
 class QueryRequest(BaseModel):
     query: str
@@ -17,10 +18,10 @@ class QueryRequest(BaseModel):
     model: Optional[str] = None
     source: str = "processed_oee"
 
+
 @router.post("/query")
 async def query_procedural(
-    request: QueryRequest,
-    rae_service: RAECoreService = Depends(get_rae_core_service)
+    request: QueryRequest, rae_service: RAECoreService = Depends(get_rae_core_service)
 ):
     try:
         bridge = ScreenWatcherBridge()
@@ -37,14 +38,12 @@ async def query_procedural(
 
         # Ustawiamy temperature na 0 aby uzyskać stabilny wynik
         raw_answer = await rae_service.engine.generate_text(
-            prompt=request.query, 
-            system_prompt=system_prompt, 
-            model=real_ollama_name
+            prompt=request.query, system_prompt=system_prompt, model=real_ollama_name
         )
 
         return {
             "instruction": raw_answer,
-            "debug": {"model": real_ollama_name, "context": "STATELESS_AUDIT"}
+            "debug": {"model": real_ollama_name, "context": "STATELESS_AUDIT"},
         }
 
     except Exception as e:

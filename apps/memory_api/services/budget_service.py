@@ -19,8 +19,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from apps.memory_api.services.rae_core_service import RAECoreService
 
-from apps.memory_api.services.rae_core_service import RAECoreService
-
 logger = structlog.get_logger(__name__)
 
 
@@ -115,9 +113,7 @@ class BudgetService:
 
         if not record:
             # Create new budget with default limits
-            logger.info(
-                "creating_new_budget", tenant_id=tenant_id, project=project
-            )
+            logger.info("creating_new_budget", tenant_id=tenant_id, project=project)
             record = await self.rae_service.db.fetchrow(
                 """
                 INSERT INTO budgets (
@@ -258,9 +254,7 @@ class BudgetService:
             usage.total_tokens,
         )
 
-    async def get_budget_status(
-        self, tenant_id: str, project: str
-    ) -> Dict[str, Any]:
+    async def get_budget_status(self, tenant_id: str, project: str) -> Dict[str, Any]:
         """Returns current budget status including usage percentages."""
         budget = await self.get_or_create_budget(tenant_id, project)
 

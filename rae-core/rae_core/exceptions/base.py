@@ -24,11 +24,14 @@ class SecurityPolicyViolationError(RAEError):
 
     pass
 
+
 class ContractViolationError(RAEError):
     """Exception raised when an agentic contract is violated."""
+
     pass
 
 
 class InfrastructureError(RAEError):
     """Exception raised for underlying infrastructure failures (Redis, Qdrant, etc)."""
+
     pass

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel, Field
+
 
 class CostRecord(BaseModel):
     transaction_id: str
@@ -9,6 +10,7 @@ class CostRecord(BaseModel):
     ncu_consumed: float
     model_name: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 
 class BudgetEnvelope(BaseModel):
     policy_id: str

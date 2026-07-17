@@ -90,7 +90,9 @@ async def test_search_memories_with_custom_weights(
 
     # Mock search engine results
     with patch.object(
-        engine.search_engine, "search", AsyncMock(return_value=[(mem_id, 0.8, 0.5, {"strategy": "test"})])
+        engine.search_engine,
+        "search",
+        AsyncMock(return_value=[(mem_id, 0.8, 0.5, {"strategy": "test"})]),
     ):
         mock_storage.get_memory.return_value = {
             "id": mem_id,

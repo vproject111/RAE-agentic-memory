@@ -1,176 +1,924 @@
+"""PostgreSQL storage adapter for RAE-core.
+
+Implements IMemoryStorage interface using asyncpg for async PostgreSQL access.
+"""
+
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional, cast
 from uuid import UUID, uuid4
-import re
 
-import asyncpg
+try:
+    import asyncpg
+except ImportError:  # pragma: no cover
+    asyncpg = None  # pragma: no cover
 
 from ..interfaces.storage import IMemoryStorage
 
 
 class PostgreSQLStorage(IMemoryStorage):
+    """PostgreSQL implementation of IMemoryStorage.
+
+    Requires asyncpg package and PostgreSQL 12+ with:
+    - UUID extension
+    - JSONB support
+    - Optional: pgvector extension for embedding storage
+
+    Schema expected:
+    ```sql
+    CREATE TABLE memories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        content TEXT NOT NULL,
+        layer TEXT NOT NULL,
+        tenant_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        project TEXT,      -- Added in v2.7.0 (Phase 1)
+        session_id TEXT,   -- Added in v2.7.0 (Phase 1)
+        source TEXT,       -- Added in v2.7.0 (Phase 1)
+        memory_type TEXT DEFAULT 'text',
+        tags TEXT[] DEFAULT '{}',
+        metadata JSONB DEFAULT '{}',
+        embedding VECTOR(1536),  -- Optional, requires pgvector
+        importance FLOAT DEFAULT 0.5,
+        usage_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        last_accessed_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMP
+    );
+
+    CREATE INDEX idx_memories_tenant_agent ON memories(tenant_id, agent_id);
+    CREATE INDEX idx_memories_layer ON memories(layer);
+    CREATE INDEX idx_memories_expires_at ON memories(expires_at) WHERE expires_at IS NOT NULL;
+    CREATE INDEX idx_memories_importance ON memories(importance);
+    CREATE INDEX idx_memories_metadata ON memories USING GIN(metadata);
+
+    -- Performance Indexes (Phase 5)
+    CREATE INDEX idx_memories_project ON memories(project);
+    CREATE INDEX idx_memories_session_id ON memories(session_id);
+    CREATE INDEX idx_memories_source ON memories(source);
+    CREATE INDEX idx_memories_project_created_at ON memories(project, created_at);
+    ```
+    """
+
     def __init__(
         self,
         dsn: str | None = None,
-        pool: asyncpg.Pool | None = None,
+        pool: Optional["asyncpg.Pool"] = None,
         **pool_kwargs: Any,
     ) -> None:
+        """Initialize PostgreSQL storage.
+
+        Args:
+            dsn: PostgreSQL connection string (e.g., postgresql://user:pass@host/db)
+            pool: Existing asyncpg connection pool
+            **pool_kwargs: Additional arguments for asyncpg.create_pool()
+        """
+        if asyncpg is None:
+            raise ImportError(
+                "asyncpg is required for PostgreSQLStorage. "
+                "Install with: pip install asyncpg"
+            )
+
         self.dsn = dsn
         self._pool = pool
         self._pool_kwargs = pool_kwargs
 
-    async def _get_pool(self) -> asyncpg.Pool:
+    async def _get_pool(self) -> "asyncpg.Pool":
+        """Get or create connection pool."""
         if self._pool is None:
-            if not self.dsn and not self._pool:
+            if self.dsn is None:
                 raise ValueError("Either dsn or pool must be provided")
             self._pool = await asyncpg.create_pool(self.dsn, **self._pool_kwargs)
         return cast("asyncpg.Pool", self._pool)
 
+    async def close(self) -> None:
+        """Close connection pool."""
+        if self._pool:
+            await self._pool.close()
+            self._pool = None
+
     async def store_memory(self, **kwargs: Any) -> UUID:
+        """Store a new memory in PostgreSQL."""
         pool = await self._get_pool()
-        m_id = uuid4()
+
+        memory_id = uuid4()
+        content = kwargs.get("content")
+        layer = kwargs.get("layer")
+        tenant_id = kwargs.get("tenant_id")
+        agent_id = kwargs.get("agent_id")
+        tags = kwargs.get("tags") or []
+        metadata = kwargs.get("metadata") or {}
+        embedding = kwargs.get("embedding")
+        importance = kwargs.get("importance", 0.5)
+        expires_at = kwargs.get("expires_at")
+        memory_type = kwargs.get("memory_type", "text")
+        project = kwargs.get("project")
+        session_id = kwargs.get("session_id")
+        source = kwargs.get("source")
+        strength = kwargs.get("strength", 1.0)
+
+        import json
+
         async with pool.acquire() as conn:
             # Convert embedding to string for pgvector compatibility if using asyncpg without codec
             embedding_val = str(embedding) if embedding is not None else None
 
             await conn.execute(
-                "INSERT INTO memories (id, content, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-                m_id,
-                kwargs.get("content"),
-                kwargs.get("layer"),
-                kwargs.get("tenant_id"),
-                kwargs.get("agent_id"),
-                kwargs.get("tags", []),
-                json.dumps(kwargs.get("metadata", {})),
-                kwargs.get("importance", 0.5),
-                datetime.now(timezone.utc).replace(tzinfo=None),
-                kwargs.get("project"),
-            )
-        return m_id
-
-    async def store_reflection_audit(
-        self,
-        query_id: str,
-        tenant_id: str,
-        fsi_score: float,
-        final_decision: str,
-        l1_report: dict[str, Any],
-        l2_report: dict[str, Any],
-        l3_report: dict[str, Any],
-        agent_id: str | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> UUID:
-        pool = await self._get_pool()
-        audit_id = uuid4()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """INSERT INTO reflection_audits (
-                    id, query_id, tenant_id, agent_id, fsi_score, 
-                    final_decision, l1_report, l2_report, l3_report, 
-                    metadata, created_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)""",
-                audit_id,
-                query_id,
+                """
+                INSERT INTO memories (
+                    id, content, layer, tenant_id, agent_id,
+                    tags, metadata, embedding, importance, expires_at,
+                    created_at, last_accessed_at, memory_type, usage_count,
+                    project, session_id, source, strength
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11, $12, 0, $13, $14, $15, $16)
+                """,
+                memory_id,
+                content,
+                layer,
                 tenant_id,
                 agent_id,
-                fsi_score,
-                final_decision,
-                json.dumps(l1_report),
-                json.dumps(l2_report),
-                json.dumps(l3_report),
-                json.dumps(metadata or {}),
+                tags,
+                json.dumps(metadata),
+                embedding_val,
+                importance,
+                expires_at,
                 datetime.now(timezone.utc).replace(tzinfo=None),
+                memory_type,
+                project,
+                session_id,
+                source,
+                strength,
             )
-        return audit_id
 
-    def _row_to_dict(self, row: asyncpg.Record | None) -> dict[str, Any] | None:
-        if row is None: return None
-        d = dict(row)
-        meta = d.get("metadata")
-        while isinstance(meta, str):
-            try:
-                parsed = json.loads(meta)
-                if isinstance(parsed, (dict, list)): meta = parsed
-                else: break
-            except: break
-        d["metadata"] = meta if isinstance(meta, dict) else {}
-        return d
+        return memory_id
 
-    def _get_stem(self, token: str) -> str:
-        t = token.lower()
-        if len(t) < 4: return t
-        if t.endswith("ies"): return t[:-3]
-        if t.endswith("s") and not t.endswith("ss"): return t[:-1]
-        return t
+    async def get_memory(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+    ) -> dict[str, Any] | None:
+        """Retrieve a memory by ID."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT
+                    id, content, layer, tenant_id, agent_id,
+                    tags, metadata, embedding, importance, usage_count,
+                    created_at, last_accessed_at, expires_at,
+                    project, session_id, memory_type, source, strength
+                FROM memories
+                WHERE id = $1 AND tenant_id = $2
+                """,
+                memory_id,
+                tenant_id,
+            )
+
+        if not row:
+            return None
+
+        return {
+            "id": row["id"],
+            "content": row["content"],
+            "layer": row["layer"],
+            "tenant_id": row["tenant_id"],
+            "agent_id": row["agent_id"],
+            "project": row["project"],
+            "session_id": row["session_id"],
+            "memory_type": row["memory_type"],
+            "source": row["source"],
+            "strength": float(row["strength"]) if row["strength"] is not None else 1.0,
+            "tags": list(row["tags"]) if row["tags"] else [],
+            "metadata": row["metadata"] if row["metadata"] else {},
+            "embedding": (
+                (
+                    json.loads(row["embedding"])
+                    if isinstance(row["embedding"], str)
+                    else list(row["embedding"])
+                )
+                if row["embedding"]
+                else None
+            ),
+            "importance": float(row["importance"]),
+            "usage_count": int(row["usage_count"]),
+            "created_at": row["created_at"],
+            "last_accessed_at": row["last_accessed_at"],
+            "expires_at": row["expires_at"],
+        }
 
     async def search_memories(
-        self, query: str, tenant_id: str, agent_id: str, layer: str, limit: int = 10, **kwargs: Any
+        self,
+        query: str,
+        tenant_id: str,
+        agent_id: str,
+        layer: str,
+        limit: int = 10,
+        filters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        pool = await self._get_pool()
-        
-        ts_query = query.strip()
-        if '"' not in ts_query:
-            ts_query = re.sub(r'\s+', ' | ', ts_query)
-            
-        # System 40.16: SQL Linguistic Expansion
-        # We search for both original words AND their stems in content/metadata
-        words = [w for w in re.findall(r'\w+', query.lower()) if len(w) > 2]
-        stems = [self._get_stem(w) for w in words]
-        unique_patterns = list(set(words + stems))[:5] # Limit to avoid slow SQL
-        
-        project = kwargs.get("project")
-        
-        sql = f"""
-        WITH candidates AS (
-            SELECT *, 
-                   ts_rank_cd(to_tsvector('english', coalesce(content, '')), websearch_to_tsquery('english', $1)) as ts_rank
-            FROM memories
-            WHERE tenant_id = $2 AND agent_id = $3 AND layer = $4
-            {"AND project = $6" if project else ""}
-            AND (
-                to_tsvector('english', coalesce(content, '')) @@ websearch_to_tsquery('english', $1)
-                OR content ILIKE $5
-                { "".join([f"OR content ILIKE '%{p}%' OR metadata->>'id' ILIKE '%{p}%'" for p in unique_patterns]) }
-            )
-        )
-        SELECT * FROM candidates ORDER BY ts_rank DESC LIMIT $7
+        """Search memories using PostgreSQL full-text search.
+
+        Note: This is a basic implementation. For production, consider:
+        - Adding tsvector column with GIN index
+        - Using pgvector for semantic search
+        - Implementing proper text search configuration
         """
-        
-        async with pool.acquire() as conn:
-            if project:
-                rows = await conn.fetch(sql, ts_query, tenant_id, agent_id, layer, f"%{query}%", project, limit)
-            else:
-                rows = await conn.fetch(sql, ts_query, tenant_id, agent_id, layer, f"%{query}%", None, limit)
-                
-        return [self._row_to_dict(r) for r in rows if r]
-
-    async def get_memory(self, memory_id: UUID, tenant_id: str) -> dict[str, Any] | None:
         pool = await self._get_pool()
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT * FROM memories WHERE id = $1 AND tenant_id = $2", memory_id, tenant_id)
-        return self._row_to_dict(row)
+        filters = filters or {}
 
-    async def list_memories(self, tenant_id: str, **kwargs: Any) -> list[dict[str, Any]]:
+        # Build WHERE clause
+        conditions = [
+            "tenant_id = $1",
+            "agent_id = $2",
+            "layer = $3",
+        ]
+        params: list[Any] = [tenant_id, agent_id, layer]
+        param_idx = 4
+
+        # Handle not_expired filter
+        if filters.get("not_expired"):
+            conditions.append(f"(expires_at IS NULL OR expires_at > ${param_idx})")
+            params.append(datetime.now(timezone.utc))
+            param_idx += 1
+
+        # Handle tags filter
+        if "tags" in filters:
+            conditions.append(f"tags && ${param_idx}")
+            params.append(filters["tags"])
+            param_idx += 1
+
+        # Handle importance filter
+        if "min_importance" in filters:
+            conditions.append(f"importance >= ${param_idx}")
+            params.append(filters["min_importance"])
+            param_idx += 1
+
+        # Text search (simple ILIKE for now)
+        conditions.append(f"content ILIKE ${param_idx}")
+        params.append(f"%{query}%")
+        param_idx += 1
+
+        where_clause = " AND ".join(conditions)
+
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                f"""
+                SELECT
+                    id, content, layer, tenant_id, agent_id,
+                    tags, metadata, embedding, importance, usage_count,
+                    created_at, last_accessed_at, expires_at,
+                    project, session_id, source, strength, memory_type,
+                    -- Simple relevance scoring
+                    CASE
+                        WHEN content ILIKE ${param_idx} THEN 1.0
+                        ELSE 0.5
+                    END as score
+                FROM memories
+                WHERE {where_clause}
+                ORDER BY score DESC, importance DESC, last_accessed_at DESC
+                LIMIT ${param_idx + 1}
+                """,
+                *params,
+                f"%{query}%",  # For score calculation
+                limit,
+            )
+
+        results = []
+        for row in rows:
+            memory = {
+                "id": row["id"],
+                "content": row["content"],
+                "layer": row["layer"],
+                "tenant_id": row["tenant_id"],
+                "agent_id": row["agent_id"],
+                "project": row["project"],
+                "session_id": row["session_id"],
+                "source": row["source"],
+                "strength": (
+                    float(row["strength"]) if row["strength"] is not None else 1.0
+                ),
+                "memory_type": row["memory_type"],
+                "tags": list(row["tags"]) if row["tags"] else [],
+                "metadata": row["metadata"] if row["metadata"] else {},
+                "embedding": (
+                    (
+                        json.loads(row["embedding"])
+                        if isinstance(row["embedding"], str)
+                        else list(row["embedding"])
+                    )
+                    if row["embedding"]
+                    else None
+                ),
+                "importance": float(row["importance"]),
+                "usage_count": int(row["usage_count"]),
+                "created_at": row["created_at"],
+                "last_accessed_at": row["last_accessed_at"],
+                "expires_at": row["expires_at"],
+            }
+            results.append(
+                {
+                    "memory": memory,
+                    "score": float(row["score"]),
+                }
+            )
+
+        return results
+
+    async def list_memories(
+        self,
+        tenant_id: str,
+        agent_id: str | None = None,
+        layer: str | None = None,
+        tags: list[str] | None = None,
+        filters: dict[str, Any] | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        order_by: str = "created_at",
+        order_direction: str = "desc",
+    ) -> list[dict[str, Any]]:
+        """List memories with pagination."""
         pool = await self._get_pool()
-        limit = kwargs.get("limit", 100)
+        filters = filters or {}
+
+        conditions = [
+            "tenant_id = $1",
+        ]
+        params: list[Any] = [tenant_id]
+        param_idx = 2
+
+        if agent_id:
+            conditions.append(f"agent_id = ${param_idx}")
+            params.append(agent_id)
+            param_idx += 1
+
+        if layer:
+            conditions.append(f"layer = ${param_idx}")
+            params.append(layer)
+            param_idx += 1
+
+        if tags:
+            conditions.append(f"tags && ${param_idx}")
+            params.append(tags)
+            param_idx += 1
+
+        # Apply additional filters
+        if filters:
+            if "since" in filters or "created_after" in filters:
+                since = filters.get("since") or filters.get("created_after")
+                conditions.append(f"created_at >= ${param_idx}")
+                params.append(since)
+                param_idx += 1
+
+            if "min_importance" in filters:
+                conditions.append(f"importance >= ${param_idx}")
+                params.append(filters["min_importance"])
+                param_idx += 1
+
+            if "memory_ids" in filters:
+                conditions.append(f"id = ANY(${param_idx}::uuid[])")
+                params.append(filters["memory_ids"])
+                param_idx += 1
+
+        where_clause = " AND ".join(conditions)
+        order_clause = f"ORDER BY {order_by} {order_direction.upper()}"
+
         async with pool.acquire() as conn:
-            rows = await conn.fetch("SELECT * FROM memories WHERE tenant_id = $1 LIMIT $2", tenant_id, limit)
-        return [self._row_to_dict(r) for r in rows if r]
+            rows = await conn.fetch(
+                f"""
+                SELECT
+                    id, content, layer, tenant_id, agent_id,
+                    tags, metadata, embedding, importance, usage_count,
+                    created_at, last_accessed_at, expires_at,
+                    project, session_id, source, strength, memory_type
+                FROM memories
+                WHERE {where_clause}
+                {order_clause}
+                LIMIT ${param_idx} OFFSET ${param_idx + 1}
+                """,
+                *params,
+                limit,
+                offset,
+            )
 
-    async def close(self) -> None:
-        if self._pool: await self._pool.close()
+        results = []
+        for row in rows:
+            results.append(
+                {
+                    "id": row["id"],
+                    "content": row["content"],
+                    "layer": row["layer"],
+                    "tenant_id": row["tenant_id"],
+                    "agent_id": row["agent_id"],
+                    "project": row["project"],
+                    "session_id": row["session_id"],
+                    "source": row["source"],
+                    "strength": (
+                        float(row["strength"]) if row["strength"] is not None else 1.0
+                    ),
+                    "memory_type": row["memory_type"],
+                    "tags": list(row["tags"]) if row["tags"] else [],
+                    "metadata": row["metadata"] if row["metadata"] else {},
+                    "embedding": (
+                        (
+                            json.loads(row["embedding"])
+                            if isinstance(row["embedding"], str)
+                            else list(row["embedding"])
+                        )
+                        if row["embedding"]
+                        else None
+                    ),
+                    "importance": float(row["importance"]),
+                    "usage_count": int(row["usage_count"]),
+                    "created_at": row["created_at"],
+                    "last_accessed_at": row["last_accessed_at"],
+                    "expires_at": row["expires_at"],
+                }
+            )
 
-    async def delete_memories_with_metadata_filter(self, tenant_id=None, agent_id=None, layer=None, metadata_filter=None) -> int: return 0
-    async def count_memories(self, tenant_id=None, agent_id=None, layer=None) -> int: return 0
-    async def update_memory_access(self, memory_id, tenant_id) -> bool: return True
-    async def delete_expired_memories(self, tenant_id, agent_id=None, layer=None) -> int: return 0
-    async def update_memory(self, memory_id, tenant_id, updates) -> bool: return True
-    async def delete_memory(self, memory_id, tenant_id) -> bool: return True
-    async def get_metric_aggregate(self, tenant_id, metric, func, filters=None) -> float: return 0.0
-    async def update_memory_access_batch(self, memory_ids, tenant_id) -> bool: return True
-    async def adjust_importance(self, memory_id, delta, tenant_id) -> float: return 0.5
-    async def delete_memories_below_importance(self, tenant_id, agent_id, layer, importance_threshold) -> int: return 0
-    async def decay_importance(self, tenant_id, decay_factor) -> int: return 0
-    async def save_embedding(self, memory_id, model_name, embedding, tenant_id) -> bool: return True
-    async def update_memory_expiration(self, memory_id, tenant_id, expires_at) -> bool: return True
+        return results
+
+    async def update_memory_access(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+    ) -> bool:
+        """Update last access time and increment usage count."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE memories
+                SET
+                    last_accessed_at = $1,
+                    usage_count = usage_count + 1
+                WHERE id = $2 AND tenant_id = $3
+                """,
+                datetime.now(timezone.utc),
+                memory_id,
+                tenant_id,
+            )
+
+        return cast(str, result) == "UPDATE 1"
+
+    async def update_memory_expiration(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+        expires_at: datetime,
+    ) -> bool:
+        """Update memory expiration time."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE memories
+                SET expires_at = $1
+                WHERE id = $2 AND tenant_id = $3
+                """,
+                expires_at,
+                memory_id,
+                tenant_id,
+            )
+
+        return cast(str, result) == "UPDATE 1"
+
+    async def update_memory(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+        updates: dict[str, Any],
+    ) -> bool:
+        """Update a memory with given fields.
+
+        Args:
+            memory_id: UUID of the memory
+            tenant_id: Tenant identifier
+            updates: Dictionary of fields to update
+
+        Returns:
+            True if successful, False otherwise
+        """
+        pool = await self._get_pool()
+
+        # Build dynamic UPDATE query
+        set_clauses = []
+        params = []
+        param_idx = 1
+
+        for key, value in updates.items():
+            if key not in ["id", "created_at", "tenant_id"]:  # Immutable fields
+                set_clauses.append(f"{key} = ${param_idx}")
+                params.append(value)
+                param_idx += 1
+
+        if not set_clauses:
+            return False
+
+        # Always update modified_at if it exists in schema
+        # (Note: current schema doesn't have modified_at, but this is future-proof)
+
+        # Add WHERE clause parameters
+        params.extend([memory_id, tenant_id])
+
+        query = f"""
+            UPDATE memories
+            SET {', '.join(set_clauses)}
+            WHERE id = ${param_idx} AND tenant_id = ${param_idx + 1}
+        """
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(query, *params)
+
+        return cast(str, result) == "UPDATE 1"
+
+    async def increment_access_count(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+    ) -> bool:
+        """Increment access count for a memory.
+
+        Args:
+            memory_id: UUID of the memory
+            tenant_id: Tenant identifier
+
+        Returns:
+            True if successful, False otherwise
+        """
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE memories
+                SET
+                    usage_count = usage_count + 1,
+                    last_accessed_at = $1
+                WHERE id = $2 AND tenant_id = $3
+                """,
+                datetime.now(timezone.utc),
+                memory_id,
+                tenant_id,
+            )
+
+        return cast(str, result) == "UPDATE 1"
+
+    async def delete_memory(
+        self,
+        memory_id: UUID,
+        tenant_id: str,
+    ) -> bool:
+        """Delete a memory."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                DELETE FROM memories
+                WHERE id = $1 AND tenant_id = $2
+                """,
+                memory_id,
+                tenant_id,
+            )
+
+        return cast(str, result) == "DELETE 1"
+
+    async def delete_expired_memories(
+        self,
+        tenant_id: str,
+        agent_id: str,
+        layer: str,
+    ) -> int:
+        """Delete expired memories."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                DELETE FROM memories
+                WHERE tenant_id = $1
+                  AND agent_id = $2
+                  AND layer = $3
+                  AND expires_at IS NOT NULL
+                  AND expires_at < $4
+                """,
+                tenant_id,
+                agent_id,
+                layer,
+                datetime.now(timezone.utc),
+            )
+
+        # Parse "DELETE N" to get count
+        # Parse "DELETE N" to get count
+        status = cast(str, result)
+        count = int(status.split()[-1]) if status.startswith("DELETE") else 0
+        return count
+
+    async def delete_memories_below_importance(
+        self,
+        tenant_id: str,
+        agent_id: str,
+        layer: str,
+        importance_threshold: float,
+    ) -> int:
+        """Delete memories below importance threshold."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                DELETE FROM memories
+                WHERE tenant_id = $1
+                  AND agent_id = $2
+                  AND layer = $3
+                  AND importance < $4
+                """,
+                tenant_id,
+                agent_id,
+                layer,
+                importance_threshold,
+            )
+
+        # Parse "DELETE N" to get count
+        status = cast(str, result)
+        count = int(status.split()[-1]) if status.startswith("DELETE") else 0
+        return count
+
+    async def delete_memories_with_metadata_filter(
+        self,
+        tenant_id: str,
+        agent_id: str,
+        layer: str,
+        metadata_filter: dict[str, Any],
+    ) -> int:
+        """Delete memories matching metadata filter.
+
+        Note: This is a simplified implementation.
+        Production code should properly handle JSONB queries.
+        """
+        pool = await self._get_pool()
+
+        # For now, implement simple key-value matching
+        # Production: use jsonb operators like @>, ?, etc.
+        async with pool.acquire() as conn:
+            # Get all memories and filter in Python (not ideal for production)
+            rows = await conn.fetch(
+                """
+                SELECT id, metadata
+                FROM memories
+                WHERE tenant_id = $1 AND agent_id = $2 AND layer = $3
+                """,
+                tenant_id,
+                agent_id,
+                layer,
+            )
+
+            ids_to_delete = []
+            for row in rows:
+                metadata = dict(row["metadata"]) if row["metadata"] else {}
+                matches = True
+
+                for key, value in metadata_filter.items():
+                    # Handle special operators like confidence__lt
+                    if "__lt" in key:
+                        field = key.replace("__lt", "")
+                        if field not in metadata or metadata[field] >= value:
+                            matches = False
+                            break
+                    else:
+                        if metadata.get(key) != value:
+                            matches = False
+                            break
+
+                if matches:
+                    ids_to_delete.append(row["id"])
+
+            if ids_to_delete:
+                result = await conn.execute(
+                    """
+                    DELETE FROM memories
+                    WHERE id = ANY($1)
+                    """,
+                    ids_to_delete,
+                )
+                count = int(result.split()[-1]) if result.startswith("DELETE") else 0
+                return count
+
+        return 0
+
+    async def count_memories(
+        self,
+        tenant_id: str,
+        agent_id: str | None = None,
+        layer: str | None = None,
+    ) -> int:
+        """Count memories in a layer."""
+        pool = await self._get_pool()
+
+        conditions = ["tenant_id = $1"]
+        params = [tenant_id]
+        param_idx = 2
+
+        if agent_id:
+            conditions.append(f"agent_id = ${param_idx}")
+            params.append(agent_id)
+            param_idx += 1
+
+        if layer:
+            conditions.append(f"layer = ${param_idx}")
+            params.append(layer)
+            param_idx += 1
+
+        where_clause = " AND ".join(conditions)
+
+        async with pool.acquire() as conn:
+            result = await conn.fetchval(
+                f"SELECT COUNT(*) FROM memories WHERE {where_clause}",
+                *params,
+            )
+            return cast(int, result or 0)
+
+    async def get_metric_aggregate(
+        self,
+        tenant_id: str,
+        metric: str,
+        func: str,
+        filters: dict[str, Any] | None = None,
+    ) -> float:
+        """Calculate aggregate metric for memories."""
+        pool = await self._get_pool()
+        filters = filters or {}
+
+        # Validate metric and func to prevent SQL injection
+        allowed_metrics = {"importance", "usage_count"}
+        allowed_funcs = {"avg", "sum", "min", "max", "count"}
+
+        if metric not in allowed_metrics:
+            raise ValueError(f"Invalid metric: {metric}. Allowed: {allowed_metrics}")
+        if func not in allowed_funcs:
+            raise ValueError(f"Invalid function: {func}. Allowed: {allowed_funcs}")
+
+        conditions = ["tenant_id = $1"]
+        params: list[Any] = [tenant_id]
+        param_idx = 2
+
+        if "agent_id" in filters:
+            conditions.append(f"agent_id = ${param_idx}")
+            params.append(filters["agent_id"])
+            param_idx += 1
+
+        if "layer" in filters:
+            conditions.append(f"layer = ${param_idx}")
+            params.append(filters["layer"])
+            param_idx += 1
+
+        where_clause = " AND ".join(conditions)
+
+        async with pool.acquire() as conn:
+            result = await conn.fetchval(
+                f"""
+                SELECT {func}({metric})
+                FROM memories
+                WHERE {where_clause}
+                """,
+                *params,
+            )
+
+        return float(result) if result is not None else 0.0
+
+    async def update_memory_access_batch(
+        self,
+        memory_ids: list[UUID],
+        tenant_id: str,
+    ) -> bool:
+        """Update last access time and increment usage count for multiple memories."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE memories
+                SET
+                    last_accessed_at = $1,
+                    usage_count = usage_count + 1
+                WHERE id = ANY($2) AND tenant_id = $3
+                """,
+                datetime.now(timezone.utc),
+                memory_ids,
+                tenant_id,
+            )
+
+        # We consider it successful if the query executed, even if 0 rows updated
+        # (though ideally we might want to check if count matches)
+        return True
+
+    async def adjust_importance(
+        self,
+        memory_id: UUID,
+        delta: float,
+        tenant_id: str,
+    ) -> float:
+        """Adjust memory importance by a delta value."""
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            new_importance = await conn.fetchval(
+                """
+                UPDATE memories
+                SET importance = GREATEST(0.0, LEAST(1.0, importance + $1))
+                WHERE id = $2 AND tenant_id = $3
+                RETURNING importance
+                """,
+                delta,
+                memory_id,
+                tenant_id,
+            )
+
+        if new_importance is None:
+            raise ValueError(f"Memory not found: {memory_id}")
+
+        return float(new_importance)
+
+    async def decay_importance(
+        self,
+        tenant_id: str,
+        decay_rate: float,
+        consider_access_stats: bool = True,
+    ) -> int:
+        """Apply time-based decay to all memories with temporal considerations."""
+        pool = await self._get_pool()
+        now = datetime.now(timezone.utc)
+
+        # SQL query implementing decay with temporal considerations
+        query = """
+            UPDATE memories SET
+                importance = GREATEST(
+                    0.01,  -- Floor at 0.01
+                    CASE
+                        -- Accelerated decay for stale memories (not accessed > 30 days)
+                        WHEN $4 = TRUE AND EXTRACT(EPOCH FROM ($1 - COALESCE(last_accessed_at, created_at))) / 86400 > 30
+                        THEN importance * (
+                            1 - ($2 * (1 + (EXTRACT(EPOCH FROM ($1 - COALESCE(last_accessed_at, created_at))) / 86400) / 30))
+                        )
+                        -- Protected decay for recent memories (accessed < 7 days ago)
+                        WHEN $4 = TRUE AND EXTRACT(EPOCH FROM ($1 - COALESCE(last_accessed_at, created_at))) / 86400 < 7
+                        THEN importance * (1 - ($2 * 0.5))
+                        -- Standard decay for everything else
+                        ELSE importance * (1 - $2)
+                    END
+                )
+            WHERE tenant_id = $3
+              AND importance > 0.01
+        """
+
+        async with pool.acquire() as conn:
+            status = await conn.execute(
+                query,
+                now.replace(tzinfo=None),
+                decay_rate,
+                tenant_id,
+                consider_access_stats,
+            )
+
+        # Parse "UPDATE N"
+        if status and status.startswith("UPDATE "):
+            try:
+                return int(status.split(" ")[1])
+            except (IndexError, ValueError):
+                return 0
+        return 0
+
+    async def save_embedding(
+        self,
+        memory_id: UUID,
+        model_name: str,
+        embedding: list[float],
+        metadata: dict[str, Any] | None = None,
+    ) -> bool:
+        """Save a vector embedding for a memory."""
+        pool = await self._get_pool()
+        metadata = metadata or {}
+        embedding_val = str(embedding) if embedding is not None else None
+
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO memory_embeddings (
+                    memory_id, model_name, embedding, metadata, created_at
+                ) VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (memory_id, model_name)
+                DO UPDATE SET
+                    embedding = EXCLUDED.embedding,
+                    metadata = EXCLUDED.metadata,
+                    created_at = NOW()
+                """,
+                memory_id,
+                model_name,
+                embedding_val,
+                json.dumps(metadata),
+            )
+
+        return True

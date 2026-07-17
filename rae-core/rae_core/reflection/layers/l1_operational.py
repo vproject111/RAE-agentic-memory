@@ -1,8 +1,9 @@
-from typing import Any, Dict, List
 import uuid
+from typing import Any
+
 
 class EvidenceVerifier:
-    def verify(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def verify(self, payload: dict[str, Any]) -> dict[str, Any]:
         sources = payload.get("retrieved_sources", [])
         draft = payload.get("answer_draft", "")
         # Minimalistic deterministic logic for now or integrated with LLM prompt
@@ -10,19 +11,18 @@ class EvidenceVerifier:
         missing_sources = []
         if not sources and len(draft) > 10:
             coverage_ratio = 0.0
-        
-        return {
-            "coverage_ratio": coverage_ratio,
-            "missing_sources": missing_sources
-        }
+
+        return {"coverage_ratio": coverage_ratio, "missing_sources": missing_sources}
+
 
 class ContractEnforcer:
-    def enforce(self, payload: Dict[str, Any]) -> Dict[str, str]:
+    def enforce(self, payload: dict[str, Any]) -> dict[str, str]:
         # Minimalistic deterministic policy enforcement
         return {"contract_status": "ok"}
 
+
 class UncertaintyEstimator:
-    def estimate(self, payload: Dict[str, Any]) -> Dict[str, float]:
+    def estimate(self, payload: dict[str, Any]) -> dict[str, float]:
         draft = payload.get("answer_draft", "")
         uncertainty = 0.0
         if "probably" in draft.lower() or "maybe" in draft.lower():
@@ -30,6 +30,7 @@ class UncertaintyEstimator:
         if not payload.get("retrieved_sources"):
             uncertainty += 0.5
         return {"uncertainty_level": min(1.0, uncertainty)}
+
 
 class L1OperationalReflection:
     def __init__(self, coverage_threshold: float = 0.0, max_uncertainty: float = 0.9):
@@ -39,7 +40,7 @@ class L1OperationalReflection:
         self.coverage_threshold = coverage_threshold
         self.max_uncertainty = max_uncertainty
 
-    def reflect(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def reflect(self, payload: dict[str, Any]) -> dict[str, Any]:
         evidence = self.evidence_verifier.verify(payload)
         contract = self.contract_enforcer.enforce(payload)
         uncertainty = self.uncertainty_estimator.estimate(payload)
@@ -63,5 +64,5 @@ class L1OperationalReflection:
             "contract_status": contract_status,
             "uncertainty_level": uncertainty_level,
             "missing_sources": evidence.get("missing_sources", []),
-            "trace_id": str(uuid.uuid4())
+            "trace_id": str(uuid.uuid4()),
         }

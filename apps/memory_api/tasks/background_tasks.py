@@ -431,9 +431,7 @@ def run_entity_resolution_task(project: str = "default", tenant_id: str = "defau
 
 
 @celery_app.task
-def run_community_detection_task(
-    project: str = "default", tenant_id: str = "default"
-):
+def run_community_detection_task(project: str = "default", tenant_id: str = "default"):
     """
     Periodic task for Pillar 2: Community Detection & Summarization.
     Generates 'Wisdom' by summarizing clusters.
@@ -442,9 +440,7 @@ def run_community_detection_task(
     async def main():
         async with rae_context() as rae_service:
             service = CommunityDetectionService(rae_service=rae_service)
-            await service.run_community_detection_and_summarization(
-                project, tenant_id
-            )
+            await service.run_community_detection_and_summarization(project, tenant_id)
 
     asyncio.run(main())
 

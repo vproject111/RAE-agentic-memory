@@ -132,10 +132,13 @@ class QdrantStore(MemoryVectorStore):
         try:
             col_info = self.qdrant_client.get_collection(collection_name)
             current_vectors = col_info.config.params.vectors
-            
+
             # If current_vectors is a single VectorParams, we need to migrate to named vectors
             # (Though RAE usually starts with named vectors)
-            if not isinstance(current_vectors, dict) or vector_name not in current_vectors:
+            if (
+                not isinstance(current_vectors, dict)
+                or vector_name not in current_vectors
+            ):
                 logger.info(f"Dynamically adding vector space: {vector_name} ({size}d)")
                 self.qdrant_client.update_collection(
                     collection_name=collection_name,
@@ -143,7 +146,7 @@ class QdrantStore(MemoryVectorStore):
                         vector_name: models.VectorParams(
                             size=size, distance=models.Distance.COSINE
                         )
-                    }
+                    },
                 )
         except Exception as e:
             logger.error(f"Failed to update vector config for {vector_name}: {e}")
@@ -153,7 +156,7 @@ class QdrantStore(MemoryVectorStore):
         for memory, embedding in zip(memories, embeddings):
             sparse_vector = self._get_sparse_vector(memory.content)
             vector_payload = {"text": sparse_vector}
-            
+
             if isinstance(embedding, dict):
                 # Multiple named vectors provided
                 for v_name, v_vec in embedding.items():

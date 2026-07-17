@@ -55,12 +55,23 @@ class TestSearchCoverage:
         mock_strat.get_strategy_weight.return_value = 5.0
 
         engine = HybridSearchEngine(strategies={"s1": mock_strat})
+
+        # Mock the fusion strategy to return a simple weighted RRF format
+        target_uuid = uuid4()
+        mock_strat.search = AsyncMock(return_value=[(target_uuid, 0.5)])
+
+        async def mock_fuse(strategy_results, weights, **kwargs):
+            w = weights.get("s1", 1.0)
+            return [(target_uuid, w / (60 + 0), 0.5)]
+
+        engine.fusion_strategy.fuse = mock_fuse
+
         # weights not provided in call
         results = await engine.search("q", "t")
 
         assert len(results) == 1
         # RRF score should use weight 5.0
-        assert results[0][1] == 5.0 / (60 + 1)
+        assert results[0][1] == 5.0 / (60 + 0)
 
     @pytest.mark.asyncio
     async def test_search_cache_set(self):

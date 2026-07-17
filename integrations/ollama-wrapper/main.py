@@ -35,7 +35,9 @@ def chat(
 
         with httpx.Client() as client:
             response = client.post(
-                f"{settings.RAE_API_URL}/v2/v2/memories/query", json=payload, headers=headers
+                f"{settings.RAE_API_URL}/v2/v2/memories/query",
+                json=payload,
+                headers=headers,
             )
             response.raise_for_status()
 

@@ -35,9 +35,7 @@ class Reflector:
         self.memory_storage = memory_storage
         self.llm_provider = llm_provider
         self.coordinator = ReflectionCoordinator(
-            mode=reflection_mode, 
-            enforce_hard_frames=True,
-            storage=memory_storage
+            mode=reflection_mode, enforce_hard_frames=True, storage=memory_storage
         )
 
     async def evaluate_answer_draft(
@@ -66,13 +64,11 @@ class Reflector:
             "query_id": query_id,
             "retrieved_sources": retrieved_sources,
             "answer_draft": answer_draft,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
-        
+
         return await self.coordinator.run_and_store_reflections(
-            payload=payload,
-            tenant_id=tenant_id,
-            agent_id=agent_id
+            payload=payload, tenant_id=tenant_id, agent_id=agent_id
         )
 
     async def generate_reflection(

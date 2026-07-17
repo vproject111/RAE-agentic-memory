@@ -1,20 +1,29 @@
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
+
 from rae_core.embedding.native import NativeEmbeddingProvider
 from rae_core.embedding.onnx_cross_encoder import OnnxCrossEncoder
+
 
 class TestEmbeddingCoverage:
     @pytest.fixture
     def mock_onnx(self):
-        with patch('rae_core.embedding.native.ort.InferenceSession') as mock_sess, \
-             patch('rae_core.embedding.native.Tokenizer') as mock_tok:
+        with (
+            patch("rae_core.embedding.native.ort.InferenceSession") as mock_sess,
+            patch("rae_core.embedding.native.Tokenizer") as mock_tok,
+        ):
             # Mock session run return value: (batch, seq, dim)
-            mock_sess.return_value.run.return_value = [np.array([[[0.1]*384]])]
+            mock_sess.return_value.run.return_value = [np.array([[[0.1] * 384]])]
             # Mock session inputs
-            mock_sess.return_value.get_inputs.return_value = [MagicMock(name="input_ids")]
-            mock_sess.return_value.get_outputs.return_value = [MagicMock(name="last_hidden_state")]
-            
+            mock_sess.return_value.get_inputs.return_value = [
+                MagicMock(name="input_ids")
+            ]
+            mock_sess.return_value.get_outputs.return_value = [
+                MagicMock(name="last_hidden_state")
+            ]
+
             # Mock tokenizer encode return value
             mock_enc = MagicMock()
             mock_enc.ids = [1]
@@ -35,16 +44,22 @@ class TestEmbeddingCoverage:
     async def test_native_provider_error_handling(self, mock_onnx):
         mock_sess, _ = mock_onnx
         mock_sess.return_value.run.side_effect = Exception("Inference error")
-        with pytest.raises(RuntimeError, match="Failed to inspect ONNX model dimension"):
+        with pytest.raises(
+            RuntimeError, match="Failed to inspect ONNX model dimension"
+        ):
             NativeEmbeddingProvider(model_path="m.onnx", tokenizer_path="t.json")
 
     @pytest.mark.asyncio
     async def test_cross_encoder_rerank(self):
-        with patch('rae_core.embedding.onnx_cross_encoder.ort.InferenceSession') as mock_sess, \
-             patch('rae_core.embedding.onnx_cross_encoder.Tokenizer') as mock_tok:
+        with (
+            patch(
+                "rae_core.embedding.onnx_cross_encoder.ort.InferenceSession"
+            ) as mock_sess,
+            patch("rae_core.embedding.onnx_cross_encoder.Tokenizer") as mock_tok,
+        ):
             mock_sess.return_value.run.return_value = [np.array([[0.9], [0.1]])]
             mock_sess.return_value.get_inputs.return_value = []
-            
+
             encoder = OnnxCrossEncoder(model_path="m.onnx", tokenizer_path="t.json")
             scores = encoder.predict([("q", "d1"), ("q", "d2")])
             assert scores[0] > scores[1]

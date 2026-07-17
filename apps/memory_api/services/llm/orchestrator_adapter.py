@@ -121,5 +121,7 @@ class OrchestratorAdapter(LLMProvider):
         RAE-Core Compatibility Method.
         """
         model = kwargs.get("model", "default")
-        result = await self.generate(system=system_prompt or "", prompt=prompt, model=model)
+        result = await self.generate(
+            system=system_prompt or "", prompt=prompt, model=model
+        )
         return result.text

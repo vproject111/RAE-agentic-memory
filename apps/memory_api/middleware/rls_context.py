@@ -242,8 +242,7 @@ async def list_rls_policies(pool: asyncpg.Pool) -> list:
         list of dicts with policy information
     """
     async with pool.acquire() as conn:
-        policies = await conn.fetch(
-            """
+        policies = await conn.fetch("""
             SELECT
                 schemaname,
                 tablename,
@@ -256,7 +255,6 @@ async def list_rls_policies(pool: asyncpg.Pool) -> list:
             FROM pg_policies
             WHERE schemaname = 'public'
             ORDER BY tablename, policyname
-            """
-        )
+            """)
 
         return [dict(policy) for policy in policies]

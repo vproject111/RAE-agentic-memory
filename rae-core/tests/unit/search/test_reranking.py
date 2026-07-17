@@ -21,9 +21,7 @@ async def test_emerald_reranker_logic():
 async def test_hybrid_search_engine_uses_reranker():
     id1, id2 = uuid4(), uuid4()
     mock_strategy = MagicMock()
-    mock_strategy.search = AsyncMock(
-        return_value=[(id1, 0.8, 0.5), (id2, 0.7, 0.4)]
-    )
+    mock_strategy.search = AsyncMock(return_value=[(id1, 0.8, 0.5), (id2, 0.7, 0.4)])
     mock_strategy.get_strategy_weight.return_value = 1.0
     mock_strategy.get_strategy_name.return_value = "test"
 
@@ -33,10 +31,12 @@ async def test_hybrid_search_engine_uses_reranker():
 
     mock_embedding = MagicMock()
     mock_storage = MagicMock()
-    mock_storage.get_memories_batch = AsyncMock(return_value=[
-        {"id": id1, "content": "doc1", "metadata": {"importance": 0.5}},
-        {"id": id2, "content": "doc2", "metadata": {"importance": 0.4}}
-    ])
+    mock_storage.get_memories_batch = AsyncMock(
+        return_value=[
+            {"id": id1, "content": "doc1", "metadata": {"importance": 0.5}},
+            {"id": id2, "content": "doc2", "metadata": {"importance": 0.4}},
+        ]
+    )
 
     engine = HybridSearchEngine(
         strategies={"test": mock_strategy},

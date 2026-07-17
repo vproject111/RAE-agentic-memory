@@ -15,12 +15,12 @@ Usage:
 import argparse
 import os
 import random
-import sys
 from datetime import datetime, timedelta
 from typing import Dict, List
 
 import yaml
 from common import UniquenessGuard
+
 
 class IndustrialDataGenerator:
     """Generate realistic industrial benchmark data"""
@@ -132,8 +132,7 @@ class IndustrialDataGenerator:
         )
 
         timestamp = self.base_date + timedelta(
-            seconds=idx * 30,
-            microseconds=random.randint(0, 999999) # Unique jitter
+            seconds=idx * 30, microseconds=random.randint(0, 999999)  # Unique jitter
         )
 
         # Add unique operational nonce to ensure zero collisions
@@ -152,7 +151,7 @@ class IndustrialDataGenerator:
                 "timestamp": timestamp.isoformat(),
                 "service": service,
                 "level": level,
-                "nonce": nonce.strip()
+                "nonce": nonce.strip(),
             },
         }
 
@@ -186,7 +185,9 @@ class IndustrialDataGenerator:
 
         text = f"[{ticket_type.upper()}] {component}: {random.choice(descriptions)} - Priority: {priority}, Status: {status}"
 
-        timestamp = self.base_date + timedelta(hours=idx, microseconds=random.randint(0, 999999))
+        timestamp = self.base_date + timedelta(
+            hours=idx, microseconds=random.randint(0, 999999)
+        )
         nonce = f" [SN-{idx:06d}]"
         text = f"[{ticket_type.upper()}] {component}: {random.choice(descriptions)} - Priority: {priority}, Status: {status}{nonce}"
 
@@ -206,7 +207,7 @@ class IndustrialDataGenerator:
                 "type": ticket_type,
                 "priority": priority,
                 "component": component,
-                "nonce": nonce.strip()
+                "nonce": nonce.strip(),
             },
         }
 
@@ -218,18 +219,23 @@ class IndustrialDataGenerator:
         cluster_id = f"cls-{random.choice(['alpha', 'beta', 'prod'])}"
 
         value = random.randint(20, 95)
-        timestamp = self.base_date + timedelta(minutes=idx, microseconds=random.randint(0, 999999))
+        timestamp = self.base_date + timedelta(
+            minutes=idx, microseconds=random.randint(0, 999999)
+        )
 
         template = random.choice(domain["templates"])
         nonce = f" [SN-{idx:06d}]"
-        text = template.format(
-            metric_type=metric_type,
-            server_id=server_id,
-            value=value,
-            time=timestamp.strftime("%H:%M:%S.%f"),
-            threshold=random.choice([80, 90, 95]),
-            cluster_id=cluster_id,
-        ) + nonce
+        text = (
+            template.format(
+                metric_type=metric_type,
+                server_id=server_id,
+                value=value,
+                time=timestamp.strftime("%H:%M:%S.%f"),
+                threshold=random.choice([80, 90, 95]),
+                cluster_id=cluster_id,
+            )
+            + nonce
+        )
 
         return {
             "id": f"metric_{idx:06d}",
@@ -242,7 +248,7 @@ class IndustrialDataGenerator:
                 "server_id": server_id,
                 "metric_type": metric_type,
                 "value": value,
-                "nonce": nonce.strip()
+                "nonce": nonce.strip(),
             },
         }
 
@@ -266,18 +272,21 @@ class IndustrialDataGenerator:
 
         template = random.choice(domain["templates"])
         nonce = f" [SN-{idx:06d}]"
-        text = template.format(
-            path=random.choice(paths),
-            method=random.choice(methods),
-            params=random.choice(["id, name", "query, limit", "user_id"]),
-            component=random.choice(components),
-            other_component=random.choice(components),
-            protocol=random.choice(["HTTP", "gRPC", "AMQP"]),
-            service=random.choice(self.domains["logs"]["services"]),
-            steps="1. Install 2. Configure 3. Run",
-            problem="Service fails to start",
-            solution="Check configuration file",
-        ) + nonce
+        text = (
+            template.format(
+                path=random.choice(paths),
+                method=random.choice(methods),
+                params=random.choice(["id, name", "query, limit", "user_id"]),
+                component=random.choice(components),
+                other_component=random.choice(components),
+                protocol=random.choice(["HTTP", "gRPC", "AMQP"]),
+                service=random.choice(self.domains["logs"]["services"]),
+                steps="1. Install 2. Configure 3. Run",
+                problem="Service fails to start",
+                solution="Check configuration file",
+            )
+            + nonce
+        )
 
         # Ensure 'database' is covered if selected
         if "database" in paths and "database" not in text:
@@ -293,7 +302,7 @@ class IndustrialDataGenerator:
                 "source": "Technical Documentation",
                 "importance": 0.7,
                 "type": doc_type,
-                "nonce": nonce.strip()
+                "nonce": nonce.strip(),
             },
         }
 
@@ -310,18 +319,23 @@ class IndustrialDataGenerator:
 
         template = random.choice(domain["templates"])
         nonce = f" [SN-{idx:06d}]"
-        text = template.format(
-            id=idx,
-            service=service,
-            duration=duration,
-            severity=severity,
-            description="unexpected error rate increase",
-            count=affected_users,
-            incident_type="Database failover",
-            root_cause="Configuration drift",
-        ) + nonce
+        text = (
+            template.format(
+                id=idx,
+                service=service,
+                duration=duration,
+                severity=severity,
+                description="unexpected error rate increase",
+                count=affected_users,
+                incident_type="Database failover",
+                root_cause="Configuration drift",
+            )
+            + nonce
+        )
 
-        timestamp = self.base_date + timedelta(days=idx // 20, microseconds=random.randint(0, 999999))
+        timestamp = self.base_date + timedelta(
+            days=idx // 20, microseconds=random.randint(0, 999999)
+        )
 
         return {
             "id": f"incident_{idx:06d}",
@@ -336,7 +350,7 @@ class IndustrialDataGenerator:
                 "severity": severity,
                 "duration_minutes": duration,
                 "affected_users": affected_users,
-                "nonce": nonce.strip()
+                "nonce": nonce.strip(),
             },
         }
 
@@ -355,7 +369,7 @@ class IndustrialDataGenerator:
 
         idx = 0
         attempts = 0
-        max_attempts = count * 2 # Allow some retries for uniqueness
+        max_attempts = count * 2  # Allow some retries for uniqueness
 
         while len(memories) < count and attempts < max_attempts:
             attempts += 1
@@ -368,7 +382,7 @@ class IndustrialDataGenerator:
                     # Apply Silicon Oracle Uniqueness Guard
                     original_text = mem["text"]
                     unique_text = self._ensure_unique(original_text)
-                    
+
                     mem["text"] = unique_text
                     memories.append(mem)
                     idx += 1
@@ -379,28 +393,30 @@ class IndustrialDataGenerator:
     def generate_queries(self, num_queries: int, memories: List[Dict]) -> List[Dict]:
         """Generate atomic queries based on unique nonces"""
         queries: List[Dict] = []
-        
+
         # Select random memories to query about
         targets = random.sample(memories, min(num_queries, len(memories)))
-        
+
         for m in targets:
             nonce = m["metadata"]["nonce"]
-            
+
             # 50% chance for exact nonce query, 50% for semantic + nonce
             if random.random() > 0.5:
                 query = f"Find entry with code {nonce}"
             else:
                 # Use a snippet of the text + nonce
                 words = m["text"].split()
-                snippet = " ".join(words[:min(5, len(words))])
+                snippet = " ".join(words[: min(5, len(words))])
                 query = f"{snippet} (Reference: {nonce})"
 
-            queries.append({
-                "query": query,
-                "expected_source_ids": [m["id"]],
-                "difficulty": "easy",
-                "category": "atomic_lookup",
-            })
+            queries.append(
+                {
+                    "query": query,
+                    "expected_source_ids": [m["id"]],
+                    "difficulty": "easy",
+                    "category": "atomic_lookup",
+                }
+            )
 
         return queries
 

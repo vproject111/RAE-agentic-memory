@@ -25,9 +25,7 @@ class TestInMemoryVectorStore:
     async def _create_memory(self, store, tenant_id="tenant1"):
         """Helper to create a memory and return its ID."""
         return await store.store_memory(
-            content="test content",
-            layer="working",
-            tenant_id=tenant_id
+            content="test content", layer="working", tenant_id=tenant_id
         )
 
     @pytest.mark.asyncio
@@ -204,7 +202,7 @@ class TestInMemoryVectorStore:
         id1 = await self._create_memory(store, "tenant1")
         # Update layer for the first one
         await store.update_memory(id1, "tenant1", {"layer": "working"})
-        
+
         id2 = await self._create_memory(store, "tenant1")
         # Update layer for the second one
         await store.update_memory(id2, "tenant1", {"layer": "episodic"})
@@ -363,15 +361,19 @@ class TestInMemoryVectorStore:
         # Store vectors with different dimensions using different models
         id1 = await self._create_memory(store, "tenant1")
         id2 = await self._create_memory(store, "tenant2")
-    
-        await store.store_vector(id1, [1.0, 0.0], "tenant1", metadata={"model_name": "model2d"})
+
+        await store.store_vector(
+            id1, [1.0, 0.0], "tenant1", metadata={"model_name": "model2d"}
+        )
         await store.store_vector(id2, {"model3d": [1.0, 0.0, 0.0]}, "tenant2")
-    
+
         stats = await store.get_statistics()
-    
+
         assert stats["total_memories"] == 2
         assert stats["tenants"] == 2
-        assert "default" in stats["vector_models"] or "model3d" in stats["vector_models"]
+        assert (
+            "default" in stats["vector_models"] or "model3d" in stats["vector_models"]
+        )
 
     @pytest.mark.asyncio
     async def test_clear_all(self, store):

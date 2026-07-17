@@ -61,12 +61,15 @@ async def test_embedding_service_local_fallback():
             service, "generate_embeddings", return_value=[[0.4, 0.5, 0.6]]
         ):
             # Mock LLMRouter.embed_batch to avoid real API calls
-            with patch.object(service.router, "embed_batch", new_callable=AsyncMock) as mock_embed_batch:
+            with patch.object(
+                service.router, "embed_batch", new_callable=AsyncMock
+            ) as mock_embed_batch:
                 from apps.llm.models import EmbeddingResponse
+
                 mock_embed_batch.return_value = EmbeddingResponse(
                     model="text-embedding-3-small",
                     embeddings=[[0.4, 0.5, 0.6]],
-                    usage=None
+                    usage=None,
                 )
 
                 # Execute

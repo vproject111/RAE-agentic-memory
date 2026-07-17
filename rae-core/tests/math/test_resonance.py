@@ -1,6 +1,5 @@
 """Tests for Semantic Resonance Engine (System 40.0)."""
 
-from typing import List, Dict, Any, Tuple
 from rae_core.math.resonance import SemanticResonanceEngine
 
 
@@ -69,17 +68,21 @@ def test_resonance_energy_map_includes_neighbors():
 def test_silicon_oracle_sharpening_hard_lock():
     # Proven retrieval (Symbolic Hard-Lock) should result in massive score
     engine = SemanticResonanceEngine(h_sys=10.0)
-    
-    query = "incident_0042_critical" # Contains symbols and anchors
+
+    query = "incident_0042_critical"  # Contains symbols and anchors
     results = [
         {"id": "mem_1", "score": 0.5, "content": "Some random text about logs"},
-        {"id": "mem_2", "score": 0.6, "content": "incident_0042_critical detected in server"},
+        {
+            "id": "mem_2",
+            "score": 0.6,
+            "content": "incident_0042_critical detected in server",
+        },
     ]
-    
+
     sharpened = engine.sharpen(query, results)
-    
+
     # mem_2 should be Tier 0 (Hard-Lock)
     assert sharpened[0]["id"] == "mem_2"
     assert sharpened[0]["audit"]["tier"] == 0
     # Score should be massive (Silicon Oracle Proof)
-    assert sharpened[0]["score"] > 1e10 
+    assert sharpened[0]["score"] > 1e10

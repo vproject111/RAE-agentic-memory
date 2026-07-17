@@ -20,14 +20,19 @@ class MetadataInjector:
         }
 
     def enrich_text(self, text: str) -> str:
-        if not text: return text
+        if not text:
+            return text
         text_lower = text.lower()
         found = []
         for k, v in self.synonyms.items():
             if k in text_lower and re.search(rf"\b{re.escape(k)}\b", text_lower):
                 found.extend(v)
-        if not found: return text
+        if not found:
+            return text
         return f"{text} {' '.join(set(found))}"
 
-    def process_query(self, query: str) -> str: return self.enrich_text(query)
-    def process_document(self, text: str) -> str: return self.enrich_text(text)
+    def process_query(self, query: str) -> str:
+        return self.enrich_text(query)
+
+    def process_document(self, text: str) -> str:
+        return self.enrich_text(text)

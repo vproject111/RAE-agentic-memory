@@ -157,15 +157,11 @@ class ComplianceService:
         governance_metrics = await self._get_governance_metrics(tenant_id, project)
         risk_metrics = await self._get_risk_management_metrics(tenant_id, project)
         data_metrics = await self._get_data_management_metrics(tenant_id, project)
-        transparency_metrics = await self._get_transparency_metrics(
-            tenant_id, project
-        )
+        transparency_metrics = await self._get_transparency_metrics(tenant_id, project)
         human_oversight_metrics = await self._get_human_oversight_metrics(
             tenant_id, project
         )
-        security_metrics = await self._get_security_privacy_metrics(
-            tenant_id, project
-        )
+        security_metrics = await self._get_security_privacy_metrics(tenant_id, project)
 
         # Get risk register
         active_risks = await self._get_active_risks(tenant_id, project)
@@ -174,9 +170,7 @@ class ComplianceService:
         retention_metrics = await self._get_retention_metrics(tenant_id, project)
 
         # Get source trust metrics
-        source_trust_metrics = await self._get_source_trust_metrics(
-            tenant_id, project
-        )
+        source_trust_metrics = await self._get_source_trust_metrics(tenant_id, project)
 
         # Get audit trail completeness
         audit_completeness = await self._get_audit_trail_completeness(
@@ -326,14 +320,12 @@ class ComplianceService:
                     tables_without_rls.append(table)
 
             # Count RLS policies
-            policies = await conn.fetch(
-                """
+            policies = await conn.fetch("""
                 SELECT COUNT(*) as total,
                        COUNT(CASE WHEN qual IS NOT NULL THEN 1 END) as active
                 FROM pg_policies
                 WHERE schemaname = 'public'
-                """
-            )
+                """)
 
             total_policies = policies[0]["total"] if policies else 0
             active_policies = policies[0]["active"] if policies else 0
@@ -623,12 +615,8 @@ class ComplianceService:
         )
 
         # 8.2 - Context provenance and decision lineage
-        context_quality = await self._get_context_provenance_quality(
-            tenant_id, project
-        )
-        decision_coverage = await self._get_decision_audit_coverage(
-            tenant_id, project
-        )
+        context_quality = await self._get_context_provenance_quality(tenant_id, project)
+        decision_coverage = await self._get_decision_audit_coverage(tenant_id, project)
 
         combined_provenance = (context_quality + decision_coverage) / 2
 
@@ -741,9 +729,7 @@ class ComplianceService:
 
         return metrics
 
-    async def _get_active_risks(
-        self, tenant_id: str, project: str
-    ) -> List[RiskMetric]:
+    async def _get_active_risks(self, tenant_id: str, project: str) -> List[RiskMetric]:
         """Get active risks from risk register (parsed from documentation)"""
         # This is a simplified version - in production, risks would be in database
         # For now, we return example risks based on RAE-Risk-Register.md
@@ -1071,9 +1057,7 @@ class ComplianceService:
 
             return quality_score
 
-    async def _get_decision_audit_coverage(
-        self, tenant_id: str, project: str
-    ) -> float:
+    async def _get_decision_audit_coverage(self, tenant_id: str, project: str) -> float:
         """Calculate decision audit coverage percentage"""
         async with self.rae_service.db.acquire() as conn:
             result = await conn.fetchrow(
@@ -1122,9 +1106,7 @@ class ComplianceService:
             # All high-risk operations are going through approval workflow
             return 100.0
 
-    async def _get_high_risk_approval_rate(
-        self, tenant_id: str, project: str
-    ) -> float:
+    async def _get_high_risk_approval_rate(self, tenant_id: str, project: str) -> float:
         """Calculate approval rate for high-risk operations"""
         async with self.rae_service.db.acquire() as conn:
             result = await conn.fetchrow(

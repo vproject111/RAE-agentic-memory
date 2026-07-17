@@ -1,5 +1,5 @@
-import pytest
 from rae_core.math.stability import PIDController, SimpleKalmanFilter
+
 
 class TestPIDController:
     def test_init(self):
@@ -25,7 +25,7 @@ class TestPIDController:
         # Output = 1.0 * 2.0 = 2.0
         output1 = pid.update(8.0)
         assert output1 == 2.0
-        
+
         # Error = 10.0 - 8.0 = 2.0
         # Integral = 2.0 + 2.0 * 1.0 = 4.0
         # Output = 1.0 * 4.0 = 4.0
@@ -39,7 +39,7 @@ class TestPIDController:
         # Output = 1.0 * 5.0 = 5.0
         output1 = pid.update(5.0)
         assert output1 == 5.0
-        
+
         # Error = 10.0 - 8.0 = 2.0
         # Derivative = (2.0 - 5.0) / 1.0 = -3.0
         # Output = 1.0 * -3.0 = -3.0
@@ -55,6 +55,7 @@ class TestPIDController:
         # D = 0
         # Total = 5.0
         assert output == 5.0
+
 
 class TestSimpleKalmanFilter:
     def test_init(self):
@@ -78,7 +79,7 @@ class TestSimpleKalmanFilter:
         output = kf.update(10.0)
         assert 5.0 < output < 6.0
         assert kf.x == output
-        
+
         # Update again with 10.0
         # x should move closer to 10.0
         output2 = kf.update(10.0)

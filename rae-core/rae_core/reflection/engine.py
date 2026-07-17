@@ -50,9 +50,7 @@ class ReflectionEngine:
         self.actor = Actor(memory_storage, llm_provider)
         self.evaluator = Evaluator(memory_storage)
         self.reflector = Reflector(
-            memory_storage, 
-            llm_provider, 
-            reflection_mode=reflection_mode
+            memory_storage, llm_provider, reflection_mode=reflection_mode
         )
 
     async def run_reflection_cycle(
@@ -211,7 +209,7 @@ class ReflectionEngine:
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Evaluates an answer draft using the 3-Layer Reflection Architecture.
-        
+
         Args:
             query_id: Identifier of the query.
             retrieved_sources: Sources fetched to construct the answer.
@@ -229,7 +227,7 @@ class ReflectionEngine:
             answer_draft=answer_draft,
             tenant_id=tenant_id,
             agent_id=agent_id,
-            metadata=metadata
+            metadata=metadata,
         )
 
     async def evaluate_memory_quality(

@@ -1,9 +1,7 @@
 """Core testing fixtures and mocks."""
 
 import asyncio
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
