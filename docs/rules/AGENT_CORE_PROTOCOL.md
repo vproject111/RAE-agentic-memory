@@ -29,6 +29,7 @@
 
 ## 1. CORE MANDATES
 
+- **Senior Best Practices**: **ALWAYS** write code in compliance with best practices at a senior level (no quick-and-dirty hacks, use industry-standard libraries, maintain type safety, clean architecture, and complete error handling).
 - **Async-First**: **ALWAYS** use asynchronous connections and operations wherever possible to ensure high performance and non-blocking I/O.
 - **Autonomy**: Work autonomously. Do NOT ask for permission to create files, add tests, or commit standard work.
 - **Security**: **ALWAYS** include `tenant_id` in SQL queries. This is a multi-tenant system.
@@ -120,6 +121,15 @@ Different branches = Different testing levels.
 
 - **Zero Warning Policy**: Treat warnings as errors. Fix them immediately. Do not ignore them.
   - *Exception*: If a warning originates from a 3rd party library and is beyond the agent's control, document it and suppress it if possible, ensuring it doesn't clutter the CI output.
+- **SonarQube Quality Gates**: New/modified code must pass SonarQube checks and meet the following standards:
+  - **Vulnerabilities**: 0
+  - **Bugs**: 0
+  - **Code Smells**: 0
+  - **Hotspots Reviewed**: 100%
+  - **Coverage**: > 90%
+  - **Duplications (density on new code)**: 0.0%
+- **Mutation Testing**: Following SonarQube validation, run mutation tests. The code is only considered done when the Mutation Score Indicator is:
+  - **MSI**: > 85%
 - **No Drift**: Ensure architectural decisions are persistent. Do not re-introduce fixed bugs or deprecated patterns.
 - **Best Practices**:
   - **Clean Code**: Follow SOLID, DRY, and KISS principles.
@@ -128,18 +138,25 @@ Different branches = Different testing levels.
 - **Definition of Done**:
   - Tests passed (Green).
   - Linter passed (No warnings).
+  - SonarQube Quality Gates passed with above metrics.
+  - Mutation tests completed with MSI > 85%.
   - Documentation updated.
   - PR ready for review.
 
 ## 9. RESOURCE & COMMUNICATION EFFICIENCY
 
-- **RAE-First Communication**: **MANDATORY**. All communication and context exchange between agents MUST pass through RAE. Agents must consult RAE for context before acting and store results in RAE. Direct side-channels are prohibited to ensure full auditability and shared state. Input/Output MUST flow through RAE to minimize token usage.
+- **RAE-First Communication**: **MANDATORY**. All communication, context exchange, and session saving MUST pass natively through the MCP pipeline. Before acting, you must query RAE memory. At the end of each milestone/session, you **MUST** save the session context by invoking the `create_rae_memory` MCP tool (which is exposed by the RAE Supervisor MCP Server), rather than running manual `curl` requests or shell sync scripts on the host. This MCP-first pipeline is a hard contract in the code that guarantees full auditability and shared state.
 - **RAE-First Infrastructure**: **MANDATORY**. ALWAYS use the existing Docker infrastructure (`rae-api`, `postgres`, `qdrant`, etc.) for running tests, benchmarks, and scripts. DO NOT install dependencies or run heavy processes on the host machine if they can be executed inside a container. Use `docker compose exec` to run commands in the correct environment.
-- **Model Economy**: **MANDATORY**. Save tokens by using cheaper/lighter models (e.g., L1 heuristics, "cheap" profile in `math_controller.yaml`) for simple tasks, boilerplate, and routine checks. Reserve SOTA models (Gemini 1.5 Pro, Claude 3.5 Sonnet) only for complex reasoning, architectural decisions, and final reviews.
+- **Model Economy & Verification Protocol**: **MANDATORY**. Save tokens by using cheaper/lighter models (e.g., L1 heuristics, "cheap" profile in `math_controller.yaml`) for simple tasks, boilerplate, and routine checks. Reserve SOTA models only for complex reasoning.
+  - **OpenRouter Gateway**: OpenRouter is the mandatory API routing provider for external models.
+  - **Strategic Plan Review**: Every proposed plan must be verified using `chatgpt-5.5` (via OpenRouter).
+  - **Code Review**: Every code change must undergo a code review by `DeepSeek-V4-Flash-Pro` (via OpenRouter).
+  - **Independent Expert Validation**: `Qwen-3.7-Plus` (via OpenRouter) must be consulted as the independent expert for validation, architectural conflicts, and final evaluation.
 - **Compute Offloading**: For heavy tasks (embeddings, large benchmarks), utilize the Compute Cluster:
   - **Node KUBUS**: RTX 4080 (GPU acceleration, Local LLMs). Primary for high-quality code generation and audits.
   - **Node PIOTREK**: 128GB RAM (Large-scale memory testing).
   - **Other Nodes**: Emerging compute resources should be integrated via RAECoreService.
+
 
 ## 10. DISTRIBUTED COMPUTE WORKFLOW (Writer/Reviewer)
 
@@ -158,28 +175,33 @@ When delegating tasks to external nodes (e.g., node1/KUBUS), follow the **Agenti
 - **Opportunistic Availability**: External nodes are **NOT** permanent resources. Check status via `ControlPlaneService`.
 - **Graceful Fallback**: If a node is unavailable, fallback to local or cloud providers.
 
-## 11. DEPLOYMENT & CI PROTOCOL (DevOps V2)
+## 11. DEPLOYMENT & CI PROTOCOL (DevOps V2 - Zero Drift)
 
 **Mandatory Workflow for Code Changes**:
 
-1. **Pre-Commit Check**:
-   - `make lint` (Ensure 0 warnings)
-   - `make test-lite` (Or `make test-core` for core changes)
-   - Do NOT push if red.
+1. **Pre-Push Sequence (The "Golden Command")**:
+   - Run: `make pre-push`
+   - **What this does**:
+     1. Formats code (Black/Isort/Ruff).
+     2. **Generates Documentation & Metrics** (Crucial! Prevents CI from creating "fix" commits that drift history).
+     3. Lints strictly.
+     4. Runs Unit Tests.
+   - **If Failed**: Fix issues and repeat.
 
-2. **Push**:
-   - Push to `develop` (or feature branch).
+2. **Commit Generated Artifacts**:
+   - `make pre-push` will likely modify files like `CHANGELOG.md` or `docs/metrics/`.
+   - **MANDATORY**: Add these changes to your commit (or create a new one: `chore: update docs`).
+   - *Example*: `git add . && git commit --amend --no-edit` (if amending) or `git commit -m "chore: auto-update docs"`.
 
-3. **Post-Commit Verification**:
+3. **Push**:
+   - `git push origin develop` (or feature branch).
+   - Because you already generated the docs, the CI "Auto-Update" job will see 0 changes and skip its commit. **History stays clean.**
+
+4. **Post-Commit Verification**:
    - Run: `gh run list --branch develop --limit 1`
    - **Requirement**: Monitor status until `success`.
-   - **If Failed**:
-     - Run: `gh run view <run_id> --log-failed`
-     - Analyze logs.
-     - Fix locally -> Pre-Commit -> Push again.
-     - **REPEAT UNTIL GREEN**.
 
-4. **Sandbox Strategy**:
+5. **Sandbox Strategy**:
    - **Dev**: Port 8000 (`docker-compose.yml` + `dev.yml`). Hot Reload.
    - **Lite Sandbox**: Port 8010 (`docker-compose.test-sandbox.yml`). Integration Tests.
    - **Full Sandbox**: Port 8020 (`docker-compose.sandbox-full.yml`). Full Stack verification.
@@ -191,3 +213,39 @@ When delegating tasks to external nodes (e.g., node1/KUBUS), follow the **Agenti
 - Benchmarks verified against baseline.
 - PR ready for review.
 - CI Workflow Green.
+
+## 13. SECURITY & COMPLIANCE PROTOCOL (ISO 42001/27001)
+
+- **Mandatory Compliance Checks**:
+  - Every new feature MUST pass `make test-compliance`.
+  - Every security-related change MUST pass `make security-check`.
+  - Do NOT merge code with High/Medium security vulnerabilities (unless explicitly approved and documented with `# nosec`).
+
+- **Feature Requirements**:
+  - **Human Approval**: Any high-risk operation MUST implement `HumanApprovalService`.
+  - **Audit Logs**: Critical state changes MUST be logged via `AuditService`.
+  - **Data Isolation**: New tables MUST include `tenant_id` and have RLS policies.
+
+- Zero Errors / Zero Drift:
+  - Maintain 0 failures in test-compliance.
+  - Do not introduce regressions in ISO 42001 coverage (currently 100% for key services).
+
+## 14. ANTI-LOOPING & STABILITY PROTOCOL
+
+### 14.1 Agent (CLI) Self-Correction Rule
+- **The "Rule of Three"**: If a specific command or operation fails **3 times** in a row with the same error, the Agent **MUST** stop the loop.
+- **Action on Failure**:
+    1. Stop the current retry chain.
+    2. Read the underlying source code or configuration files related to the error.
+    3. Perform a root-cause analysis (RCA).
+    4. Propose a code-based fix instead of a configuration-based retry.
+- **No Infinite Retries**: Blindly repeating `docker restart` or `curl` commands without changing the state is forbidden.
+
+### 14.2 System (RAE Self-Improvement) Stability Rule
+- **Weight Guardrails**: Any automated tuning of mathematical weights (e.g., alpha, beta, gamma) MUST adhere to:
+    - **Sum Constraint**: Weights must always sum to **1.0**.
+    - **Boundary Limits**: Each weight must be within range `[0.05, 0.85]` to prevent complete loss of a signal (e.g., ignoring recency entirely).
+- **Update Frequency**: Automated updates to tenant configuration MUST be throttled (max once per 10 feedback events or a fixed time interval).
+- **Oscillation Detection**: If a weight change is reversed by the next tuning cycle (A -> B -> A), the system MUST halt automated tuning for that tenant and request HITL (Human-in-the-loop) review.
+- **Baseline Fallback**: Always maintain a "Golden Baseline" configuration. If performance (MRR/HitRate) drops by >15% after tuning, revert to baseline immediately.
+

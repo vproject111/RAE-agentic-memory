@@ -79,4 +79,6 @@ def _build_local_runtime(requirements: Optional[dict] = None) -> ILLMProvider:
     if qwen_key:
         return LightweightOpenAIProvider(api_key=qwen_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", model="qwen-turbo")
 
-    return SmallLocalLLMProvider()
+    ollama_url = os.getenv("OLLAMA_API_URL") or os.getenv("OLLAMA_URL") or "http://localhost:11434"
+    ollama_model = os.getenv("OLLAMA_MODEL") or "qwen3:8b"
+    return SmallLocalLLMProvider(ollama_url=ollama_url, model=ollama_model)

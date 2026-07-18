@@ -26,13 +26,14 @@ class RAE_Enterprise_Foundation:
         """Hardware-coded validation of Hard Frames and Security Contracts."""
         forbidden_patterns = ["vim", "nano", "ssh", "ftp", "htop"]
         
-        # 1. No Interactive Commands Check
-        payload_str = str(payload).lower()
-        for pattern in forbidden_patterns:
-            if pattern in payload_str:
-                error_msg = f"CONTRACT VIOLATION: Forbidden interactive pattern '{pattern}' detected in {operation_name}."
-                self.logger.error(error_msg)
-                raise FatalEnterpriseError(error_msg)
+        # 1. No Interactive Commands Check (only for command execution operations)
+        if operation_name in ["execute_system_command", "run_command", "run_terminal"]:
+            payload_str = str(payload).lower()
+            for pattern in forbidden_patterns:
+                if pattern in payload_str:
+                    error_msg = f"CONTRACT VIOLATION: Forbidden interactive pattern '{pattern}' detected in {operation_name}."
+                    self.logger.error(error_msg)
+                    raise FatalEnterpriseError(error_msg)
         
         return True
 

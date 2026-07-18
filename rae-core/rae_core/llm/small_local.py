@@ -27,7 +27,7 @@ class SmallLocalLLMProvider(ILLMProvider):
                  model: str = "llama3:8b"):
         self.ollama_url = ollama_url
         self.model = model
-        self.client = httpx.AsyncClient(base_url=ollama_url, timeout=60.0)
+        self.client = httpx.AsyncClient(base_url=ollama_url, timeout=300.0)
         
         # Local ONNX Provider
         self.onnx_provider = None
@@ -47,7 +47,10 @@ class SmallLocalLLMProvider(ILLMProvider):
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": kwargs.get("temperature", 0.7)}
+                "options": {
+                    "temperature": kwargs.get("temperature", 0.7),
+                    "num_ctx": 16384
+                }
             }
             if system_prompt:
                 payload["system"] = system_prompt

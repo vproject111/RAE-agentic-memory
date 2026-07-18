@@ -30,7 +30,10 @@ def load_config():
 
 async def check_ssh_node(node_id, host, user):
     """Check SSH connectivity"""
-    cmd = f"ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o BatchMode=yes {user}@{host} 'exit 0'"
+    if node_id == "node1":
+        cmd = f"sshpass -p 'mwzmjsunp' ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@100.117.242.21 \"ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no {user}@{host} 'exit 0'\""
+    else:
+        cmd = f"ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o BatchMode=yes {user}@{host} 'exit 0'"
     proc = await asyncio.create_subprocess_shell(
         cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
     )

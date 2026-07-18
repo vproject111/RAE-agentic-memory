@@ -3,8 +3,33 @@
 > **SINGLE SOURCE OF TRUTH** for all AI Agents (Gemini, Claude, etc.) working on RAE.
 > **MANDATORY**: Read this before every session.
 
+## 0. CRITICAL MANDATES (RAE-FIRST v2.1) - READ FIRST
+**These rules are NON-NEGOTIABLE. Violation = Session Termination.**
+
+### 🚫 1. Zero Side-Channels (Communication Contract)
+- **RAE is the Only Broker**: You share state ONLY via RAE. Do not "hold" information in this chat.
+- **Action**: Every significant discovery, decision, or state change MUST be saved to RAE immediately (`save_memory`).
+- **Context**: Before acting, query RAE. Do not guess. Do not assume.
+
+### 🐳 2. Container-First (Infrastructure Contract)
+- **No Host Execution**: NEVER run tests/benchmarks on the host if a container exists.
+- **Command**: Use `docker compose exec rae-api pytest ...` instead of local `pytest`.
+- **Reason**: Reproducibility. Your local environment is irrelevant.
+
+### 🧠 3. RAE-SZUBAR MODE (Cognitive Contract)
+- **Think > Generate**: Do not spam code. Plan first.
+- **Failure-First Memory**: Check RAE for past failures before trying a "new" fix.
+- **Pressure Regulation**: If you are confused, STOP. Query RAE. Do not hallucinate.
+
+### 🔒 4. ISO Security (Data Contract)
+- **Classification**: `RESTRICTED` data NEVER leaves the Working Memory layer without encryption.
+- **Reflective Extraction**: Use the Reflective Layer to extract *patterns* from private data, never the raw data itself.
+
+---
+
 ## 1. CORE MANDATES
 
+- **Senior Best Practices**: **ALWAYS** write code in compliance with best practices at a senior level (no quick-and-dirty hacks, use industry-standard libraries, maintain type safety, clean architecture, and complete error handling).
 - **Async-First**: **ALWAYS** use asynchronous connections and operations wherever possible to ensure high performance and non-blocking I/O.
 - **Autonomy**: Work autonomously. Do NOT ask for permission to create files, add tests, or commit standard work.
 - **Security**: **ALWAYS** include `tenant_id` in SQL queries. This is a multi-tenant system.
@@ -96,6 +121,15 @@ Different branches = Different testing levels.
 
 - **Zero Warning Policy**: Treat warnings as errors. Fix them immediately. Do not ignore them.
   - *Exception*: If a warning originates from a 3rd party library and is beyond the agent's control, document it and suppress it if possible, ensuring it doesn't clutter the CI output.
+- **SonarQube Quality Gates**: New/modified code must pass SonarQube checks and meet the following standards:
+  - **Vulnerabilities**: 0
+  - **Bugs**: 0
+  - **Code Smells**: 0
+  - **Hotspots Reviewed**: 100%
+  - **Coverage**: > 90%
+  - **Duplications (density on new code)**: 0.0%
+- **Mutation Testing**: Following SonarQube validation, run mutation tests. The code is only considered done when the Mutation Score Indicator is:
+  - **MSI**: > 85%
 - **No Drift**: Ensure architectural decisions are persistent. Do not re-introduce fixed bugs or deprecated patterns.
 - **Best Practices**:
   - **Clean Code**: Follow SOLID, DRY, and KISS principles.
@@ -104,18 +138,25 @@ Different branches = Different testing levels.
 - **Definition of Done**:
   - Tests passed (Green).
   - Linter passed (No warnings).
+  - SonarQube Quality Gates passed with above metrics.
+  - Mutation tests completed with MSI > 85%.
   - Documentation updated.
   - PR ready for review.
 
 ## 9. RESOURCE & COMMUNICATION EFFICIENCY
 
-- **RAE-First Communication**: **MANDATORY**. All communication and context exchange between agents MUST pass through RAE. Agents must consult RAE for context before acting and store results in RAE. Direct side-channels are prohibited to ensure full auditability and shared state. Input/Output MUST flow through RAE to minimize token usage.
+- **RAE-First Communication**: **MANDATORY**. All communication, context exchange, and session saving MUST pass natively through the MCP pipeline. Before acting, you must query RAE memory. At the end of each milestone/session, you **MUST** save the session context by invoking the `create_rae_memory` MCP tool (which is exposed by the RAE Supervisor MCP Server), rather than running manual `curl` requests or shell sync scripts on the host. This MCP-first pipeline is a hard contract in the code that guarantees full auditability and shared state.
 - **RAE-First Infrastructure**: **MANDATORY**. ALWAYS use the existing Docker infrastructure (`rae-api`, `postgres`, `qdrant`, etc.) for running tests, benchmarks, and scripts. DO NOT install dependencies or run heavy processes on the host machine if they can be executed inside a container. Use `docker compose exec` to run commands in the correct environment.
-- **Model Economy**: **MANDATORY**. Save tokens by using cheaper/lighter models (e.g., L1 heuristics, "cheap" profile in `math_controller.yaml`) for simple tasks, boilerplate, and routine checks. Reserve SOTA models (Gemini 1.5 Pro, Claude 3.5 Sonnet) only for complex reasoning, architectural decisions, and final reviews.
+- **Model Economy & Verification Protocol**: **MANDATORY**. Save tokens by using cheaper/lighter models (e.g., L1 heuristics, "cheap" profile in `math_controller.yaml`) for simple tasks, boilerplate, and routine checks. Reserve SOTA models only for complex reasoning.
+  - **OpenRouter Gateway**: OpenRouter is the mandatory API routing provider for external models.
+  - **Strategic Plan Review**: Every proposed plan must be verified using `chatgpt-5.5` (via OpenRouter).
+  - **Code Review**: Every code change must undergo a code review by `DeepSeek-V4-Flash-Pro` (via OpenRouter).
+  - **Independent Expert Validation**: `Qwen-3.7-Plus` (via OpenRouter) must be consulted as the independent expert for validation, architectural conflicts, and final evaluation.
 - **Compute Offloading**: For heavy tasks (embeddings, large benchmarks), utilize the Compute Cluster:
   - **Node KUBUS**: RTX 4080 (GPU acceleration, Local LLMs). Primary for high-quality code generation and audits.
   - **Node PIOTREK**: 128GB RAM (Large-scale memory testing).
   - **Other Nodes**: Emerging compute resources should be integrated via RAECoreService.
+
 
 ## 10. DISTRIBUTED COMPUTE WORKFLOW (Writer/Reviewer)
 
