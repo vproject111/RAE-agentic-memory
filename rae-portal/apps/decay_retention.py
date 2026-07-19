@@ -12,10 +12,10 @@ class DecayRetentionApp:
             {"id": "m-1311", "content": "SLA Rollback: Negative cache validation logic", "layer": "semantic", "age": "12 days", "importance": 0.82, "pinned": True},
         ]
         self.decay_curve_data = []
+        self.on_inspect = None
         self._calculate_decay_curve()
 
     def _calculate_decay_curve(self):
-        # Calculate memory strength over 30 days based on decay rate
         self.decay_curve_data = []
         strength = 1.0
         for day in range(31):
@@ -25,7 +25,6 @@ class DecayRetentionApp:
     def update_decay_rate(self, new_val):
         self.decay_rate = new_val
         self._calculate_decay_curve()
-        # Trigger chart reload
         ui.notify(f"Decay rate updated to {self.decay_rate:.4f}", type="info")
 
     def toggle_pin(self, mem_id):
@@ -36,24 +35,24 @@ class DecayRetentionApp:
                 break
 
     def render(self):
-        with ui.column().classes('w-full max-w-7xl mx-auto p-8 gap-6'):
-            ui.label('Decay & Retention Management').classes('text-3xl font-black text-teal-950 mb-2')
+        with ui.column().classes('w-full max-w-7xl mx-auto p-8 gap-y-6'):
+            ui.label('Decay & Retention Management').classes('text-3xl font-black text-slate-800 mb-2')
             ui.label('Monitor memory decay curves, retention rules, and protection pins.').classes('text-slate-500 mb-4')
 
             with ui.row().classes('w-full gap-6'):
                 # Left side: Chart and parameters
-                with ui.card().classes('flex-[2] p-6 shadow-sm'):
+                with ui.card().classes('flex-[2] p-6 bg-slate-900 text-white shadow-sm'):
                     ui.label('MEMORY DECAY SIMULATOR (30 DAYS)').classes('text-xs font-bold text-slate-400 mb-4')
                     
                     with ui.row().classes('w-full items-center gap-4 mb-4'):
-                        ui.label(f'Decay Rate: {self.decay_rate:.4f}').classes('text-sm font-bold text-teal-950')
+                        ui.label(f'Decay Rate: {self.decay_rate:.4f}').classes('text-sm font-bold text-teal-300')
                         ui.slider(min=0.001, max=0.05, step=0.001, value=self.decay_rate, on_change=lambda e: self.update_decay_rate(e.value)).classes('flex-grow')
 
                     ui.echart({
                         'title': {'text': ''},
                         'tooltip': {'trigger': 'axis'},
-                        'xAxis': {'name': 'Day', 'type': 'value', 'min': 0, 'max': 30},
-                        'yAxis': {'name': 'Strength', 'type': 'value', 'min': 0, 'max': 1.0},
+                        'xAxis': {'name': 'Day', 'type': 'value', 'min': 0, 'max': 30, 'axisLabel': {'color': '#94a3b8'}, 'nameTextStyle': {'color': '#94a3b8'}},
+                        'yAxis': {'name': 'Strength', 'type': 'value', 'min': 0, 'max': 1.0, 'axisLabel': {'color': '#94a3b8'}, 'nameTextStyle': {'color': '#94a3b8'}},
                         'series': [{
                             'type': 'line',
                             'data': self.decay_curve_data,
@@ -64,9 +63,9 @@ class DecayRetentionApp:
                     }).classes('w-full h-64')
 
                 # Right side: Retention rules
-                with ui.card().classes('flex-1 p-6 bg-teal-50 border-teal-100 shadow-sm'):
-                    ui.label('RETENTION POLICIES (ISO 42001)').classes('text-xs font-bold text-teal-800 mb-4')
-                    with ui.column().classes('gap-3 text-sm text-slate-800'):
+                with ui.card().classes('flex-1 p-6 bg-slate-900 text-white border border-teal-500/20 shadow-sm'):
+                    ui.label('RETENTION POLICIES (ISO 42001)').classes('text-xs font-bold text-teal-300 mb-4')
+                    with ui.column().classes('gap-y-3 text-sm text-slate-200'):
                         with ui.row().classes('items-center gap-2'):
                             ui.icon('schedule', color='teal')
                             ui.label('Sensory Memory SLA: 30 days').classes('font-bold')
@@ -74,26 +73,29 @@ class DecayRetentionApp:
                             ui.icon('lock', color='teal')
                             ui.label('Protected threshold: 7 days').classes('font-bold')
                         
-                        ui.separator().classes('bg-teal-200')
-                        ui.label('System Decay Schedule:').classes('text-xs text-teal-900 uppercase font-black tracking-widest')
-                        ui.label('Runs daily at 02:00 in the morning ("0 2 * * *").').classes('text-xs italic text-slate-600')
+                        ui.separator().classes('bg-slate-800')
+                        ui.label('System Decay Schedule:').classes('text-xs text-teal-300 uppercase font-black tracking-widest')
+                        ui.label('Runs daily at 02:00 in the morning ("0 2 * * *").').classes('text-xs italic text-slate-400')
 
             # --- Row 2: Protected/Pinned Memories Tabela ---
-            with ui.card().classes('w-full p-6 shadow-sm'):
+            with ui.card().classes('w-full p-6 bg-slate-900 text-white shadow-sm'):
                 ui.label('PROTECTED MEMORY LEDGER (PINNED ITEMS)').classes('text-xs font-bold text-slate-400 mb-4')
                 
-                with ui.column().classes('w-full gap-4'):
+                with ui.column().classes('w-full gap-y-4').props('role=list'):
                     for mem in self.protected_memories:
-                        with ui.row().classes('w-full items-center justify-between border-b pb-3 text-sm'):
-                            with ui.column().classes('gap-1'):
+                        card_details = f"**ID:** `{mem['id']}`\n**Layer:** `{mem['layer']}`\n**Age:** `{mem['age']}`\n**Importance:** `{mem['importance']:.2f}`\n\n**Content:**\n{mem['content']}"
+                        with ui.row().classes('w-full items-center justify-between border-b border-slate-800 pb-3 text-sm cursor-pointer hover:bg-slate-800 focus:outline focus:outline-2 focus:outline-blue-500') \
+                             .props('tabindex=0 role="listitem" aria-label="Protected Memory entry: click for details"') \
+                             .on('click', lambda m_title=f"Memory {mem['id']}", m_det=card_details: self.on_inspect(m_title, m_det) if self.on_inspect else None):
+                            with ui.column().classes('gap-y-1'):
                                 with ui.row().classes('gap-2 items-center'):
                                     ui.badge(mem["id"]).props('color=teal')
                                     ui.badge(mem["layer"].upper()).props('color=slate')
                                     ui.label(f'Age: {mem["age"]}').classes('text-xs text-slate-400')
-                                ui.label(mem["content"]).classes('text-slate-800 font-medium')
+                                ui.label(mem["content"]).classes('text-slate-200 font-medium')
                             
                             with ui.row().classes('items-center gap-4'):
-                                ui.label(f'Importance: {mem["importance"]:.2f}').classes('font-bold text-teal-950')
+                                ui.label(f'Importance: {mem["importance"]:.2f}').classes('font-bold text-teal-300')
                                 ui.button(
                                     'UNPIN' if mem["pinned"] else 'PIN', 
                                     on_click=lambda m_id=mem["id"]: self.toggle_pin(m_id)

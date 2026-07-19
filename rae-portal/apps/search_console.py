@@ -17,6 +17,7 @@ class SearchConsoleApp:
         self.status = "Idle"
         self.total_time_ms = 0
         self.results_container = None
+        self.on_inspect = None
 
     async def execute_search(self):
         if not self.query:
@@ -73,12 +74,12 @@ class SearchConsoleApp:
             if self.status == "Searching...":
                 with ui.column().classes('w-full items-center py-12'):
                     ui.spinner('dots', size='lg', color='sky-5')
-                    ui.label('Querying Manifolds & Named Vectors...').classes('text-sky-900 font-bold mt-4')
+                    ui.label('Querying Manifolds & Named Vectors...').classes('text-sky-400 font-bold mt-4')
                 return
 
             if self.query:
-                with ui.row().classes('w-full items-center justify-between bg-sky-50 p-4 rounded-xl border border-sky-100 mb-6'):
-                    ui.label(f'Found {len(self.results)} hits in {self.total_time_ms}ms').classes('text-sky-950 font-bold')
+                with ui.row().classes('w-full items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6'):
+                    ui.label(f'Found {len(self.results)} hits in {self.total_time_ms}ms').classes('text-white font-bold')
                     ui.badge(f'Math Manifold: {self.manifold_mode.upper()}').props('color=sky')
 
                 if not self.results:
@@ -86,35 +87,38 @@ class SearchConsoleApp:
                         ui.icon('search_off', size='lg', color='grey')
                         ui.label('No matching memories found in current space.').classes('text-slate-500 mt-2')
                 else:
-                    with ui.column().classes('w-full gap-4'):
+                    with ui.column().classes('w-full gap-y-4').props('role=list'):
                         for idx, hit in enumerate(self.results):
                             score = hit.get("score", 0.0)
                             content = hit.get("content", hit.get("memory", {}).get("content", ""))
                             layer = hit.get("layer", hit.get("memory", {}).get("layer", "semantic"))
                             source = hit.get("source", hit.get("memory", {}).get("source", "unknown"))
                             
-                            with ui.card().classes('w-full p-6 shadow-sm border-l-4 border-sky-400'):
+                            card_details = f"**Layer:** `{layer}`\n**Source:** `{source}`\n**Score:** `{score:.4f}`\n\n**Content:**\n{content}"
+                            with ui.card().classes('w-full p-6 shadow-sm border-l-4 border-sky-400 bg-slate-900 text-white cursor-pointer hover:bg-slate-800 focus:outline focus:outline-2 focus:outline-blue-500') \
+                                 .props('tabindex=0 role="listitem" aria-label="Memory hit: click for details"') \
+                                 .on('click', lambda c_title=f"Memory #{idx+1}", c_det=card_details: self.on_inspect(c_title, c_det) if self.on_inspect else None):
                                 with ui.row().classes('w-full items-center justify-between mb-2'):
                                     with ui.row().classes('gap-2 items-center'):
                                         ui.badge(f'#{idx+1}').props('color=sky')
                                         ui.badge(layer.upper()).props('color=indigo-9')
-                                        ui.label(f'Source: {source}').classes('text-xs text-slate-500')
-                                    ui.label(f'Score: {score:.4f}').classes('text-sm font-black text-sky-950')
-                                ui.markdown(content).classes('text-slate-800 leading-relaxed text-sm')
+                                        ui.label(f'Source: {source}').classes('text-xs text-slate-400')
+                                    ui.label(f'Score: {score:.4f}').classes('text-sm font-black text-sky-300')
+                                ui.markdown(content).classes('text-slate-200 leading-relaxed text-sm')
 
     def render(self):
         with ui.row().classes('w-full gap-8'):
             # Left panel: Strategy selection
-            with ui.card().classes('w-80 p-6 bg-slate-50 border-r'):
+            with ui.card().classes('w-80 p-6 bg-slate-900 text-white border-r border-slate-800'):
                 ui.label('SEARCH ENGINES').classes('text-xs font-black text-slate-400 mb-4 tracking-widest')
                 
-                self.vec_chk = ui.checkbox('Vector Similarity', value=self.enable_vector, on_change=lambda e: setattr(self, 'enable_vector', e.value))
-                self.sem_chk = ui.checkbox('Semantic Nodes', value=self.enable_semantic, on_change=lambda e: setattr(self, 'enable_semantic', e.value))
-                self.graph_chk = ui.checkbox('Graph Traversal', value=self.enable_graph, on_change=lambda e: setattr(self, 'enable_graph', e.value))
-                self.ft_chk = ui.checkbox('GIN Full-Text', value=self.enable_fulltext, on_change=lambda e: setattr(self, 'enable_fulltext', e.value))
-                self.rr_chk = ui.checkbox('Reranker Pass', value=self.enable_rerank, on_change=lambda e: setattr(self, 'enable_rerank', e.value))
+                self.vec_chk = ui.checkbox('Vector Similarity', value=self.enable_vector, on_change=lambda e: setattr(self, 'enable_vector', e.value)).props('dark')
+                self.sem_chk = ui.checkbox('Semantic Nodes', value=self.enable_semantic, on_change=lambda e: setattr(self, 'enable_semantic', e.value)).props('dark')
+                self.graph_chk = ui.checkbox('Graph Traversal', value=self.enable_graph, on_change=lambda e: setattr(self, 'enable_graph', e.value)).props('dark')
+                self.ft_chk = ui.checkbox('GIN Full-Text', value=self.enable_fulltext, on_change=lambda e: setattr(self, 'enable_fulltext', e.value)).props('dark')
+                self.rr_chk = ui.checkbox('Reranker Pass', value=self.enable_rerank, on_change=lambda e: setattr(self, 'enable_rerank', e.value)).props('dark')
 
-                ui.separator().classes('my-6')
+                ui.separator().classes('my-6 bg-slate-800')
                 ui.label('MATH MANIFOLD ARM').classes('text-xs font-black text-slate-400 mb-4 tracking-widest')
                 
                 self.mode_sel = ui.select({
@@ -124,20 +128,19 @@ class SearchConsoleApp:
                     "system_41_scalpel": "System 41: Linguistic",
                     "system_100_fluid": "System 100: Fluid",
                     "legacy_416": "Legacy 4.1.6"
-                }, value=self.manifold_mode, on_change=lambda e: setattr(self, 'manifold_mode', e.value)).classes('w-full').props('dense outlined')
+                }, value=self.manifold_mode, on_change=lambda e: setattr(self, 'manifold_mode', e.value)).classes('w-full').props('dark dense outlined')
 
             # Right panel: query and results
-            with ui.column().classes('flex-grow'):
+            with ui.column().classes('flex-grow gap-y-4'):
                 ui.label('Hybrid Search Console').classes('text-3xl font-black text-slate-800 mb-2')
                 ui.label('Query multi-strategy named vectors and compare manifold arms.').classes('text-slate-500 mb-8')
 
-                with ui.row().classes('w-full items-center gap-4 mb-12 bg-white p-6 rounded-2xl shadow-sm border'):
+                with ui.row().classes('w-full items-center gap-4 mb-12 bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800'):
                     query_input = ui.input(
                         label='Ask RAE Memory Space...', 
                         placeholder='e.g. Find all refactoring failures in setup files'
-                    ).classes('flex-grow text-lg')
+                    ).classes('flex-grow text-lg text-white').props('dark')
                     
-                    # Update internal query upon text input
                     query_input.on('change', lambda: setattr(self, 'query', query_input.value))
                     
                     ui.button('SEARCH', 
