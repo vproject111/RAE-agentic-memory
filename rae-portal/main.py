@@ -20,24 +20,28 @@ from apps.evolution_lab import EvolutionLabApp
 from apps.phoenix_repair import PhoenixRepairApp
 from apps.hive_sandbox import HiveSandboxApp
 from apps.openclaw_escalation import OpenClawEscalationApp
+from apps.rae_crl import RaeCrlApp
 
 # --- Initialization ---
 client = RAESuiteClient()
-oracle_app = OracleApp(client)
-wizard_app = ProceduralWizard(client)
-mozilla_app = MozillaApp(client)
-mission_control_app = MissionControlApp(client)
-search_console_app = SearchConsoleApp(client)
-decay_retention_app = DecayRetentionApp(client)
-evolution_lab_app = EvolutionLabApp(client)
-phoenix_repair_app = PhoenixRepairApp(client)
-hive_sandbox_app = HiveSandboxApp(client)
-openclaw_escalation_app = OpenClawEscalationApp(client)
 
 class RAESuitePortal:
     def __init__(self):
         self.current_page = "mission_control"
         self.system_profile = "Detecting..."
+        
+        # Instantiate apps dynamically inside session to avoid memory leaks / deleted client exceptions
+        self.oracle_app = OracleApp(client)
+        self.wizard_app = ProceduralWizard(client)
+        self.mozilla_app = MozillaApp(client)
+        self.mission_control_app = MissionControlApp(client)
+        self.search_console_app = SearchConsoleApp(client)
+        self.decay_retention_app = DecayRetentionApp(client)
+        self.evolution_lab_app = EvolutionLabApp(client)
+        self.phoenix_repair_app = PhoenixRepairApp(client)
+        self.hive_sandbox_app = HiveSandboxApp(client)
+        self.openclaw_escalation_app = OpenClawEscalationApp(client)
+        self.rae_crl_app = RaeCrlApp(client)
         
         # State variables for Faza 2
         self.connection_status = "Offline"
@@ -453,6 +457,8 @@ class RAESuitePortal:
                               on_click=lambda: self.set_page('hive_sandbox')).props(f'flat align=left {"color=emerald" if self.current_page=="hive_sandbox" else ""}').classes('w-full')
                     ui.button('OpenClaw Escalation', icon='warning', 
                               on_click=lambda: self.set_page('openclaw_escalation')).props(f'flat align=left {"color=red" if self.current_page=="openclaw_escalation" else ""}').classes('w-full')
+                    ui.button('RAE-CRL Console', icon='rule_folder', 
+                              on_click=lambda: self.set_page('rae_crl')).props(f'flat align=left {"color=deep-orange" if self.current_page=="rae_crl" else ""}').classes('w-full')
 
                 ui.label('CAPABILITIES').classes('text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest')
                 with ui.column().classes('w-full gap-2'):
@@ -482,32 +488,35 @@ class RAESuitePortal:
         @ui.refreshable
         def content_router():
             if self.current_page == "mission_control":
-                mission_control_app.on_inspect = self.open_inspector
-                mission_control_app.render()
+                self.mission_control_app.on_inspect = self.open_inspector
+                self.mission_control_app.render()
             elif self.current_page == "search_console":
-                search_console_app.on_inspect = self.open_inspector
-                search_console_app.render()
+                self.search_console_app.on_inspect = self.open_inspector
+                self.search_console_app.render()
             elif self.current_page == "decay_retention":
-                decay_retention_app.on_inspect = self.open_inspector
-                decay_retention_app.render()
+                self.decay_retention_app.on_inspect = self.open_inspector
+                self.decay_retention_app.render()
             elif self.current_page == "evolution_lab":
-                evolution_lab_app.on_inspect = self.open_inspector
-                evolution_lab_app.render()
+                self.evolution_lab_app.on_inspect = self.open_inspector
+                self.evolution_lab_app.render()
             elif self.current_page == "phoenix_repair":
-                phoenix_repair_app.on_inspect = self.open_inspector
-                phoenix_repair_app.render()
+                self.phoenix_repair_app.on_inspect = self.open_inspector
+                self.phoenix_repair_app.render()
             elif self.current_page == "hive_sandbox":
-                hive_sandbox_app.on_inspect = self.open_inspector
-                hive_sandbox_app.render()
+                self.hive_sandbox_app.on_inspect = self.open_inspector
+                self.hive_sandbox_app.render()
             elif self.current_page == "openclaw_escalation":
-                openclaw_escalation_app.on_inspect = self.open_inspector
-                openclaw_escalation_app.render()
+                self.openclaw_escalation_app.on_inspect = self.open_inspector
+                self.openclaw_escalation_app.render()
+            elif self.current_page == "rae_crl":
+                self.rae_crl_app.on_inspect = self.open_inspector
+                self.rae_crl_app.render()
             elif self.current_page == "oracle":
-                oracle_app.render(self.model_select, self.source_select)
+                self.oracle_app.render(self.model_select, self.source_select)
             elif self.current_page == "wizard":
-                wizard_app.render(self.model_select)
+                self.wizard_app.render(self.model_select)
             elif self.current_page == "mozilla":
-                mozilla_app.render(self.model_select)
+                self.mozilla_app.render(self.model_select)
 
         self.content_router = content_router
         content_router()
