@@ -11,6 +11,9 @@ from .qdrant_adapter import QdrantAdapter as QdrantVectorStore
 from .redis_adapter import RedisAdapter as RedisCache
 from .sqlite.storage import SQLiteStorage
 from .sqlite.vector import SQLiteVectorStore
+from .openapi_adapter import OpenAPIAdapter, OpenAPIQueryParams
+from .git_adapter import GitRuntimeAdapter
+from .rae_memory_adapter import RAEAgenticMemoryAdapter, RAEMemoryQueryParams
 
 # Aliases for backwards compatibility
 PostgreSQLStorage = PostgreSQLStorage

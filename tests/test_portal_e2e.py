@@ -3,6 +3,8 @@ import sys
 import time
 import subprocess
 import pytest
+
+playwright_mod = pytest.importorskip("playwright")
 from playwright.sync_api import sync_playwright
 
 PORT = 8098

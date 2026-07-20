@@ -1,0 +1,67 @@
+# config/knowledge-source-inventory.yaml
+version: "1.0"
+metadata:
+  description: "Rejestr i inwentarz źródeł wiedzy, ich klasyfikacji oraz poziomów autorytetu w systemie RAE"
+  created_at: "2026-07-20"
+  updated_at: "2026-07-20"
+
+sources:
+  - id: database-postgres-memories
+    name: "RAE PostgreSQL Memories"
+    type: postgres
+    connection_env: RAE_DATABASE_URL
+    tables:
+      - memories
+      - memory_embeddings
+    authority_level: observed
+    data_classification: internal
+    retention_days: 90
+    encryption: "TLS-required"
+    description: "Główne repozytorium pamięci epizodycznej, semantycznej i roboczej agenta"
+
+  - id: openapi-specification
+    name: "Dreamsoft Factory OpenAPI Specification"
+    type: openapi
+    path: "/home/grzegorz/cloud/dreamsoft_factory/Dockerized/openapi/openapi.yaml"
+    authority_level: canonical
+    data_classification: public
+    description: "Kanoniczna specyfikacja kontraktów API fabryki"
+
+  - id: git-repository-dreamsoft
+    name: "Dreamsoft Factory Source Code"
+    type: git
+    path: "/home/grzegorz/cloud/dreamsoft_factory"
+    authority_level: observed
+    data_classification: internal
+    description: "Stan kodu źródłowego i konfiguracji w locie (Runtime)"
+
+  - id: sonarqube-metrics
+    name: "SonarQube Code Quality API"
+    type: api
+    endpoint: "http://sonarqube:9000/api"
+    authority_level: observed
+    data_classification: internal
+    auth:
+      type: api_token
+      env_key: SONARQUBE_API_TOKEN
+    description: "Wskaźniki jakości kodu i długu technologicznego ze skanowania statycznego"
+
+  - id: compliance-policies
+    name: "Factory Spec Compliance Policies"
+    type: json-schema
+    path: "/home/grzegorz/cloud/RAE-Suite/packages/rae-agentic-memory/config/policies/"
+    authority_level: canonical
+    data_classification: confidential
+    description: "Kanoniczne reguły i zasady bezpieczeństwa (ISO 27001 / ISO 42001)"
+
+  - id: keycloak-user-credentials
+    name: "Keycloak User & Identity Registry"
+    type: api
+    endpoint: "https://auth.localtest.me/admin/realms/dreamsoft"
+    authority_level: canonical
+    data_classification: restricted
+    auth:
+      type: client_credentials
+      client_id_env: KEYCLOAK_ADMIN_CLIENT_ID
+      client_secret_env: KEYCLOAK_ADMIN_CLIENT_SECRET
+    description: "Restrykcyjny rejestr tożsamości i uprawnień użytkowników Keycloak"

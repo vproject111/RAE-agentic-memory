@@ -19,6 +19,16 @@ from .search import (
     SearchStrategy,
 )
 from .sync import SyncChange, SyncConflict, SyncOperation, SyncState
+from .knowledge import KnowledgeRecord, KnowledgeClass, AuthorityLevel, KnowledgeSourceType
+from .registry import KnowledgeRegistryRecord, KnowledgeRevisionDraft, KnowledgeRevisionRecord
+from .evidence import (
+    EvidenceItem,
+    EvidenceBundle,
+    KnowledgeConflict,
+    ConflictType,
+    ConflictSeverity,
+    ResolutionStatus,
+)
 
 __all__ = [
     # Memory models
@@ -50,4 +60,20 @@ __all__ = [
     "SyncOperation",
     "SyncState",
     "SyncConflict",
+    # Knowledge models
+    "KnowledgeRecord",
+    "KnowledgeClass",
+    "AuthorityLevel",
+    "KnowledgeSourceType",
+    # Registry models
+    "KnowledgeRegistryRecord",
+    "KnowledgeRevisionDraft",
+    "KnowledgeRevisionRecord",
+    # Evidence models
+    "EvidenceItem",
+    "EvidenceBundle",
+    "KnowledgeConflict",
+    "ConflictType",
+    "ConflictSeverity",
+    "ResolutionStatus",
 ]
