@@ -60,7 +60,7 @@ def test_verify_memory_hash(audit_service):
 
 
 def test_mask_secrets(audit_service):
-    raw_text = "Here is my secret API key: "sk-or-v1-" + "a" * 64"
+    raw_text = "Here is my secret API key: " + "sk-or-v1-" + "a" * 64
     masked = audit_service.mask_secrets(raw_text)
     assert "[MASKED_OPENROUTER_KEY]" in masked
     assert "sk-or-v1-" not in masked
@@ -93,7 +93,7 @@ async def test_get_audit_trail(audit_service, mock_pool):
         {
             "id": "11111111-2222-3333-4444-555555555555",
             "tenant_id": "f51d8b92-2fb1-524c-86e4-c6f8f6f59872",
-            "content": "Secret key: "sk-or-v1-" + "a" * 64",
+            "content": "Secret key: " + "sk-or-v1-" + "a" * 64,
             "source": "user-input",
             "project": "dreamsoft_factory",
             "session_id": "session-123",
