@@ -3,6 +3,7 @@ from datetime import datetime
 
 from nicegui import ui
 from utils.api_client import RAESuiteClient
+from utils.ui_helpers import create_module_header
 
 
 class MissionControlApp:
@@ -79,14 +80,12 @@ class MissionControlApp:
         )
 
         with ui.column().classes("w-full max-w-7xl mx-auto p-8 gap-y-6"):
-            with ui.row().classes("w-full justify-between items-center"):
-                with ui.column().classes("gap-y-1"):
-                    ui.label("Mission Control").classes(
-                        "text-3xl font-black text-slate-800"
-                    )
-                    ui.label(
-                        "Real-time ISO 42001 and ISO 27001 operations, RLS status, and audit logs."
-                    ).classes("text-slate-500")
+            create_module_header(
+                "Mission Control",
+                "Real-time ISO 42001 and ISO 27001 operations, RLS status, and audit logs.",
+                self.client,
+                rls_status="PROTECTED" if rls_pct == 100.0 else "PARTIAL",
+            )
 
             # --- Row 1: KPI Cards ---
             with ui.row().classes("w-full gap-4"):

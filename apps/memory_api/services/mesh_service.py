@@ -6,7 +6,7 @@ import json
 import secrets
 import time
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import jwt
@@ -538,14 +538,29 @@ class MeshService:
         if self.pool is not None:
             try:
                 async with self.pool.acquire() as conn:
+                    # Get the watermark (created_at of the last successfully synced memory)
+                    watermark_row = await conn.fetchrow(
+                        """
+                        SELECT MAX(m.created_at) as max_created
+                        FROM mesh_sync_log l
+                        JOIN memories m ON l.memory_id = m.id
+                        WHERE l.peer_id = $1 AND l.status = 'success'
+                        """,
+                        peer_id
+                    )
+                    watermark = watermark_row["max_created"] if watermark_row and watermark_row["max_created"] else datetime.fromtimestamp(0, tz=timezone.utc)
+
                     rows = await conn.fetch(
                         """
                         SELECT id, content, layer, tenant_id, agent_id, tags, metadata, importance, created_at, last_accessed_at, expires_at, project, session_id, memory_type, source, info_class
                         FROM memories
-                        WHERE id NOT IN (
-                            SELECT memory_id FROM mesh_sync_log WHERE peer_id = $1 AND status = 'success'
-                        )
+                        WHERE created_at >= $1
+                          AND id NOT IN (
+                              SELECT memory_id FROM mesh_sync_log WHERE peer_id = $2 AND status = 'success'
+                          )
+                        ORDER BY created_at ASC
                         """,
+                        watermark,
                         peer_id
                     )
                     
