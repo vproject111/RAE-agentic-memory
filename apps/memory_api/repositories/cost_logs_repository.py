@@ -376,15 +376,11 @@ async def get_daily_cost(pool: asyncpg.Pool, tenant_id: str, project: str) -> fl
     )
     today_end = datetime.now(timezone.utc)
 
-    stats = await get_cost_statistics(
-        pool, tenant_id, project, today_start, today_end
-    )
+    stats = await get_cost_statistics(pool, tenant_id, project, today_start, today_end)
     return stats.total_cost_usd
 
 
-async def get_monthly_cost(
-    pool: asyncpg.Pool, tenant_id: str, project: str
-) -> float:
+async def get_monthly_cost(pool: asyncpg.Pool, tenant_id: str, project: str) -> float:
     """
     Gets total cost for current month (UTC).
 
@@ -402,9 +398,7 @@ async def get_monthly_cost(
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_end = now
 
-    stats = await get_cost_statistics(
-        pool, tenant_id, project, month_start, month_end
-    )
+    stats = await get_cost_statistics(pool, tenant_id, project, month_start, month_end)
     return stats.total_cost_usd
 
 
@@ -427,15 +421,11 @@ async def get_daily_tokens(pool: asyncpg.Pool, tenant_id: str, project: str) -> 
     )
     today_end = datetime.now(timezone.utc)
 
-    stats = await get_cost_statistics(
-        pool, tenant_id, project, today_start, today_end
-    )
+    stats = await get_cost_statistics(pool, tenant_id, project, today_start, today_end)
     return stats.total_tokens
 
 
-async def get_monthly_tokens(
-    pool: asyncpg.Pool, tenant_id: str, project: str
-) -> int:
+async def get_monthly_tokens(pool: asyncpg.Pool, tenant_id: str, project: str) -> int:
     """
     Gets total tokens used for current month (UTC).
 
@@ -453,9 +443,7 @@ async def get_monthly_tokens(
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_end = now
 
-    stats = await get_cost_statistics(
-        pool, tenant_id, project, month_start, month_end
-    )
+    stats = await get_cost_statistics(pool, tenant_id, project, month_start, month_end)
     return stats.total_tokens
 
 

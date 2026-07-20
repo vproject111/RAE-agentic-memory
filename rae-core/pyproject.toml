@@ -100,7 +100,13 @@ ignore = [
     "UP035", # Deprecated types
     "B008", # Function call in argument defaults
     "N806", # Variable name should be lowercase
+    "N818", # Exception name should end with Error
+    "N801", # Class name should use CapWords convention
+    "E741", # Ambiguous variable name
+    "E722", # Do not use bare except
 ]
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F841", "E402", "E712", "F811", "W291"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

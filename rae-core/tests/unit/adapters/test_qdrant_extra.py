@@ -16,15 +16,15 @@ async def test_batch_store_vectors_empty():
 async def test_search_similar_with_session_id():
     mock_client = AsyncMock()
     mock_client.get_collection = AsyncMock()
-    mock_client.search = AsyncMock(return_value=[])
+    mock_client.query_points = AsyncMock(return_value=MagicMock(points=[]))
 
     store = QdrantVectorStore(client=mock_client)
     store._initialized = True
 
     await store.search_similar([0.1], "t1", session_id="s1")
-    call_args = mock_client.search.call_args
+    call_args = mock_client.query_points.call_args
     # Check if session_id is in filter
-    filter_keys = [c["key"] for c in call_args.kwargs["query_filter"]["must"]]
+    filter_keys = [c.key for c in call_args.kwargs["query_filter"].must]
     assert "session_id" in filter_keys
 
 
@@ -66,14 +66,14 @@ async def test_search_with_contradiction_penalty_missing_vectors():
 async def test_search_similar_with_agent_id():
     mock_client = AsyncMock()
     mock_client.get_collection = AsyncMock()
-    mock_client.search = AsyncMock(return_value=[])
+    mock_client.query_points = AsyncMock(return_value=MagicMock(points=[]))
 
     store = QdrantVectorStore(client=mock_client)
     store._initialized = True
 
     await store.search_similar([0.1], "t1", agent_id="a1")
-    call_args = mock_client.search.call_args
-    filter_keys = [c["key"] for c in call_args.kwargs["query_filter"]["must"]]
+    call_args = mock_client.query_points.call_args
+    filter_keys = [c.key for c in call_args.kwargs["query_filter"].must]
     assert "agent_id" in filter_keys
 
 
@@ -101,7 +101,7 @@ async def test_all_qdrant_methods_exception_handling():
     mock_client.get_collection = AsyncMock()
     # Trigger exception in every client method
     mock_client.upsert = AsyncMock(side_effect=Exception("Error"))
-    mock_client.search = AsyncMock(side_effect=Exception("Error"))
+    mock_client.query_points = AsyncMock(side_effect=Exception("Error"))
     mock_client.retrieve = AsyncMock(side_effect=Exception("Error"))
     mock_client.delete = AsyncMock(side_effect=Exception("Error"))
     mock_client.count = AsyncMock(side_effect=Exception("Error"))
@@ -133,7 +133,7 @@ async def test_qdrant_init_with_url():
 async def test_search_similar_exception():
     mock_client = AsyncMock()
     mock_client.get_collection = AsyncMock()
-    mock_client.search = AsyncMock(side_effect=Exception("Error"))
+    mock_client.query_points = AsyncMock(side_effect=Exception("Error"))
 
     store = QdrantVectorStore(client=mock_client)
     store._initialized = True
@@ -211,7 +211,7 @@ async def test_search_with_contradiction_penalty_full_logic():
         # Mock get_vector to return contradictory vectors (e.g. opposite)
         # Similarity should be < 0.15
         with patch.object(
-            store, "get_vector", AsyncMock(side_effect=[[1.0, 0.0], [-1.0, 0.0]])
+            store, "get_vector", AsyncMock(side_effect=[[-1.0, 0.0], [-1.0, 0.0]])
         ):
             results = await store.search_with_contradiction_penalty(
                 [1.0, 0.0], "t1", penalty_factor=0.5

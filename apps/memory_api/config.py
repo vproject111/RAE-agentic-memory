@@ -1,6 +1,6 @@
 import os
-import socket
 from pathlib import Path
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,22 +29,22 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
-    
+
     # --- Intelligence & Determinism Stack ---
     # RAE_EMBEDDING_BACKEND: "onnx" ensures 100% deterministic vectors using local models (22MB/130MB)
-    RAE_EMBEDDING_BACKEND: str = "onnx"  
-    
+    RAE_EMBEDDING_BACKEND: str = "onnx"
+
     # RAE_LLM_MODEL_DEFAULT: Using Qwen 3.5 9B for high-quality synthesis.
     RAE_LLM_MODEL_DEFAULT: str = "ollama/qwen2.5:1.5b"
-    
-    # RAE_REFLECTION_STRATEGY: 
+
+    # RAE_REFLECTION_STRATEGY:
     # "math" - Purely deterministic L1-L3 reflections
     # "hybrid" - Math for validation + LLM for "Lessons Learned" generation
     RAE_REFLECTION_STRATEGY: str = "hybrid"
 
     OLLAMA_API_BASE: str | None = None
     OLLAMA_API_URL: str | None = "http://ollama-dev:11434"
-    
+
     # Ollama Configuration
     OLLAMA_HOSTS: list[str] = [
         "http://ollama-dev:11434",
@@ -85,6 +85,14 @@ class Settings(BaseSettings):
     ENABLE_API_KEY_AUTH: bool = False
     ENABLE_JWT_AUTH: bool = False
     SECRET_KEY: str = "change-this-secret-key-in-production"
+    RAE_PEER_ID: str = "rae-host"
+
+    # --- Keycloak Integration ---
+    ENABLE_KEYCLOAK_AUTH: bool = False
+    KEYCLOAK_URL: str = "http://localhost:8080"
+    KEYCLOAK_REALM: str = "rae-realm"
+    KEYCLOAK_FRONTEND_CLIENT_ID: str = "rae-portal"
+    KEYCLOAK_BACKEND_CLIENT_ID: str = "rae-memory-api"
 
     ENABLE_RATE_LIMITING: bool = False
     RATE_LIMIT_REQUESTS: int = 100
@@ -154,21 +162,27 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_sandbox_mode(self):
-        if self.RAE_PROFILE == "lite":
-            def is_port_in_use(port):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    return s.connect_ex(("localhost", port)) == 0
-            if is_port_in_use(8000):
-                if self.MEMORY_API_URL == "http://localhost:8000":
-                    self.MEMORY_API_URL = "http://localhost:8010"
-        return self
-
-    @model_validator(mode="after")
-    def validate_sandbox_mode(self):
         """
         Detect if RAE and RAE-Lite are co-existing on the same machine.
         If port 8000 is occupied and we are in lite mode, force sandbox ports.
+        Also enforces that wildcard CORS origins are not allowed in production profile.
         """
+        if self.RAE_PROFILE in ["prod", "production"]:
+            if "*" in self.ALLOWED_ORIGINS:
+                raise ValueError(
+                    "Wildcard ALLOWED_ORIGINS ('*') is not allowed in production profile"
+                )
+            import re
+
+            origin_regex = re.compile(
+                r"^https?://([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|localhost)(:\d+)?$"
+            )
+            for origin in self.ALLOWED_ORIGINS:
+                if not origin_regex.match(origin):
+                    raise ValueError(
+                        f"Invalid CORS origin format: {origin}. Must be in format http(s)://domain.com(:port)"
+                    )
+
         if self.RAE_PROFILE == "lite":
             import socket
 
@@ -186,7 +200,6 @@ class Settings(BaseSettings):
                 # Force sandbox ports for infrastructure if they are still at standard defaults
                 if self.POSTGRES_HOST == "localhost":
                     self.POSTGRES_HOST = "localhost"  # Host stays same
-                # Ports are usually handled by docker-compose, but we ensure internal URLs are consistent
         return self
 
     @model_validator(mode="after")
@@ -204,7 +217,13 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_file=[".env", str(Path(__file__).parent.parent.parent / "rae-core" / ".env"), str(Path("/app/rae_core/.env"))], env_file_encoding="utf-8", extra="ignore"
+        env_file=[
+            ".env",
+            str(Path(__file__).parent.parent.parent / "rae-core" / ".env"),
+            str(Path("/app/rae_core/.env")),
+        ],
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 

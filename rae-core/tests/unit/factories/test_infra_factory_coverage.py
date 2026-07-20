@@ -1,6 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+
 from rae_core.factories.infra_factory import InfrastructureFactory
+
 
 class MockSettings:
     def __init__(self):
@@ -13,6 +16,7 @@ class MockSettings:
         self.QDRANT_HOST = "localhost"
         self.QDRANT_PORT = 6333
 
+
 class TestInfrastructureFactory:
     @pytest.fixture
     def settings(self):
@@ -23,11 +27,19 @@ class TestInfrastructureFactory:
         mock_app = MagicMock()
         # Ensure app.state exists
         mock_app.state = MagicMock()
-        
-        with patch('rae_core.factories.infra_factory.AsyncQdrantClient'), \
-             patch('rae_core.factories.infra_factory.asyncpg.create_pool', new_callable=AsyncMock), \
-             patch('rae_core.factories.infra_factory.aioredis.from_url', new_callable=AsyncMock):
-            
+
+        with (
+            patch("rae_core.factories.infra_factory.AsyncQdrantClient"),
+            patch(
+                "rae_core.factories.infra_factory.asyncpg.create_pool",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "rae_core.factories.infra_factory.aioredis.from_url",
+                new_callable=AsyncMock,
+            ),
+        ):
+
             await InfrastructureFactory.initialize(mock_app, settings)
             assert mock_app.state.redis_client is not None
             assert mock_app.state.qdrant_client is not None
@@ -37,10 +49,18 @@ class TestInfrastructureFactory:
         mock_app = MagicMock()
         mock_app.state = MagicMock()
         settings.DATABASE_URL = "postgresql://user:pass@host/db"
-        
-        with patch('rae_core.factories.infra_factory.AsyncQdrantClient'), \
-             patch('rae_core.factories.infra_factory.asyncpg.create_pool', new_callable=AsyncMock), \
-             patch('rae_core.factories.infra_factory.aioredis.from_url', new_callable=AsyncMock):
-            
+
+        with (
+            patch("rae_core.factories.infra_factory.AsyncQdrantClient"),
+            patch(
+                "rae_core.factories.infra_factory.asyncpg.create_pool",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "rae_core.factories.infra_factory.aioredis.from_url",
+                new_callable=AsyncMock,
+            ),
+        ):
+
             await InfrastructureFactory.initialize(mock_app, settings)
             assert mock_app.state.pool is not None

@@ -59,8 +59,7 @@ class SQLiteVectorStore(IVectorStore):
                 self._has_vec_extension = False
 
             # Vectors table
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS vectors (
                     memory_id TEXT PRIMARY KEY,
                     embedding BLOB NOT NULL,
@@ -68,16 +67,13 @@ class SQLiteVectorStore(IVectorStore):
                     tenant_id TEXT NOT NULL,
                     metadata TEXT  -- JSON object
                 )
-            """
-            )
+            """)
 
             # Indexes
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE INDEX IF NOT EXISTS idx_vectors_tenant_id
                 ON vectors(tenant_id)
-            """
-            )
+            """)
 
             await db.commit()
 

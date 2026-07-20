@@ -18,8 +18,15 @@ async def test_fulltext_extra_coverage(mock_storage):
 
     # Test memory_id as string
     mem_id_str = str(uuid4())
-    mock_storage.list_memories = AsyncMock(
-        return_value=[{"id": mem_id_str, "content": "test content", "tags": ["tag1"]}]
+    mock_storage.search_memories = AsyncMock(
+        return_value=[
+            {
+                "id": mem_id_str,
+                "content": "test content",
+                "tags": ["tag1"],
+                "score": 1.0,
+            }
+        ]
     )
 
     results = await strategy.search("test", "tenant")
@@ -28,18 +35,20 @@ async def test_fulltext_extra_coverage(mock_storage):
     assert str(results[0][0]) == mem_id_str
 
     # Test score 0 filter
-    mock_storage.list_memories = AsyncMock(
-        return_value=[{"id": uuid4(), "content": "completely different", "tags": []}]
+    mock_storage.search_memories = AsyncMock(
+        return_value=[
+            {"id": uuid4(), "content": "completely different", "tags": [], "score": 0.0}
+        ]
     )
     results = await strategy.search("xyz", "tenant")
     assert len(results) == 0
 
     # Test strategy name and weight
     assert strategy.get_strategy_name() == "fulltext"
-    assert strategy.get_strategy_weight() == 0.2
+    assert strategy.get_strategy_weight() == 1.0
 
     # Test empty memories
-    mock_storage.list_memories = AsyncMock(return_value=[])
+    mock_storage.search_memories = AsyncMock(return_value=[])
     results = await strategy.search("test", "tenant")
     assert results == []
 

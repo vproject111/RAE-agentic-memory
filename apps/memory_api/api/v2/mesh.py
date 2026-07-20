@@ -1,24 +1,69 @@
 import uuid
-from typing import Any
+import hashlib
+import secrets
+import threading
+import asyncio
+from typing import Any, Dict, List, Optional
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from apps.memory_api.services.mesh_service import MeshService
+from apps.memory_api.services.mesh_service import MeshService, PeerInfo
+from apps.memory_api.config import settings
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["Mesh"], prefix="/v2/mesh")
+
+_mesh_service_lock = threading.Lock()
+
+
+def safe_hash(content: str, max_size_bytes: int = 10 * 1024 * 1024) -> str:
+    """Hash content safely, rejecting content larger than max_size_bytes to prevent DoS."""
+    content_bytes = content.encode("utf-8")
+    if len(content_bytes) > max_size_bytes:
+        raise ValueError("Content size exceeds maximum allowed limit for hashing (10MB)")
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
+
+def parse_uuid(val: Any) -> UUID:
+    if isinstance(val, UUID):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return UUID(val)
+        except ValueError:
+            pass
+    return uuid4()
+
+def parse_datetime(val: Any) -> Optional[datetime]:
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return None
 
 
 # Dependency to get MeshService singleton
 def get_mesh_service(request: Request) -> MeshService:
     if not hasattr(request.app.state, "mesh_service"):
-        # Initialize if not present (Lazy init for MVP)
-        request.app.state.mesh_service = MeshService()
+        with _mesh_service_lock:
+            if not hasattr(request.app.state, "mesh_service"):
+                pool = getattr(request.app.state, "pool", None)
+                redis_client = getattr(request.app.state, "redis_client", None)
+                request.app.state.mesh_service = MeshService(
+                    pool=pool, 
+                    redis_client=redis_client, 
+                    secret_key=settings.SECRET_KEY
+                )
 
     from typing import cast
-
     return cast(MeshService, request.app.state.mesh_service)
 
 
@@ -43,20 +88,29 @@ class JoinRequest(BaseModel):
 class JoinResponse(BaseModel):
     status: str
     host_peer_id: str
-    host_token: str  # Token for the Joiner to use
+    host_token: str
+
+
+class ChallengeResponse(BaseModel):
+    challenge: Dict[str, Any]
+    host_public_key: str
+    challenge_signature: str
 
 
 class HandshakeRequest(BaseModel):
-    # Sent by Joiner to Host
     invite_code: str
     peer_id: str
     peer_url: str
     peer_name: str
-    peer_token: str  # Token for Host to use back
+    peer_token: str
+    # Security verification
+    public_key: str
+    challenge: Dict[str, Any]
+    signature: str
+    joiner_challenge: Dict[str, Any]
 
 
 # --- Endpoints ---
-
 
 @router.post("/invite", response_model=InviteResponse)
 async def create_invite(
@@ -67,27 +121,74 @@ async def create_invite(
     return InviteResponse(invite_code=code, expires_in_seconds=300)
 
 
+@router.get("/handshake/challenge", response_model=ChallengeResponse)
+async def get_handshake_challenge(service: MeshService = Depends(get_mesh_service)):
+    """(Host) Retrieve challenge, host public key, and host signature for trust verification."""
+    data = service.generate_challenge(settings.RAE_PEER_ID)
+    return ChallengeResponse(
+        challenge=data["challenge"],
+        host_public_key=data["host_public_key"],
+        challenge_signature=data["challenge_signature"]
+    )
+
+
 @router.post("/join", response_model=JoinResponse)
 async def join_mesh(
     request: JoinRequest, service: MeshService = Depends(get_mesh_service)
 ):
-    """(Joiner) Consume an invite code and connect to a host."""
+    """(Joiner) Consume an invite code and connect to a host using signed challenge handshake."""
     try:
-        # 1. Decode locally to find Host URL (Pre-check)
-        # Note: We don't have the Host's secret, so we can't verify signature yet.
-        # But standard JWT decode without verification allows reading the payload.
+        # 1. Decode locally to find Host URL
         import jwt
-
         payload = jwt.decode(request.invite_code, options={"verify_signature": False})
         host_url = payload.get("host")
         if not host_url:
             raise HTTPException(status_code=400, detail="Invalid invite: missing host")
+            
+        # Validate host_url scheme and netloc to prevent SSRF
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(host_url)
+            if parsed.scheme not in ["http", "https"] or not parsed.netloc:
+                raise ValueError("URL scheme must be http or https and netloc must be present")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid host URL: {e}")
 
-        # 2. Perform Handshake with Host
+        # 2. Retrieve challenge from Host
         import httpx
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{host_url}/v2/mesh/handshake/challenge")
+            if resp.status_code != 200:
+                raise HTTPException(
+                    status_code=400, detail=f"Failed to fetch challenge from Host: {resp.text}"
+                )
+            challenge_data = resp.json()
 
-        my_token = str(uuid.uuid4())  # Generate a token for Host to call us
+        challenge = challenge_data["challenge"]
+        host_pub_key = challenge_data["host_public_key"]
+        challenge_sig = challenge_data["challenge_signature"]
 
+        # 3. Verify Host's challenge signature
+        try:
+            service.verify_challenge_signature(host_pub_key, challenge, challenge_sig)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Host challenge signature verification failed: {e}")
+
+        # 4. Sign Host's challenge using our own private key
+        my_signature = service.sign_challenge(challenge, request.my_peer_id)
+        _, my_public_key = service.derive_key_pair(request.my_peer_id)
+        my_public_key_hex = my_public_key.public_bytes_raw().hex()
+
+        # 5. Generate a challenge for the Host to sign
+        import secrets
+        import time
+        my_challenge = {
+            "nonce": secrets.token_hex(16),
+            "timestamp": int(time.time())
+        }
+
+        # 6. Perform Handshake with Host
+        my_token = str(uuid.uuid4())
         async with httpx.AsyncClient() as client:
             hs_payload = {
                 "invite_code": request.invite_code,
@@ -95,29 +196,47 @@ async def join_mesh(
                 "peer_url": request.my_public_url,
                 "peer_name": request.my_name,
                 "peer_token": my_token,
+                "public_key": my_public_key_hex,
+                "challenge": challenge,
+                "signature": my_signature,
+                "joiner_challenge": my_challenge
             }
             resp = await client.post(f"{host_url}/v2/mesh/handshake", json=hs_payload)
             if resp.status_code != 200:
                 raise HTTPException(
-                    status_code=400, detail=f"Handshake rejected: {resp.text}"
+                    status_code=400, detail=f"Handshake rejected by Host: {resp.text}"
                 )
-
             data = resp.json()
 
-        # 3. Register Host as a peer locally
-        service.register_peer(
-            peer_id=data["host_id"],
+        # 7. Verify Host's signature of our challenge
+        host_id = data["host_id"]
+        host_token = data["token"]
+        host_signature_of_my_challenge = data["signature"]
+        
+        try:
+            service.verify_challenge_signature(host_pub_key, my_challenge, host_signature_of_my_challenge)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Host signature of our challenge is invalid: {e}")
+
+        # 8. Register Host as a peer locally
+        await service.register_peer(
+            peer_id=host_id,
             name="Host",
             url=host_url,
-            token=data["token"],  # Token they gave us
+            token=host_token,
+            public_key=host_pub_key,
+            consent_grant_id=data.get("consent_grant_id"),
+            status="active"
         )
 
         return JoinResponse(
             status="connected",
-            host_peer_id=data["host_id"],
-            host_token=data["token"],
+            host_peer_id=host_id,
+            host_token=host_token,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("join_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -127,47 +246,505 @@ async def join_mesh(
 async def receive_handshake(
     request: HandshakeRequest, service: MeshService = Depends(get_mesh_service)
 ):
-    """(Host) Receive a handshake request from a Joiner."""
+    """(Host) Receive a handshake request from a Joiner, validating signed challenge."""
     try:
         # 1. Validate Invite Code
         service.validate_invite(request.invite_code)
 
-        # 2. Register the Joiner as a trusted peer
-        service.register_peer(
+        # 2. Verify Joiner's challenge signature
+        try:
+            service.verify_challenge_signature(request.public_key, request.challenge, request.signature)
+        except ValueError as e:
+            raise HTTPException(status_code=403, detail=f"Joiner challenge signature verification failed: {e}")
+
+        # 3. Establish Consent Grant ID
+        consent_grant_id = f"grant-{uuid.uuid4()}"
+
+        # 4. Register the Joiner as a trusted peer
+        await service.register_peer(
             peer_id=request.peer_id,
             name=request.peer_name,
             url=request.peer_url,
             token=request.peer_token,
+            public_key=request.public_key,
+            consent_grant_id=consent_grant_id,
+            status="active"
         )
 
-        # 3. Generate a token for the Joiner to use
+        # 5. Generate a token for the Joiner to use
         my_token_for_joiner = str(uuid.uuid4())
 
-        # For MVP, we assume the token is valid if it matches what we generated.
-        # In a real system, we'd store this token in a DB associated with the peer_id.
+        # 6. Sign Joiner's challenge
+        host_signature = service.sign_challenge(request.joiner_challenge, settings.RAE_PEER_ID)
+        
+        _, my_public_key = service.derive_key_pair(settings.RAE_PEER_ID)
+        my_public_key_hex = my_public_key.public_bytes_raw().hex()
 
         return {
             "status": "accepted",
-            "host_id": "rae-host",
+            "host_id": settings.RAE_PEER_ID,
             "token": my_token_for_joiner,
+            "host_public_key": my_public_key_hex,
+            "signature": host_signature,
+            "consent_grant_id": consent_grant_id
         }
 
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("handshake_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/peers")
+@router.get("/peers", response_model=List[PeerInfo])
 async def list_peers(service: MeshService = Depends(get_mesh_service)):
     """List connected peers."""
-    return service.list_peers()
+    return await service.list_peers()
 
 
 @router.post("/sync/receive")
-async def receive_sync_data(payload: dict[str, Any]):
-    """Receive pushed memories from a peer."""
-    # Placeholder for actual ingestion logic
-    logger.info("received_sync_push", items=len(payload.get("memories", [])))
-    return {"status": "accepted", "processed": len(payload.get("memories", []))}
+async def receive_sync_data(
+    request: Request,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Receive pushed memories from a peer, enforcing data classification and consent checks."""
+    # 1. Validate request payload size (limit to 10MB) before parsing
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Payload Too Large")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Content-Length header")
+            
+    body_bytes = await request.body()
+    if len(body_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Payload Too Large")
+        
+    import json
+    try:
+        payload = json.loads(body_bytes)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        
+    sender_id = payload.get("sender_id")
+    receiver_id = payload.get("receiver_id", settings.RAE_PEER_ID)
+    consent_token = payload.get("consent_token")
+    memories = payload.get("memories", [])
+    
+    logger.info("received_sync_push", sender=sender_id, items=len(memories))
+    
+    if not sender_id:
+        raise HTTPException(status_code=400, detail="Missing sender_id in sync payload")
+        
+    peer = await service.get_peer(sender_id)
+    if not peer:
+        raise HTTPException(status_code=403, detail=f"Sender peer {sender_id} is not registered")
+        
+    # Check if there are restricted memories
+    has_restricted = any(str(m.get("info_class", "")).lower() == "restricted" for m in memories)
+    
+    if has_restricted:
+        # Require a valid consent token
+        if not consent_token:
+            raise HTTPException(
+                status_code=403, 
+                detail="Sync contains RESTRICTED memories but no consent token was provided"
+            )
+            
+        try:
+            # Verify consent token (asynchronous)
+            token_payload = await service.verify_consent_token(consent_token, sender_id, receiver_id)
+            
+            # Verify ConsentGrant in DB matches the token's consent_grant_id (prevent timing attacks)
+            peer_grant_id = peer.consent_grant_id or ""
+            token_grant_id = token_payload.get("consent_grant_id") or ""
+            if not peer.consent_grant_id or not secrets.compare_digest(peer_grant_id, token_grant_id):
+                raise HTTPException(
+                    status_code=403, 
+                    detail="ConsentGrant verification failed for sender-receiver pair"
+                )
+                
+            # Verify peer status is active
+            if peer.status != "active":
+                raise HTTPException(
+                    status_code=403, 
+                    detail="ConsentGrant is inactive (peer status is not active)"
+                )
+                
+        except ValueError as e:
+            raise HTTPException(status_code=403, detail=f"Consent token validation failed: {str(e)}")
+            
+    # Verify signature and provenance if peer public key is registered
+    signature = payload.get("signature")
+    sender_pub_key = await service.get_peer_public_key(sender_id)
+    
+    if sender_pub_key:
+        if not signature:
+            raise HTTPException(status_code=403, detail="Signature is required for registered peers")
+        try:
+            from cryptography.hazmat.primitives.asymmetric import ed25519
+            pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(sender_pub_key))
+            memories_bytes = json.dumps(memories, sort_keys=True).encode("utf-8")
+            
+            payload_hash = hashlib.sha256(memories_bytes).hexdigest()
+            expected_hash = payload.get("payload_hash")
+            if expected_hash and not secrets.compare_digest(expected_hash, payload_hash):
+                raise ValueError("Payload hash mismatch")
+                
+            pub_key.verify(bytes.fromhex(signature), memories_bytes)
+        except Exception as e:
+            raise HTTPException(status_code=403, detail=f"Invalid payload signature or provenance: {e}")
+
+    # Process and save memories concurrently using Semaphore(50) and asyncio.gather
+    sem = asyncio.Semaphore(50)
+    
+    # Pre-fetch existing UUIDs and (tenant_id, content_hash) pairs in bulk to avoid SELECT N+1 query problem
+    existing_uuids = set()
+    existing_hashes = {}
+    pool = getattr(request.app.state, "pool", None)
+    
+    if pool is not None:
+        uuids_to_query = []
+        hashes_to_query = []
+        import unicodedata
+        import nh3
+        
+        for m in memories:
+            m_content = m.get("content", "")
+            norm_c = unicodedata.normalize("NFKC", m_content)
+            clean_c = nh3.clean(norm_c)
+            try:
+                chash = safe_hash(clean_c)
+            except ValueError:
+                continue
+            hashes_to_query.append(chash)
+            
+            mid = m.get("id")
+            if mid:
+                try:
+                    uuids_to_query.append(UUID(str(mid)))
+                except ValueError:
+                    pass
+                    
+        async with pool.acquire() as conn:
+            if uuids_to_query:
+                rows_by_id = await conn.fetch("SELECT id FROM memories WHERE id = ANY($1)", uuids_to_query)
+                existing_uuids = {row["id"] for row in rows_by_id}
+            if hashes_to_query:
+                rows_by_hash = await conn.fetch("SELECT id, tenant_id, content_hash FROM memories WHERE content_hash = ANY($1)", hashes_to_query)
+                existing_hashes = {(row["tenant_id"], row["content_hash"]): row["id"] for row in rows_by_hash}
+    
+    async def process_single_memory(m: Dict[str, Any]) -> int:
+        async with sem:
+            memory_id = m.get("id")
+            content = m.get("content", "")
+            
+            # NFKC Unicode Normalization
+            import unicodedata
+            normalized_content = unicodedata.normalize("NFKC", content)
+            
+            # HTML sanitization using nh3
+            import nh3
+            sanitized_content = nh3.clean(normalized_content)
+            
+            try:
+                content_hash = safe_hash(sanitized_content)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+                
+            # If the database pool is available, store in postgres
+            m_id = None
+            if pool is not None:
+                memory_uuid = parse_uuid(memory_id)
+                
+                layer = m.get("layer", "episodic")
+                tenant_id = m.get("tenant_id", "default")
+                agent_id = m.get("agent_id", "default")
+                tags = m.get("tags") or []
+                metadata = m.get("metadata") or {}
+                
+                # Sanitize metadata to prevent metadata injection attacks
+                if not isinstance(metadata, dict):
+                    metadata = {}
+                else:
+                    metadata = metadata.copy()
+                    # Strip critical operational fields from the user input
+                    for key in ["witness_count", "last_sync_instance", "is_chunk", "ingest_audit", "is_operational"]:
+                        metadata.pop(key, None)
+                        
+                importance = m.get("importance", 0.5)
+                project = m.get("project", "default")
+                source = m.get("source", "sync")
+                human_label = m.get("human_label")
+                session_id = m.get("session_id")
+                memory_type = m.get("memory_type", "text")
+                info_class = m.get("info_class", "internal")
+                
+                expires_at = parse_datetime(m.get("expires_at"))
+                
+                is_existing_id = memory_uuid in existing_uuids
+                existing_hash_id = existing_hashes.get((tenant_id, content_hash))
+                        
+                async with pool.acquire() as conn:
+                    if is_existing_id:
+                        await conn.execute(
+                            """
+                            UPDATE memories SET
+                                content = $1,
+                                content_hash = $2,
+                                layer = $3,
+                                agent_id = $4,
+                                tags = $5,
+                                metadata = memories.metadata || $6::jsonb,
+                                importance = GREATEST(memories.importance, $7),
+                                project = $8,
+                                source = $9,
+                                human_label = COALESCE($10, memories.human_label),
+                                session_id = $11,
+                                memory_type = $12,
+                                expires_at = $13,
+                                info_class = $14,
+                                last_accessed_at = NOW()
+                            WHERE id = $15
+                            """,
+                            sanitized_content,
+                            content_hash,
+                            layer,
+                            agent_id,
+                            tags,
+                            json.dumps(metadata),
+                            importance,
+                            project,
+                            source,
+                            human_label,
+                            session_id,
+                            memory_type,
+                            expires_at,
+                            info_class,
+                            memory_uuid
+                        )
+                        m_id = memory_uuid
+                    elif existing_hash_id:
+                        await conn.execute(
+                            """
+                            UPDATE memories SET
+                                importance = GREATEST(memories.importance, $1),
+                                usage_count = memories.usage_count + 1,
+                                last_accessed_at = NOW(),
+                                source = memories.source || ', ' || $2,
+                                human_label = COALESCE($3, memories.human_label),
+                                metadata = memories.metadata || $4::jsonb || jsonb_build_object('witness_count', (COALESCE((memories.metadata->>'witness_count')::int, 1) + 1)),
+                                info_class = $5
+                            WHERE id = $6
+                            """,
+                            importance,
+                            source,
+                            human_label,
+                            json.dumps(metadata),
+                            info_class,
+                            existing_hash_id
+                        )
+                        m_id = existing_hash_id
+                    else:
+                        await conn.execute(
+                            """
+                            INSERT INTO memories (
+                                id, content, content_hash, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project, source, human_label, session_id, memory_type, expires_at, info_class
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12, $13, $14, $15, $16)
+                            """,
+                            memory_uuid,
+                            sanitized_content,
+                            content_hash,
+                            layer,
+                            tenant_id,
+                            agent_id,
+                            tags,
+                            json.dumps(metadata),
+                            importance,
+                            project,
+                            source,
+                            human_label,
+                            session_id,
+                            memory_type,
+                            expires_at,
+                            info_class
+                        )
+                        m_id = memory_uuid
+
+                # Store vector in Qdrant if rae_core_service is available and not operational layer
+                rae_service = getattr(request.app.state, "rae_core_service", None)
+                if rae_service and rae_service.qdrant_client and "operational" not in tags and m_id:
+                    try:
+                        if hasattr(rae_service.embedding_provider, "generate_all_embeddings"):
+                            embs_dict = await rae_service.embedding_provider.generate_all_embeddings(
+                                [sanitized_content], task_type="search_document"
+                            )
+                            emb = {name: e[0] for name, e in embs_dict.items() if e}
+                        else:
+                            emb = await rae_service.embedding_provider.embed_text(
+                                sanitized_content, task_type="search_document"
+                            )
+                        
+                        vector_meta = {
+                            "agent_id": agent_id,
+                            "session_id": session_id or "default",
+                            "layer": layer,
+                            "project": project,
+                        }
+                        await rae_service.qdrant_adapter.store_vector(m_id, emb, tenant_id, metadata=vector_meta)
+                    except Exception as q_err:
+                        logger.warning("failed_to_index_vector_in_sync", error=str(q_err), memory_id=str(m_id))
+            
+            if memory_id:
+                await service.save_sync_log(
+                    peer_id=sender_id,
+                    memory_id=memory_id,
+                    content_hash=content_hash,
+                    status="success"
+                )
+                return 1
+            return 0
+            
+    results = await asyncio.gather(*(process_single_memory(m) for m in memories))
+    processed_count = sum(results)
+            
+    return {"status": "accepted", "processed": processed_count}
+
+
+class PeerRegisterRequest(BaseModel):
+    peer_id: str
+    name: str
+    url: str
+    token: str
+    public_key: Optional[str] = None
+    consent_grant_id: Optional[str] = None
+    status: str = "active"
+    transport_type: str = "http"
+
+
+@router.post("/peers")
+async def register_peer(
+    request: PeerRegisterRequest,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Register or update a peer configuration."""
+    try:
+        await service.register_peer(
+            peer_id=request.peer_id,
+            name=request.name,
+            url=request.url,
+            token=request.token,
+            public_key=request.public_key,
+            consent_grant_id=request.consent_grant_id,
+            status=request.status,
+            transport_type=request.transport_type
+        )
+        return {"status": "success", "message": f"Peer {request.peer_id} registered/updated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/peers/{peer_id}")
+async def revoke_peer(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Revoke/Delete a peer configuration."""
+    try:
+        await service.revoke_peer(peer_id)
+        return {"status": "success", "message": f"Peer {peer_id} revoked"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/peers/{peer_id}/sync")
+async def trigger_peer_sync(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Trigger manual synchronization for a specific peer."""
+    # Enforce Redis advisory lock
+    lock_key = f"mesh_sync_{peer_id}"
+    locked = False
+    if service.redis_client is not None:
+        locked = await service.redis_client.set(lock_key, "1", ex=300, nx=True)
+        if not locked:
+            raise HTTPException(status_code=409, detail="Synchronization already in progress for this peer")
+            
+    try:
+        synced_count = await service.push_memories_to_peer(peer_id)
+        return {"status": "success", "synced_memories": synced_count}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error("manual_sync_failed", peer_id=peer_id, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if locked and service.redis_client is not None:
+            await service.redis_client.delete(lock_key)
+
+
+@router.get("/peers/{peer_id}/status")
+async def get_peer_status(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Get peer status including latency and sync statistics."""
+    peer = await service.get_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+        
+    # Measure latency
+    import time
+    import httpx
+    latency = -1
+    if peer.url:
+        start_time = time.time()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"{peer.url}/v2/mesh/handshake/challenge", timeout=5.0)
+                if response.status_code == 200:
+                    latency = int((time.time() - start_time) * 1000)
+        except Exception:
+            pass
+            
+    success_count = 0
+    failed_count = 0
+    last_synced_at = None
+    
+    if service.pool is not None:
+        try:
+            stats = await service.pool.fetch(
+                """
+                SELECT status, COUNT(*), MAX(synced_at) as last_sync
+                FROM mesh_sync_log
+                WHERE peer_id = $1
+                GROUP BY status
+                """,
+                peer_id
+            )
+            for row in stats:
+                if row["status"] == "success":
+                    success_count = row["count"]
+                else:
+                    failed_count = row["count"]
+                if row["last_sync"]:
+                    if not last_synced_at or row["last_sync"] > last_synced_at:
+                        last_synced_at = row["last_sync"]
+        except Exception as e:
+            logger.error("failed_to_fetch_sync_stats", peer_id=peer_id, error=str(e))
+            
+    return {
+        "peer_id": peer_id,
+        "status": "online" if latency >= 0 else "offline",
+        "latency_ms": latency,
+        "sync_stats": {
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "last_synced_at": last_synced_at.isoformat() if last_synced_at else None
+        }
+    }
+

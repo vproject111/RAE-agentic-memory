@@ -1,8 +1,7 @@
 """Additional unit tests for InMemoryStorage to achieve 100% coverage."""
 
-import asyncio
 from datetime import datetime, timedelta, timezone
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
@@ -39,11 +38,11 @@ class TestInMemoryStorageCoverageV3:
     async def test_store_vector_invalid_types(self, storage):
         """Test store_vector with invalid types to cover error handling."""
         mid = await storage.store_memory(tenant_id="t1")
-        
+
         # Invalid embedding type (Line 96)
         success = await storage.store_vector(mid, "not a list or dict", "t1")
         assert success is False
-        
+
         # Invalid vector type in dict (Line 100)
         success = await storage.store_vector(mid, {"default": "not a list"}, "t1")
         assert success is False
@@ -53,7 +52,7 @@ class TestInMemoryStorageCoverageV3:
         """Test store_vector dimension mismatch (Line 107)."""
         mid = await storage.store_memory(tenant_id="t1")
         await storage.store_vector(mid, [0.1, 0.2], "t1")
-        
+
         with pytest.raises(ValueError, match="Dimension mismatch"):
             await storage.store_vector(mid, [0.1, 0.2, 0.3], "t1")
 
@@ -68,7 +67,7 @@ class TestInMemoryStorageCoverageV3:
         """Test search_similar with dimension mismatch (Line 165)."""
         mid = await storage.store_memory(tenant_id="t1")
         await storage.store_vector(mid, [0.1, 0.2, 0.3], "t1")
-        
+
         # Query with different dimension
         results = await storage.search_similar([0.1, 0.2], "t1")
         assert results == []
@@ -77,9 +76,18 @@ class TestInMemoryStorageCoverageV3:
     async def test_search_similar_filters_extended(self, storage):
         """Test search_similar with various filters (Line 194-203)."""
         mid = await storage.store_memory(tenant_id="t1", agent_id="a1", layer="l1")
-        await storage.store_vector(mid, [1.0, 0.0], "t1", 
-                                  metadata={"agent_id": "a1", "layer": "l1", "session_id": "s1", "project": "p1"})
-        
+        await storage.store_vector(
+            mid,
+            [1.0, 0.0],
+            "t1",
+            metadata={
+                "agent_id": "a1",
+                "layer": "l1",
+                "session_id": "s1",
+                "project": "p1",
+            },
+        )
+
         # Wrong tenant (Line 194)
         assert await storage.search_similar([1.0, 0.0], "t2") == []
         # Wrong layer (Line 197)
@@ -97,11 +105,11 @@ class TestInMemoryStorageCoverageV3:
         mid = await storage.store_memory(tenant_id="t1")
         # Orthogonal vector gives 0 similarity
         await storage.store_vector(mid, [1.0, 0.0], "t1")
-        
+
         # score <= 0.0 (Line 235)
         res = await storage.search_similar([0.0, 1.0], "t1")
         assert res == []
-        
+
         # score < score_threshold (Line 238)
         res = await storage.search_similar([1.0, 0.0], "t1", score_threshold=0.99)
         # Note: quantization might make it slightly less than 1.0
@@ -130,11 +138,11 @@ class TestInMemoryStorageCoverageV3:
         """Test delete_vector (Line 304-316)."""
         mid = await storage.store_memory(tenant_id="t1")
         await storage.store_vector(mid, {"m1": [0.1, 0.2], "m2": [0.3, 0.4]}, "t1")
-        
+
         # Wrong tenant
         assert await storage.delete_vector(mid, "t2") is False
         assert mid in storage._vector_indices["m1"]
-        
+
         # Success
         assert await storage.delete_vector(mid, "t1") is True
         assert mid not in storage._vector_indices["m1"]
@@ -154,10 +162,9 @@ class TestInMemoryStorageCoverageV3:
         """Test batch_store_vectors (Line 336-340)."""
         mid1 = await storage.store_memory(tenant_id="t1")
         mid2 = await storage.store_memory(tenant_id="t1")
-        count = await storage.batch_store_vectors([
-            (mid1, [0.1, 0.2], {}),
-            (mid2, [0.3, 0.4], {})
-        ], "t1")
+        count = await storage.batch_store_vectors(
+            [(mid1, [0.1, 0.2], {}), (mid2, [0.3, 0.4], {})], "t1"
+        )
         assert count == 2
 
     @pytest.mark.asyncio
@@ -172,14 +179,24 @@ class TestInMemoryStorageCoverageV3:
     async def test_delete_memories_with_metadata_filter_mismatches(self, storage):
         """Test delete_memories_with_metadata_filter mismatches (Line 712, 714, 716)."""
         mid = await storage.store_memory(tenant_id="t1", agent_id="a1", layer="l1")
-        
+
         # Wrong tenant (Line 712)
         assert await storage.delete_memories_with_metadata_filter(tenant_id="t2") == 0
         # Wrong agent (Line 714)
-        assert await storage.delete_memories_with_metadata_filter(tenant_id="t1", agent_id="a2") == 0
+        assert (
+            await storage.delete_memories_with_metadata_filter(
+                tenant_id="t1", agent_id="a2"
+            )
+            == 0
+        )
         # Wrong layer (Line 716)
-        assert await storage.delete_memories_with_metadata_filter(tenant_id="t1", layer="l2") == 0
-        
+        assert (
+            await storage.delete_memories_with_metadata_filter(
+                tenant_id="t1", layer="l2"
+            )
+            == 0
+        )
+
         assert await storage.count_memories("t1") == 1
 
     @pytest.mark.asyncio
@@ -188,25 +205,31 @@ class TestInMemoryStorageCoverageV3:
         now = datetime.now(timezone.utc)
         clock = MockClock(now)
         storage = InMemoryStorage(clock=clock)
-        await storage.store_memory(tenant_id="t1", agent_id="a1", layer="l1", 
-                                  expires_at=now - timedelta(seconds=10))
-        
+        await storage.store_memory(
+            tenant_id="t1",
+            agent_id="a1",
+            layer="l1",
+            expires_at=now - timedelta(seconds=10),
+        )
+
         # Wrong agent (Line 811)
         assert await storage.delete_expired_memories(tenant_id="t1", agent_id="a2") == 0
         # Wrong layer (Line 813)
         assert await storage.delete_expired_memories(tenant_id="t1", layer="l2") == 0
-        
+
         assert await storage.count_memories("t1") == 1
 
     @pytest.mark.asyncio
     async def test_close_and_other_stubs(self, storage):
         """Test close() and other stubs (Line 968)."""
-        await storage.close() # Should do nothing but hit the line
+        await storage.close()  # Should do nothing but hit the line
 
     @pytest.mark.asyncio
     async def test_delete_memory_sync_full(self, storage):
         """Test _delete_memory_sync with tags and vectors (Line 998, 1002-1004)."""
-        mid = await storage.store_memory(tenant_id="t1", tags=["t1"], embedding=[0.1, 0.2])
+        mid = await storage.store_memory(
+            tenant_id="t1", tags=["t1"], embedding=[0.1, 0.2]
+        )
         # Call via a method that uses _delete_memory_sync
         await storage.clear_tenant("t1")
         # Verify it's gone
@@ -220,7 +243,7 @@ class TestInMemoryStorageCoverageV3:
         mid = await storage.store_memory(tenant_id="t1")
         # Store vector in "custom" model, not "default"
         await storage.store_vector(mid, {"custom": [0.1, 0.2]}, "t1")
-        
+
         # Should find it in "custom" via fallback
         vec = await storage.get_vector(mid, "t1")
         assert vec == pytest.approx([0.1, 0.2], abs=1e-3)
@@ -235,7 +258,7 @@ class TestInMemoryStorageCoverageV3:
             final_decision="APPROVED",
             l1_report={},
             l2_report={},
-            l3_report={}
+            l3_report={},
         )
         assert audit_id in storage._reflection_audits
 

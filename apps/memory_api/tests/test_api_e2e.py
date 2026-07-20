@@ -65,8 +65,9 @@ def api_client():
 
     else:
         print("🏠 Running E2E tests against LOCAL app (TestClient)")
-        from apps.memory_api.main import app
         from unittest.mock import AsyncMock
+
+        from apps.memory_api.main import app
 
         with TestClient(app) as client:
             # SYSTEM 40.19: Mock LLM to avoid hangs

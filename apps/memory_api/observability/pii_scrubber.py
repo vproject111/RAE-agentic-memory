@@ -55,9 +55,17 @@ PII_PATTERNS = {
 
 # Technical terms to EXEMPT from name_pattern (White list)
 TECHNICAL_EXEMPTIONS = [
-    "Core Objective", "Query Signature", "Detection Logic", "System 93",
-    "Math Fallback", "Stability Mode", "Episodic Log", "Timeline Indexing",
-    "Candidate Gating", "Vector Scoring", "Lexical Filtering"
+    "Core Objective",
+    "Query Signature",
+    "Detection Logic",
+    "System 93",
+    "Math Fallback",
+    "Stability Mode",
+    "Episodic Log",
+    "Timeline Indexing",
+    "Candidate Gating",
+    "Vector Scoring",
+    "Lexical Filtering",
 ]
 
 
@@ -144,7 +152,10 @@ class PIIScrubber:
                 def replacer(m: Any, r: str = replacement) -> str:
                     match_str = m.group()
                     # Skip if match is in technical exemptions
-                    if any(term.lower() in match_str.lower() for term in TECHNICAL_EXEMPTIONS):
+                    if any(
+                        term.lower() in match_str.lower()
+                        for term in TECHNICAL_EXEMPTIONS
+                    ):
                         return match_str
                     return self._preserve_length(match_str, r)
 
@@ -153,10 +164,13 @@ class PIIScrubber:
                 # Simple replacement
                 def simple_replacer(m: Any, r: str = replacement) -> str:
                     match_str = m.group()
-                    if any(term.lower() in match_str.lower() for term in TECHNICAL_EXEMPTIONS):
+                    if any(
+                        term.lower() in match_str.lower()
+                        for term in TECHNICAL_EXEMPTIONS
+                    ):
                         return match_str
                     return r
-                
+
                 scrubbed = pattern.sub(simple_replacer, scrubbed)
 
         return scrubbed

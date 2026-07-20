@@ -38,6 +38,7 @@ from apps.memory_api.models.dashboard_models import (
     RLSVerificationStatus,
     SourceTrustMetric,
 )
+from apps.memory_api.services.alert_service import AlertService
 from apps.memory_api.services.rae_core_service import RAECoreService
 
 logger = logging.getLogger(__name__)
@@ -122,8 +123,11 @@ class ComplianceService:
         },
     }
 
-    def __init__(self, rae_service: RAECoreService):
+    def __init__(
+        self, rae_service: RAECoreService, alert_service: Optional[AlertService] = None
+    ):
         self.rae_service = rae_service
+        self.alert_service = alert_service or AlertService()
 
     async def generate_compliance_report(
         self,
@@ -157,15 +161,11 @@ class ComplianceService:
         governance_metrics = await self._get_governance_metrics(tenant_id, project)
         risk_metrics = await self._get_risk_management_metrics(tenant_id, project)
         data_metrics = await self._get_data_management_metrics(tenant_id, project)
-        transparency_metrics = await self._get_transparency_metrics(
-            tenant_id, project
-        )
+        transparency_metrics = await self._get_transparency_metrics(tenant_id, project)
         human_oversight_metrics = await self._get_human_oversight_metrics(
             tenant_id, project
         )
-        security_metrics = await self._get_security_privacy_metrics(
-            tenant_id, project
-        )
+        security_metrics = await self._get_security_privacy_metrics(tenant_id, project)
 
         # Get risk register
         active_risks = await self._get_active_risks(tenant_id, project)
@@ -174,9 +174,7 @@ class ComplianceService:
         retention_metrics = await self._get_retention_metrics(tenant_id, project)
 
         # Get source trust metrics
-        source_trust_metrics = await self._get_source_trust_metrics(
-            tenant_id, project
-        )
+        source_trust_metrics = await self._get_source_trust_metrics(tenant_id, project)
 
         # Get audit trail completeness
         audit_completeness = await self._get_audit_trail_completeness(
@@ -281,6 +279,18 @@ class ComplianceService:
             },
         )
 
+        if overall_score < 80.0:
+            self.alert_service.trigger_compliance_alert(
+                tenant_id,
+                overall_score,
+                (
+                    overall_status.value
+                    if hasattr(overall_status, "value")
+                    else str(overall_status)
+                ),
+                [i.description for i in issues],
+            )
+
         return report
 
     async def verify_rls_status(self, tenant_id: str) -> RLSVerificationStatus:
@@ -297,12 +307,12 @@ class ComplianceService:
         """
         critical_tables = [
             "memories",
-            "semantic_nodes",
-            "graph_triples",
             "reflections",
-            "cost_logs",
-            "audit_logs",
-            "deletion_audit_log",
+            "access_logs",
+            "knowledge_graph_nodes",
+            "knowledge_graph_edges",
+            "token_savings_log",
+            "budgets",
         ]
 
         tables_with_rls = []
@@ -326,14 +336,12 @@ class ComplianceService:
                     tables_without_rls.append(table)
 
             # Count RLS policies
-            policies = await conn.fetch(
-                """
+            policies = await conn.fetch("""
                 SELECT COUNT(*) as total,
                        COUNT(CASE WHEN qual IS NOT NULL THEN 1 END) as active
                 FROM pg_policies
                 WHERE schemaname = 'public'
-                """
-            )
+                """)
 
             total_policies = policies[0]["total"] if policies else 0
             active_policies = policies[0]["active"] if policies else 0
@@ -350,6 +358,9 @@ class ComplianceService:
 
         # Determine verification status
         verification_passed = all_protected and active_policies > 0
+
+        if not verification_passed:
+            self.alert_service.trigger_rls_alert(tenant_id, tables_without_rls)
 
         # Generate issues and recommendations
         issues = []
@@ -623,12 +634,8 @@ class ComplianceService:
         )
 
         # 8.2 - Context provenance and decision lineage
-        context_quality = await self._get_context_provenance_quality(
-            tenant_id, project
-        )
-        decision_coverage = await self._get_decision_audit_coverage(
-            tenant_id, project
-        )
+        context_quality = await self._get_context_provenance_quality(tenant_id, project)
+        decision_coverage = await self._get_decision_audit_coverage(tenant_id, project)
 
         combined_provenance = (context_quality + decision_coverage) / 2
 
@@ -741,9 +748,7 @@ class ComplianceService:
 
         return metrics
 
-    async def _get_active_risks(
-        self, tenant_id: str, project: str
-    ) -> List[RiskMetric]:
+    async def _get_active_risks(self, tenant_id: str, project: str) -> List[RiskMetric]:
         """Get active risks from risk register (parsed from documentation)"""
         # This is a simplified version - in production, risks would be in database
         # For now, we return example risks based on RAE-Risk-Register.md
@@ -827,13 +832,18 @@ class ComplianceService:
             result = await conn.fetchrow(
                 """
                 SELECT
-                    COUNT(CASE WHEN trust_level = 'high' THEN 1 END) as high_trust,
-                    COUNT(CASE WHEN trust_level = 'medium' THEN 1 END) as medium_trust,
-                    COUNT(CASE WHEN trust_level = 'low' THEN 1 END) as low_trust,
-                    COUNT(CASE WHEN trust_level = 'unverified' THEN 1 END) as unverified,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'high' THEN 1 END) as high_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'medium' THEN 1 END) as medium_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'low' THEN 1 END) as low_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'unverified' THEN 1 END) as unverified,
                     COUNT(*) as total
                 FROM memories
-                WHERE tenant_id = $1
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                )
                 """,
                 tenant_id,
             )
@@ -923,9 +933,14 @@ class ComplianceService:
                 """
                 SELECT
                     COUNT(*) as total,
-                    COUNT(CASE WHEN trust_level != 'unverified' THEN 1 END) as verified
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') != 'unverified' THEN 1 END) as verified
                 FROM memories
-                WHERE tenant_id = $1
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                )
                 """,
                 tenant_id,
             )
@@ -998,7 +1013,7 @@ class ComplianceService:
                     COUNT(*) as total_checks,
                     COUNT(CASE WHEN compliant THEN 1 END) as compliant_checks
                 FROM policy_enforcement_results
-                WHERE tenant_id = $1
+                WHERE tenant_id = $1::text
                     AND checked_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1020,7 +1035,7 @@ class ComplianceService:
                     COUNT(CASE WHEN new_state = 'open' THEN 1 END) as times_opened,
                     COUNT(CASE WHEN new_state = 'closed' AND previous_state = 'half_open' THEN 1 END) as recoveries
                 FROM circuit_breaker_events
-                WHERE tenant_id = $1
+                WHERE tenant_id = $1::text
                     AND event_time >= NOW() - INTERVAL '7 days'
                 """,
                 tenant_id,
@@ -1051,7 +1066,12 @@ class ComplianceService:
                     AVG(coverage_score) as avg_coverage,
                     COUNT(*) as context_count
                 FROM decision_contexts
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND created_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1071,16 +1091,19 @@ class ComplianceService:
 
             return quality_score
 
-    async def _get_decision_audit_coverage(
-        self, tenant_id: str, project: str
-    ) -> float:
+    async def _get_decision_audit_coverage(self, tenant_id: str, project: str) -> float:
         """Calculate decision audit coverage percentage"""
         async with self.rae_service.db.acquire() as conn:
             result = await conn.fetchrow(
                 """
                 SELECT COUNT(*) as decision_count
                 FROM decision_records
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND decided_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1108,7 +1131,12 @@ class ComplianceService:
                     COUNT(*) as total_requests,
                     COUNT(CASE WHEN risk_level IN ('high', 'critical') THEN 1 END) as high_risk_requests
                 FROM approval_requests
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND requested_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1122,9 +1150,7 @@ class ComplianceService:
             # All high-risk operations are going through approval workflow
             return 100.0
 
-    async def _get_high_risk_approval_rate(
-        self, tenant_id: str, project: str
-    ) -> float:
+    async def _get_high_risk_approval_rate(self, tenant_id: str, project: str) -> float:
         """Calculate approval rate for high-risk operations"""
         async with self.rae_service.db.acquire() as conn:
             result = await conn.fetchrow(
@@ -1133,7 +1159,12 @@ class ComplianceService:
                     COUNT(*) as total_high_risk,
                     COUNT(CASE WHEN status IN ('approved', 'auto_approved') THEN 1 END) as approved_count
                 FROM approval_requests
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND risk_level IN ('high', 'critical')
                     AND requested_at >= NOW() - INTERVAL '30 days'
                 """,

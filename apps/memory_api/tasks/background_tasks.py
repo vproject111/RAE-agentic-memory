@@ -431,9 +431,7 @@ def run_entity_resolution_task(project: str = "default", tenant_id: str = "defau
 
 
 @celery_app.task
-def run_community_detection_task(
-    project: str = "default", tenant_id: str = "default"
-):
+def run_community_detection_task(project: str = "default", tenant_id: str = "default"):
     """
     Periodic task for Pillar 2: Community Detection & Summarization.
     Generates 'Wisdom' by summarizing clusters.
@@ -442,9 +440,7 @@ def run_community_detection_task(
     async def main():
         async with rae_context() as rae_service:
             service = CommunityDetectionService(rae_service=rae_service)
-            await service.run_community_detection_and_summarization(
-                project, tenant_id
-            )
+            await service.run_community_detection_and_summarization(project, tenant_id)
 
     asyncio.run(main())
 
@@ -765,6 +761,69 @@ def run_nightly_quality_audit(self):
     return asyncio.run(main())
 
 
+@celery_app.task(bind=True, max_retries=3)
+def sync_mesh_peers_task(self):
+    """
+    Periodically synchronizes memories with registered mesh peers.
+    Enforces Redis advisory locks `mesh_sync_{peer_id}` around peer sync loops.
+    Sorts peer UUIDs lexicographically to prevent deadlocks.
+    """
+    import asyncio
+    from apps.memory_api.services.mesh_service import MeshService
+
+    async def main():
+        async with rae_context() as rae_service:
+            try:
+                mesh_service = MeshService(
+                    pool=rae_service.postgres_pool,
+                    redis_client=rae_service.redis_client,
+                    secret_key=settings.SECRET_KEY
+                )
+                peers = await mesh_service.list_peers()
+                if not peers:
+                    logger.info("sync_mesh_peers_task_no_peers")
+                    return {"peers_synced": 0, "details": {}}
+
+                # Sort peer IDs lexicographically to prevent deadlocks
+                sorted_peers = sorted(peers, key=lambda p: p.peer_id)
+                results = {}
+
+                for peer in sorted_peers:
+                    peer_id = peer.peer_id
+                    lock_key = f"mesh_sync_{peer_id}"
+                    locked = False
+                    
+                    if rae_service.redis_client is not None:
+                        # Enforce Redis advisory lock
+                        locked = await rae_service.redis_client.set(lock_key, "1", ex=300, nx=True)
+                        if not locked:
+                            logger.warning("sync_mesh_peers_lock_conflict", peer_id=peer_id)
+                            results[peer_id] = "locked"
+                            continue
+
+                    try:
+                        logger.info("sync_mesh_peers_started", peer_id=peer_id)
+                        synced_count = await mesh_service.push_memories_to_peer(peer_id)
+                        results[peer_id] = f"success: {synced_count} memories"
+                        logger.info("sync_mesh_peers_complete", peer_id=peer_id, count=synced_count)
+                    except Exception as e:
+                        logger.error("sync_mesh_peers_failed", peer_id=peer_id, error=str(e))
+                        results[peer_id] = f"failed: {str(e)}"
+                    finally:
+                        if locked and rae_service.redis_client is not None:
+                            await rae_service.redis_client.delete(lock_key)
+
+                return {
+                    "peers_synced": len(peers),
+                    "details": results
+                }
+            except Exception as e:
+                logger.error("sync_mesh_peers_task_error", error=str(e))
+                raise self.retry(exc=e, countdown=60)
+
+    return asyncio.run(main())
+
+
 # --- Celery Beat Schedule ---
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
@@ -822,3 +881,10 @@ def setup_periodic_tasks(sender, **kwargs):
         run_consistency_check_task.s(),
         name="run consistency check daily at 4 AM",
     )
+    # Schedule Mesh Peer sync every 5 minutes
+    sender.add_periodic_task(
+        300.0,
+        sync_mesh_peers_task.s(),
+        name="synchronize with mesh peers every 5 mins",
+    )
+

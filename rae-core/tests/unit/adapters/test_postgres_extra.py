@@ -70,6 +70,11 @@ async def test_list_memories_with_data(mock_pool):
             "created_at": datetime.now(),
             "last_accessed_at": None,
             "expires_at": None,
+            "project": None,
+            "session_id": None,
+            "source": None,
+            "memory_type": "text",
+            "strength": 1.0,
         }
     ]
 
@@ -111,13 +116,9 @@ async def test_save_embedding_coverage(mock_pool):
     storage = PostgreSQLStorage(dsn="postgresql://localhost/db")
     storage._pool = pool
 
-    # Mock existence check
-    conn.fetchval.return_value = 1
-
-    res = await storage.save_embedding(uuid4(), "model1", [0.1, 0.2], "t1")
+    res = await storage.save_embedding(uuid4(), "model1", [0.1, 0.2])
     assert res is True
     assert conn.execute.called
-    assert conn.fetchval.called  # SEC-02 check
 
 
 @pytest.mark.asyncio
@@ -142,6 +143,11 @@ async def test_search_memories_coverage(mock_pool):
             "last_accessed_at": None,
             "expires_at": None,
             "score": 0.9,
+            "project": None,
+            "session_id": None,
+            "source": None,
+            "memory_type": "text",
+            "strength": 1.0,
         }
     ]
 

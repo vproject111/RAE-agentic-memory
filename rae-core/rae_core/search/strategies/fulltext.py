@@ -48,6 +48,8 @@ class FullTextStrategy(SearchStrategy):
                 continue
 
             score = float(r.get("score", 0.0))
+            if score <= 0.0:
+                continue
             importance = float(r.get("importance", 0.0))
             output.append((m_id, score, importance))
 

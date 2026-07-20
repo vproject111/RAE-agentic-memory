@@ -2,7 +2,11 @@
 
 **Auto-Generated** from requirements files
 
+<<<<<<< HEAD
 **Last Updated:** 2026-07-20 00:24:41
+=======
+**Last Updated:** 2026-07-17 14:43:14
+>>>>>>> release/3.8.0
 
 ## Core Dependencies
 

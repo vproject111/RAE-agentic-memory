@@ -8,7 +8,6 @@ import pytest
 from rae_core.search.engine import HybridSearchEngine
 
 
-
 class TestHybridSearchEngineExtended:
     @pytest.fixture
     def mock_strategy(self):

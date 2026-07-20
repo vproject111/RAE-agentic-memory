@@ -661,9 +661,7 @@ class DashboardWebSocketService:
                 logger.error("health_monitoring_error", error=str(e))
                 await asyncio.sleep(10)
 
-    async def _check_system_health(
-        self, tenant_id: str, project: str
-    ) -> SystemHealth:
+    async def _check_system_health(self, tenant_id: str, project: str) -> SystemHealth:
         """
         Check system health for a tenant/project.
 

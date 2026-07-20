@@ -69,13 +69,11 @@ class NodeRepository:
 
     async def list_online_nodes(self) -> list[ComputeNode]:
         """List all nodes that are currently ONLINE and have a recent heartbeat."""
-        records = await self.pool.fetch(
-            """
+        records = await self.pool.fetch("""
             SELECT * FROM compute_nodes
             WHERE status = 'ONLINE'
               AND last_heartbeat > NOW() - INTERVAL '5 minutes'
-            """
-        )
+            """)
         nodes = []
         for record in records:
             data = dict(record)

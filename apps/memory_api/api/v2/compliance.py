@@ -15,7 +15,7 @@ from apps.memory_api.dependencies import get_db_pool
 from apps.memory_api.models import OperationRiskLevel
 from apps.memory_api.observability.rae_tracing import get_tracer
 from apps.memory_api.security import auth
-from apps.memory_api.security.dependencies import require_admin, verify_tenant_access
+from apps.memory_api.security.dependencies import require_admin
 from apps.memory_api.services.human_approval_service import (
     ApprovalStatus,
     HumanApprovalService,

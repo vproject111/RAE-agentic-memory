@@ -40,6 +40,17 @@ class InMemoryStorage(IMemoryStorage):
                 "tenant_id": tenant_id,
                 "agent_id": agent_id,
                 "importance": kwargs.get("importance", 0.5),
+                "tags": kwargs.get("tags") or [],
+                "metadata": kwargs.get("metadata") or {},
+                "governance": kwargs.get("governance") or {},
+                "info_class": kwargs.get("info_class", "internal"),
+                "project": kwargs.get("project"),
+                "session_id": kwargs.get("session_id"),
+                "source": kwargs.get("source"),
+                "expires_at": kwargs.get("expires_at"),
+                "memory_type": kwargs.get("memory_type", "text"),
+                "strength": kwargs.get("strength", 1.0),
+                "embedding": kwargs.get("embedding"),
                 "created_at": now,
             }
             self._memories[memory_id] = memory
@@ -109,11 +120,45 @@ class InMemoryStorage(IMemoryStorage):
         query: str,
         tenant_id: str,
         agent_id: str,
-        layer: str,
+        layer: str | None = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        return []
+        async with self._lock:
+            results = []
+            project = kwargs.get("project")
+            filters = kwargs.get("filters") or {}
+
+            for m in self._memories.values():
+                if m.get("tenant_id") != tenant_id:
+                    continue
+                if agent_id and agent_id != "default" and m.get("agent_id") != agent_id:
+                    continue
+                if layer and m.get("layer") != layer:
+                    continue
+                if project and m.get("project") != project:
+                    continue
+
+                if query and query != "*":
+                    if query.lower() not in m.get("content", "").lower():
+                        continue
+
+                match_filters = True
+                for fk, fv in filters.items():
+                    if fk == "governance.is_failure":
+                        gov = m.get("governance") or {}
+                        is_fail = gov.get("is_failure")
+                        if str(is_fail).lower() != str(fv).lower():
+                            match_filters = False
+                            break
+
+                if not match_filters:
+                    continue
+
+                results.append(m.copy())
+
+            results.sort(key=lambda x: x.get("importance", 0.5), reverse=True)
+            return results[:limit]
 
     async def delete_expired_memories(
         self, tenant_id: str, agent_id: str | None = None, layer: str | None = None

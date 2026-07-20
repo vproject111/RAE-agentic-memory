@@ -131,13 +131,6 @@ class QdrantVectorStore(IVectorStore):
         if vector_name in self._known_vectors:
             return
 
-        # Handle Named Vectors
-        vector_data: dict[str, list[float]] | list[float]
-        if isinstance(embedding, dict):
-            vector_data = embedding
-        else:
-            vector_data = {"dense": embedding}
-
         try:
             # check again against API to be safe (race conditions)
             collection_info = await self.client.get_collection(self.collection_name)
@@ -466,11 +459,7 @@ class QdrantVectorStore(IVectorStore):
             memory_vector = await self.get_vector(memory_id, tenant_id)
             final_score = score
             if memory_vector:
-                # Calculate cosine similarity
-                dot = sum(a * b for a, b in zip(query_embedding, memory_vector))
-                mag1 = math.sqrt(sum(a * a for a in query_embedding))
-                mag2 = math.sqrt(sum(b * b for b in memory_vector))
-                similarity = dot / (mag1 * mag2) if (mag1 * mag2) > 0 else 0.0
+                similarity = self._cosine_similarity(query_embedding, memory_vector)
 
                 if similarity < contradiction_threshold:
                     final_score = score * penalty_factor
@@ -478,3 +467,14 @@ class QdrantVectorStore(IVectorStore):
             penalized_results.append((memory_id, final_score))
 
         return sorted(penalized_results, key=lambda x: x[1], reverse=True)
+
+    def _cosine_similarity(self, v1: list[float], v2: list[float]) -> float:
+        """Calculate cosine similarity between two vectors."""
+        if len(v1) != len(v2) or not v1 or not v2:
+            return 0.0
+        dot = sum(a * b for a, b in zip(v1, v2))
+        mag1 = math.sqrt(sum(a * a for a in v1))
+        mag2 = math.sqrt(sum(b * b for b in v2))
+        if mag1 == 0.0 or mag2 == 0.0:
+            return 0.0
+        return dot / (mag1 * mag2)

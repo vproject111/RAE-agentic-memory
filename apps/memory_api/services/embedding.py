@@ -1,5 +1,5 @@
-import os
 import hashlib
+import os
 from typing import Any, List, Optional, cast
 
 from apps.llm.broker.llm_router import LLMRouter
@@ -11,7 +11,9 @@ from rae_core.interfaces.embedding import IEmbeddingProvider
 
 
 class EmbeddingService:
-    def __init__(self, settings: Optional[Any] = None, router: Optional[LLMRouter] = None):
+    def __init__(
+        self, settings: Optional[Any] = None, router: Optional[LLMRouter] = None
+    ):
         self._settings = settings
         self._initialized = False
         self.router = router or LLMRouter()
@@ -118,7 +120,9 @@ class EmbeddingService:
                 result = await client.generate_embeddings(texts)
                 return cast(List[List[float]], result.get("embeddings", []))
             except Exception as ml_err:
-                print(f"⚠️ [EmbeddingService] Remote ML service call failed: {ml_err}. Falling back to local/native embedder.")
+                print(
+                    f"⚠️ [EmbeddingService] Remote ML service call failed: {ml_err}. Falling back to local/native embedder."
+                )
             finally:
                 await client.close()
 
@@ -140,7 +144,9 @@ class EmbeddingService:
 
         # Use LLMRouter for embeddings
         try:
-            request = EmbeddingRequest(model=self.embedding_model, input=processed_texts)
+            request = EmbeddingRequest(
+                model=self.embedding_model, input=processed_texts
+            )
 
             response = await self.router.embed_batch(request)
             return response.embeddings
@@ -189,7 +195,9 @@ class LocalEmbeddingProvider(IEmbeddingProvider):
     def get_dimension(self) -> int:
         """Get embedding dimension."""
         self.service._initialize_model()
-        return self.service.get_dimension_for_model(os.getenv("LITELLM_MODEL", "gpt-4o"))
+        return self.service.get_dimension_for_model(
+            os.getenv("LITELLM_MODEL", "gpt-4o")
+        )
 
 
 class RemoteEmbeddingProvider(IEmbeddingProvider):

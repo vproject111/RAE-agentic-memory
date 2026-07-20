@@ -34,8 +34,7 @@ class SQLiteGraphStore(IGraphStore):
             await db.execute("PRAGMA journal_mode=WAL")
 
             # Nodes table
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_graph_nodes (
                     id TEXT PRIMARY KEY,
                     type TEXT NOT NULL,
@@ -43,12 +42,10 @@ class SQLiteGraphStore(IGraphStore):
                     properties TEXT,  -- JSON object
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
-            """
-            )
+            """)
 
             # Edges table
-            await db.execute(
-                """
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_graph_edges (
                     source_id TEXT NOT NULL,
                     target_id TEXT NOT NULL,
@@ -61,8 +58,7 @@ class SQLiteGraphStore(IGraphStore):
                     FOREIGN KEY (source_id) REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
                     FOREIGN KEY (target_id) REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE
                 )
-            """
-            )
+            """)
 
             # Indexes
             await db.execute(

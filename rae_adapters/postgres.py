@@ -43,12 +43,17 @@ class PostgreSQLStorage(IMemoryStorage):
         new_metadata = kwargs.get("metadata", {})
         new_metadata["last_sync_instance"] = instance_id
         
+        expires_at = kwargs.get("expires_at")
+        if not expires_at and kwargs.get("ttl"):
+            from datetime import timedelta
+            expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=int(kwargs["ttl"]))
+        
         async with pool.acquire() as conn:
             # 3. Federated UPSERT (Evidence Consolidation)
             sql = """
                 INSERT INTO memories (
-                    id, content, content_hash, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project, source, human_label
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                    id, content, content_hash, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project, source, human_label, session_id, memory_type, expires_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                 ON CONFLICT (tenant_id, content_hash) DO UPDATE SET
                     importance = GREATEST(memories.importance, EXCLUDED.importance),
                     usage_count = memories.usage_count + 1,
@@ -75,7 +80,10 @@ class PostgreSQLStorage(IMemoryStorage):
                 datetime.now(timezone.utc).replace(tzinfo=None),
                 kwargs.get("project"),
                 source,
-                kwargs.get("human_label")
+                kwargs.get("human_label"),
+                kwargs.get("session_id"),
+                kwargs.get("memory_type", "text"),
+                expires_at,
             )
             return row["id"]
 

@@ -488,6 +488,11 @@ class EmitEventResponse(BaseModel):
     triggers_matched: int = Field(0, ge=0)
     actions_queued: int = Field(0, ge=0)
     message: str = "Event emitted successfully"
+    target_response: Optional[Dict[str, Any]] = Field(
+        default=None, description="Response payload from target agent"
+    )
+    autonomy_state: Optional[str] = Field(None, max_length=50)
+    autonomy_journal: Optional[List[str]] = Field(None, max_length=100)
 
 
 class BridgeInteractionRequest(BaseModel):
@@ -528,6 +533,20 @@ class BridgeInteractionRequest(BaseModel):
         None,
         description="Optional readable label. If missing, RAE generates one intelligently.",
         examples=["STABILIZACJA INFRASTRUKTURY: Python 3.14"],
+    )
+    strategy: Optional[str] = Field(
+        None,
+        description="Optional routing/reasoning strategy",
+    )
+    autonomy_state: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Current AutonomyState (e.g. DRY_RUN_PASSED)",
+    )
+    autonomy_journal: Optional[List[str]] = Field(
+        None,
+        max_length=100,
+        description="History of AutonomyState transitions",
     )
 
 

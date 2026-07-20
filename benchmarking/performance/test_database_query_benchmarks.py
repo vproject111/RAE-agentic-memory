@@ -20,14 +20,12 @@ async def db_pool():
 async def setup_db(db_pool):
     # Ensure table exists for benchmarking
     async with db_pool.acquire() as conn:
-        await conn.execute(
-            """
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS benchmark_data (
                 id SERIAL PRIMARY KEY,
                 value TEXT
             );
-        """
-        )
+        """)
         # Insert some initial data
         await conn.execute(
             "INSERT INTO benchmark_data (value) SELECT 'test_value_' || generate_series(1, 1000);"

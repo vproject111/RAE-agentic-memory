@@ -47,7 +47,7 @@ async def get_theory_details(name: str):
                 "tier_0_base": arm.tier_0_base,
             },
         }
-    except Exception as e:
+    except Exception:
         return {"status": "error", "message": f"Theory '{name}' not found in Atlas."}
 
 

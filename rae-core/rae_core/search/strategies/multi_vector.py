@@ -40,26 +40,28 @@ class MultiVectorSearchStrategy(SearchStrategy):
         # Determine which layers to search
         safe_filters = filters.copy() if filters else {}
         layers_to_search = self.target_layers
-        
+
         # If a specific layer is forced via filters or kwargs, respect it
         forced_layer = safe_filters.get("layer") or kwargs.get("layer")
         if forced_layer:
             layers_to_search = [forced_layer]
-            
+
         # Remove 'layer' from base kwargs so we can inject it dynamically per task
         safe_kwargs = kwargs.copy()
         safe_kwargs.pop("layer", None)
         safe_filters.pop("layer", None)
 
         tasks = []
-        task_metadata = [] # Keep track of (vector_name, layer) for each task
+        task_metadata = []  # Keep track of (vector_name, layer) for each task
 
-        # Generate embeddings for all providers first (can be done sequentially as it's usually fast, 
+        # Generate embeddings for all providers first (can be done sequentially as it's usually fast,
         # or we could parallelize it too, but API limits might be an issue. Let's do it per provider).
         embeddings_cache = {}
         for store, embedder, vector_name in self.strategies_list:
             try:
-                embeddings_cache[vector_name] = await embedder.embed_text(query, task_type="search_query")
+                embeddings_cache[vector_name] = await embedder.embed_text(
+                    query, task_type="search_query"
+                )
             except Exception:
                 continue
 
@@ -67,13 +69,13 @@ class MultiVectorSearchStrategy(SearchStrategy):
         for store, embedder, vector_name in self.strategies_list:
             if vector_name not in embeddings_cache:
                 continue
-                
+
             query_embedding = embeddings_cache[vector_name]
 
             for layer in layers_to_search:
                 layer_filters = safe_filters.copy()
                 layer_filters["layer"] = layer
-                
+
                 tasks.append(
                     store.search_similar(
                         query_embedding=query_embedding,
@@ -95,11 +97,11 @@ class MultiVectorSearchStrategy(SearchStrategy):
 
         # Fuse results using Exponential Rank Sharpening
         fused_scores: dict[UUID, float] = {}
-        
+
         for meta, strategy_res in zip(task_metadata, all_results):
             if isinstance(strategy_res, Exception) or not strategy_res:
                 continue
-                
+
             for rank, result in enumerate(strategy_res):
                 m_id = result[0]
                 # Using the same constant as System 37.0 for consistency

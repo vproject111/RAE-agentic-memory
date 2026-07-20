@@ -279,13 +279,11 @@ class MetricsRepository:
                 tenant_id,
             )
         else:
-            records = await self.db.fetch(
-                """
+            records = await self.db.fetch("""
                 SELECT DISTINCT metric_name
                 FROM metrics_timeseries
                 ORDER BY metric_name
-                """
-            )
+                """)
 
         return [r["metric_name"] for r in records]
 

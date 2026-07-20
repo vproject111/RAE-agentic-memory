@@ -4,7 +4,9 @@ Authentication and Authorization Module
 Provides API key authentication and optional JWT token verification.
 """
 
+import asyncio
 import os
+import time
 from typing import Optional, cast
 from uuid import UUID
 
@@ -19,6 +21,91 @@ logger = structlog.get_logger(__name__)
 # Security schemes
 security = HTTPBearer(auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+# Globals for Keycloak JWKS cache
+_jwks_cache: dict = {}
+_jwks_expires_at: float = 0.0
+_jwks_last_refreshed: float = 0.0
+_jwks_lock = asyncio.Lock()
+
+
+async def _refresh_jwks() -> None:
+    """
+    Fetch and cache JWKS from Keycloak.
+    Uses Cache-Control max-age header to determine expiration time.
+    """
+    global _jwks_cache, _jwks_expires_at, _jwks_last_refreshed
+
+    import httpx
+    from jose import JWTError
+
+    jwks_url = f"{settings.KEYCLOAK_URL.rstrip('/')}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs"
+    logger.info("fetching_keycloak_jwks", url=jwks_url)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(jwks_url)
+            response.raise_for_status()
+            
+            # Parse Cache-Control headers
+            max_age = 86400  # default 24 hours
+            cache_control = response.headers.get("Cache-Control", "")
+            if "max-age" in cache_control:
+                for part in cache_control.split(","):
+                    part = part.strip()
+                    if part.startswith("max-age="):
+                        try:
+                            max_age = int(part.split("=")[1])
+                        except ValueError:
+                            pass
+                            
+            jwks = response.json()
+            keys = jwks.get("keys", [])
+            
+            new_cache = {}
+            for key in keys:
+                if "kid" in key:
+                    new_cache[key["kid"]] = key
+                    
+            _jwks_cache = new_cache
+            _jwks_expires_at = time.time() + max_age
+            _jwks_last_refreshed = time.time()
+            logger.info("keycloak_jwks_refreshed", keys_count=len(_jwks_cache), expires_in=max_age)
+    except Exception as e:
+        logger.error("failed_to_refresh_jwks", error=str(e))
+        raise JWTError(f"Failed to fetch JWKS from Keycloak: {str(e)}")
+
+
+async def get_keycloak_jwk(kid: str) -> dict:
+    """
+    Get public JWK for the given key ID (kid) from cache or Keycloak certs endpoint.
+    """
+    global _jwks_cache, _jwks_expires_at, _jwks_last_refreshed
+
+    from jose import JWTError
+
+    now = time.time()
+    if _jwks_cache and now < _jwks_expires_at and kid in _jwks_cache:
+        return _jwks_cache[kid]
+
+    async with _jwks_lock:
+        # Re-check inside lock
+        now = time.time()
+        if _jwks_cache and now < _jwks_expires_at and kid in _jwks_cache:
+            return _jwks_cache[kid]
+
+        # Rate limit refreshes to prevent thundering herd / DoS on missing keys
+        if now - _jwks_last_refreshed < 30.0:
+            if kid in _jwks_cache:
+                return _jwks_cache[kid]
+            raise JWTError(f"Public key for kid '{kid}' not found in Keycloak JWKS (recently refreshed)")
+
+        # Refresh cache
+        await _refresh_jwks()
+        
+        if kid not in _jwks_cache:
+            raise JWTError(f"Public key for kid '{kid}' not found in Keycloak JWKS")
+            
+        return _jwks_cache[kid]
 
 
 async def verify_api_key(
@@ -65,9 +152,10 @@ async def verify_token(
     """
     Verify authentication token (Bearer token or API key).
 
-    Supports two authentication methods:
-    1. Bearer token (JWT) in Authorization header
-    2. API key in X-API-Key header
+    Supports three authentication methods:
+    1. API key in X-API-Key header
+    2. Keycloak Bearer token (JWT) verified via RS256 JWKS
+    3. Legacy Bearer token (JWT) (Google OIDC or internal HS256)
 
     Args:
         credentials: Bearer token credentials
@@ -91,11 +179,65 @@ async def verify_token(
     if credentials:
         token = credentials.credentials
 
+        # If Keycloak authentication is enabled
+        if settings.ENABLE_KEYCLOAK_AUTH:
+            from jose import jwt, JWTError
+            try:
+                # 1. Retrieve the unverified header to get the key ID (kid)
+                headers = jwt.get_unverified_header(token)
+                kid = headers.get("kid")
+                alg = headers.get("alg")
+                if not kid:
+                    raise JWTError("Token header is missing 'kid'")
+                if alg != "RS256":
+                    raise JWTError(f"Unsupported algorithm: {alg}. Expected RS256")
+
+                # 2. Get the public key corresponding to the kid
+                key = await get_keycloak_jwk(kid)
+
+                # 3. Decode and verify the token signature
+                expected_issuer = f"{settings.KEYCLOAK_URL.rstrip('/')}/realms/{settings.KEYCLOAK_REALM}"
+                allowed_audiences = [settings.KEYCLOAK_BACKEND_CLIENT_ID, settings.KEYCLOAK_FRONTEND_CLIENT_ID]
+
+                # 3. Decode and verify the token signature, issuer, and audience
+                decoded = jwt.decode(
+                    token,
+                    key,
+                    algorithms=["RS256"],
+                    audience=allowed_audiences,
+                    issuer=expected_issuer,
+                    options={
+                        "verify_aud": True,
+                        "verify_iss": True,
+                        "verify_signature": True,
+                    }
+                )
+
+                if "sub" not in decoded:
+                    raise JWTError("Keycloak token is missing 'sub' (subject) claim")
+
+                logger.info("keycloak_jwt_verification_succeeded", user_id=decoded["sub"])
+                return {
+                    "authenticated": True,
+                    "method": "keycloak",
+                    "user_id": decoded["sub"],
+                    "email": decoded.get("email"),
+                    "token": token,
+                    "claims": decoded,
+                }
+            except JWTError as e:
+                logger.warning("keycloak_jwt_verification_failed", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid Keycloak token: {str(e)}",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
         # If JWT auth is disabled, we can still use the token for non-verified identity
         if not settings.ENABLE_JWT_AUTH:
             return {"authenticated": True, "method": "bearer", "token": token}
 
-        # --- JWT Verification Logic ---
+        # --- Legacy JWT Verification Logic ---
         from google.auth.transport import requests as google_requests
         from google.oauth2 import id_token
         from jose import JWTError, jwt
@@ -161,8 +303,8 @@ async def verify_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # If both API key and token authentication are disabled, allow access but as unauthenticated
-    if not settings.ENABLE_API_KEY_AUTH and not settings.ENABLE_JWT_AUTH:
+    # If all authentication methods are disabled, allow access but as unauthenticated
+    if not settings.ENABLE_API_KEY_AUTH and not settings.ENABLE_JWT_AUTH and not settings.ENABLE_KEYCLOAK_AUTH:
         return {"authenticated": False, "method": "none"}
 
     # No valid authentication method was provided (no API key, no Bearer token)
@@ -210,6 +352,17 @@ async def get_user_id_from_token(request: Request) -> Optional[str]:
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
+
+        # If Keycloak is enabled, try that first
+        if settings.ENABLE_KEYCLOAK_AUTH:
+            from jose import jwt
+            try:
+                claims = jwt.get_unverified_claims(token)
+                user_id_val = claims.get("sub")
+                if user_id_val:
+                    return str(user_id_val)
+            except Exception:
+                pass
 
         # If JWT is enabled, decode it to get the real user_id
         if settings.ENABLE_JWT_AUTH:

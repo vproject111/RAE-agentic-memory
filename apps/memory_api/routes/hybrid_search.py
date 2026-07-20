@@ -22,7 +22,6 @@ from apps.memory_api.models.hybrid_search_models import (
 )
 from apps.memory_api.services.hybrid_search_service import HybridSearchService
 from apps.memory_api.services.query_analyzer import QueryAnalyzer
-
 from apps.memory_api.services.rae_core_service import (
     RAECoreService,
     get_rae_core_service,
@@ -101,7 +100,9 @@ async def hybrid_search(
 
 @router.post("/analyze", response_model=QueryAnalysisResponse)
 async def analyze_query(
-    req: Request, request: QueryAnalysisRequest, rae_service: RAECoreService = Depends(get_rae_core_service)
+    req: Request,
+    request: QueryAnalysisRequest,
+    rae_service: RAECoreService = Depends(get_rae_core_service),
 ):
     """
     Analyze query intent and recommend search strategies.
@@ -287,7 +288,8 @@ async def calculate_weights_for_query(request: QueryAnalysisRequest):
 
 @router.post("/compare")
 async def compare_search_strategies(
-    request: HybridSearchRequest, rae_service: RAECoreService = Depends(get_rae_core_service)
+    request: HybridSearchRequest,
+    rae_service: RAECoreService = Depends(get_rae_core_service),
 ):
     """
     Compare results from different search strategies side-by-side.

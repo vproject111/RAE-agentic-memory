@@ -129,9 +129,7 @@ class ScoringWeights(BaseModel):
     importance: float = Field(
         default=0.3, ge=0.0, description="Importance score weight"
     )
-    recency: float = Field(
-        default=0.3, ge=0.0, description="Recency/decay weight"
-    )
+    recency: float = Field(default=0.3, ge=0.0, description="Recency/decay weight")
 
     def validate_sum(self) -> bool:
         """Validate that weights sum to 1.0."""

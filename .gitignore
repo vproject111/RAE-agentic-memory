@@ -85,5 +85,5 @@ pass_*.tmp
 scripts/wake_lumina.sh
 RAE_PORTABLE_STATE.zip
 work_dir/
-data/
+data
 err*.txt

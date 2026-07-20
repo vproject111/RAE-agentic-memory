@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from typing import Any, List, Optional, Dict
 from uuid import uuid4
+
 from pydantic import BaseModel, Field
+
 
 class Hypothesis(BaseModel):
     hypothesis_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -10,16 +13,19 @@ class Hypothesis(BaseModel):
     target_metric: str
     origin: str = "lab"
 
+
 class FailurePatternPack(BaseModel):
     pack_id: str = Field(default_factory=lambda: str(uuid4()))
     version: str = "1.0.0"
     patterns: List[Dict[str, Any]]
     source_failures: List[str]
 
+
 class InsightPack(BaseModel):
     pack_id: str = Field(default_factory=lambda: str(uuid4()))
     insights: List[Dict[str, Any]]
     recommendations: List[str]
+
 
 class ImprovementProposal(BaseModel):
     proposal_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -28,11 +34,13 @@ class ImprovementProposal(BaseModel):
     status: str = "draft"
     promotion_requirements: List[str] = Field(default_factory=list)
 
+
 class PolicyPatchProposal(BaseModel):
     proposal_id: str = Field(default_factory=lambda: str(uuid4()))
     target_policy_id: str
-    rationale: str
-    proposed_patch: dict[str, Any] = Field(default_factory=dict)
+    patch_payload: dict[str, Any]
+    epistemic_status: str = "proposed"
+
 
 class ExperimentRun(BaseModel):
     run_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -42,10 +50,12 @@ class ExperimentRun(BaseModel):
     role: Optional[str] = None  # e.g., L1_writer, L2_auditor
     model_ref: Optional[str] = None  # e.g., ollama/qwen3.5:9b
 
+
 class PromotionDecision(BaseModel):
     proposal_id: str
     approved: bool
     reason: str
+
 
 class RollbackDecision(BaseModel):
     proposal_id: str

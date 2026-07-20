@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Any, Dict, Optional
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
 
 class MessageEnvelope(BaseModel):
     message_id: str
@@ -8,8 +10,9 @@ class MessageEnvelope(BaseModel):
     target_node: str
     protocol_version: str = "3.0"
     payload_type: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 
 class NodeStatus(BaseModel):
     node_id: str

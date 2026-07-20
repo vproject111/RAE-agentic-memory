@@ -67,9 +67,7 @@ class EntityResolutionService:
         3. Process each cluster (auto-merge or ask LLM)
         4. Execute merges in database
         """
-        logger.info(
-            "starting_entity_resolution", project=project, tenant_id=tenant_id
-        )
+        logger.info("starting_entity_resolution", project=project, tenant_id=tenant_id)
 
         # Fetch nodes from database
         nodes = await self._fetch_nodes(project, tenant_id)
@@ -238,6 +236,4 @@ class EntityResolutionService:
         Returns:
             List of node dictionaries
         """
-        return await self.graph_repo.get_all_nodes(
-            tenant_id=tenant_id, project=project
-        )
+        return await self.graph_repo.get_all_nodes(tenant_id=tenant_id, project=project)

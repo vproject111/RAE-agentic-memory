@@ -1,11 +1,9 @@
-
-import json
 import os
-import httpx
-import asyncio
-import structlog
 from collections.abc import AsyncIterator
-from typing import Any, Dict, cast, Optional
+from typing import Optional
+
+import httpx
+import structlog
 
 from ..models import (
     EmbeddingRequest,

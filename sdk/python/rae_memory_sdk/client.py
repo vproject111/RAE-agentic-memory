@@ -126,7 +126,9 @@ class MemoryClient:
         """
         request_body = QueryMemoryRequest(query=query, k=k, filters=filters)
         response_data = self._request(
-            "POST", "/v2/v2/memories/query", json=request_body.model_dump(exclude_none=True)
+            "POST",
+            "/v2/v2/memories/query",
+            json=request_body.model_dump(exclude_none=True),
         )
         return QueryMemoryResponse(**response_data)
 
@@ -848,7 +850,9 @@ class MemoryClient:
         """
         request_body = QueryMemoryRequest(query=query, k=k, filters=filters)
         response_data = await self._async_request(
-            "POST", "/v2/v2/memories/query", json=request_body.model_dump(exclude_none=True)
+            "POST",
+            "/v2/v2/memories/query",
+            json=request_body.model_dump(exclude_none=True),
         )
         return QueryMemoryResponse(**response_data)
 
@@ -913,9 +917,7 @@ class MemoryClient:
         """Async version of get_graph_stats."""
         return cast(
             Dict[str, Any],
-            await self._async_request(
-                "GET", f"/v2/graph/stats?project={project}"
-            ),
+            await self._async_request("GET", f"/v2/graph/stats?project={project}"),
         )
 
     async def execute_agent_async(

@@ -128,13 +128,13 @@ async def store_memory(
                 metadata=request.metadata,
                 human_label=request.human_label,
             )
-            
+
             if memory_id is None:
                 return StoreMemoryResponseV2(
-                    memory_id="skipped", 
-                    message="Memory skipped (duplicate or filtered)"
+                    memory_id="skipped",
+                    message="Memory skipped (duplicate or filtered)",
                 )
-                
+
             return StoreMemoryResponseV2(memory_id=str(memory_id))
         except (SecurityPolicyViolationError, ContractViolationError) as e:
             logger.warning("memory_action_blocked", error=str(e), tenant_id=tenant_id)
@@ -170,10 +170,12 @@ async def query_memories(
             results = []
             for res in response.results:
                 # Handle timestamp from engine results
-                ts = res.metadata.get("created_at") if hasattr(res, "metadata") else None
+                ts = (
+                    res.metadata.get("created_at") if hasattr(res, "metadata") else None
+                )
                 if not ts and hasattr(res, "timestamp"):
                     ts = res.timestamp
-                
+
                 if hasattr(ts, "isoformat"):
                     ts = ts.isoformat()
 
@@ -208,7 +210,9 @@ async def list_memories(
     offset: int = Query(0, ge=0),
     project: Optional[str] = None,
     layer: Optional[str] = None,
-    sort: Optional[str] = Query(None, description="Sort field and direction, e.g. 'created_at:desc'"),
+    sort: Optional[str] = Query(
+        None, description="Sort field and direction, e.g. 'created_at:desc'"
+    ),
     tenant_id: UUID = Depends(get_and_verify_tenant_id),
     rae_service: RAECoreService = Depends(get_rae_core_service),
 ):
@@ -228,9 +232,7 @@ async def list_memories(
                 field, direction = sort.split(":")
                 reverse = direction.lower() == "desc"
                 sort_field = "created_at" if field == "created_at" else field
-                memories.sort(
-                    key=lambda x: x.get(sort_field) or "", reverse=reverse
-                )
+                memories.sort(key=lambda x: x.get(sort_field) or "", reverse=reverse)
             except Exception as e:
                 logger.warning("manual_sort_failed", error=str(e), sort=sort)
 
@@ -240,6 +242,7 @@ async def list_memories(
             if isinstance(metadata_val, str):
                 try:
                     import json
+
                     metadata_val = json.loads(metadata_val)
                 except Exception:
                     metadata_val = {}
@@ -285,7 +288,9 @@ async def get_statistics(
         return {"statistics": stats}
     except Exception as e:
         logger.error("get_statistics_failed", error=str(e), tenant_id=tenant_id)
-        raise HTTPException(status_code=500, detail=f"Failed to get statistics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get statistics: {str(e)}"
+        )
 
 
 @router.post("/consolidate")
@@ -333,7 +338,9 @@ async def generate_reflections(
         }
     except Exception as e:
         logger.error("generate_reflections_failed", error=str(e), tenant_id=tenant_id)
-        raise HTTPException(status_code=500, detail=f"Failed to generate reflections: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate reflections: {str(e)}"
+        )
 
 
 @router.get("/sessions/{session_id}")
@@ -372,6 +379,7 @@ async def get_memory(
         if isinstance(metadata_val, str):
             try:
                 import json
+
                 metadata_val = json.loads(metadata_val)
             except Exception:
                 metadata_val = {}
@@ -409,7 +417,7 @@ async def delete_memory(
         deleted = await rae_service.delete_memory(memory_id, str(tenant_id))
         if not deleted:
             raise HTTPException(status_code=404, detail="Memory not found")
-        return {"message": "Memory deleted successfully"}
+        return {"memory_id": memory_id, "message": "Memory deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:

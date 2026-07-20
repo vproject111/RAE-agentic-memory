@@ -39,7 +39,16 @@ ignore = [
     "B905", # zip() without an explicit strict= parameter
     "B007", # Loop control variable not used within loop body
     "B017", # Do not assert blind exception: Exception
+    "N818", # Exception name should end with Error
+    "N801", # Class name should use CapWords convention
+    "E741", # Ambiguous variable name
+    "E722", # Do not use bare except
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["F841", "E402", "E712", "F811", "W291"]
+"**/benchmarking/**" = ["E402", "F841", "E712", "W291"]
+"**/apps/**" = ["E402", "F841", "E712", "F821", "W291", "F811"]
 
 [tool.black]
 line-length = 88
