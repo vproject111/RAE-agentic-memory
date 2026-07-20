@@ -288,9 +288,9 @@ class RAECoreService:
                 vector_store=self.qdrant_adapter,
                 embedding_provider=self.embedding_provider,
             ),
-            "fulltext": FullTextStrategy(memory_storage=self.postgres_adapter),
-            "sparse": SparseVectorStrategy(memory_storage=self.postgres_adapter),
-            "anchor": AnchorStrategy(memory_storage=self.postgres_adapter),
+            "fulltext": FullTextStrategy(self.postgres_adapter),
+            "sparse": SparseVectorStrategy(self.postgres_adapter),
+            "anchor": AnchorStrategy(self.postgres_adapter),
         }
 
         # SYSTEM 40.15: Optional Graph Store for Lite Mode
