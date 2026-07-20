@@ -1,4 +1,7 @@
 import uuid
+import hashlib
+import secrets
+import threading
 from typing import Any, Dict, List
 
 import structlog
@@ -6,17 +9,34 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from apps.memory_api.services.mesh_service import MeshService, PeerInfo
+from apps.memory_api.config import settings
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["Mesh"], prefix="/v2/mesh")
+
+_mesh_service_lock = threading.Lock()
+
+
+def safe_hash(content: str, max_size_bytes: int = 10 * 1024 * 1024) -> str:
+    """Hash content safely, rejecting content larger than max_size_bytes to prevent DoS."""
+    content_bytes = content.encode("utf-8")
+    if len(content_bytes) > max_size_bytes:
+        raise ValueError("Content size exceeds maximum allowed limit for hashing (10MB)")
+    return hashlib.sha256(content_bytes).hexdigest()
 
 
 # Dependency to get MeshService singleton
 def get_mesh_service(request: Request) -> MeshService:
     if not hasattr(request.app.state, "mesh_service"):
-        from apps.memory_api.config import settings
-        pool = getattr(request.app.state, "pool", None)
-        request.app.state.mesh_service = MeshService(pool=pool, secret_key=settings.SECRET_KEY)
+        with _mesh_service_lock:
+            if not hasattr(request.app.state, "mesh_service"):
+                pool = getattr(request.app.state, "pool", None)
+                redis_client = getattr(request.app.state, "redis_client", None)
+                request.app.state.mesh_service = MeshService(
+                    pool=pool, 
+                    redis_client=redis_client, 
+                    secret_key=settings.SECRET_KEY
+                )
 
     from typing import cast
     return cast(MeshService, request.app.state.mesh_service)
@@ -79,7 +99,7 @@ async def create_invite(
 @router.get("/handshake/challenge", response_model=ChallengeResponse)
 async def get_handshake_challenge(service: MeshService = Depends(get_mesh_service)):
     """(Host) Retrieve challenge, host public key, and host signature for trust verification."""
-    data = service.generate_challenge()
+    data = service.generate_challenge(settings.RAE_PEER_ID)
     return ChallengeResponse(
         challenge=data["challenge"],
         host_public_key=data["host_public_key"],
@@ -121,8 +141,8 @@ async def join_mesh(
             raise HTTPException(status_code=400, detail=f"Host challenge signature verification failed: {e}")
 
         # 4. Sign Host's challenge using our own private key
-        my_signature = service.sign_challenge(challenge)
-        _, my_public_key = service.derive_key_pair()
+        my_signature = service.sign_challenge(challenge, request.my_peer_id)
+        _, my_public_key = service.derive_key_pair(request.my_peer_id)
         my_public_key_hex = my_public_key.public_bytes_raw().hex()
 
         # 5. Generate a challenge for the Host to sign
@@ -221,14 +241,14 @@ async def receive_handshake(
         my_token_for_joiner = str(uuid.uuid4())
 
         # 6. Sign Joiner's challenge
-        host_signature = service.sign_challenge(request.joiner_challenge)
+        host_signature = service.sign_challenge(request.joiner_challenge, settings.RAE_PEER_ID)
         
-        _, my_public_key = service.derive_key_pair()
+        _, my_public_key = service.derive_key_pair(settings.RAE_PEER_ID)
         my_public_key_hex = my_public_key.public_bytes_raw().hex()
 
         return {
             "status": "accepted",
-            "host_id": "rae-host",
+            "host_id": settings.RAE_PEER_ID,
             "token": my_token_for_joiner,
             "host_public_key": my_public_key_hex,
             "signature": host_signature,
@@ -257,7 +277,7 @@ async def receive_sync_data(
 ):
     """Receive pushed memories from a peer, enforcing data classification and consent checks."""
     sender_id = payload.get("sender_id")
-    receiver_id = payload.get("receiver_id", "rae-host")
+    receiver_id = payload.get("receiver_id", settings.RAE_PEER_ID)
     consent_token = payload.get("consent_token")
     memories = payload.get("memories", [])
     
@@ -282,11 +302,13 @@ async def receive_sync_data(
             )
             
         try:
-            # Verify consent token
-            token_payload = service.verify_consent_token(consent_token, sender_id, receiver_id)
+            # Verify consent token (asynchronous)
+            token_payload = await service.verify_consent_token(consent_token, sender_id, receiver_id)
             
-            # Verify ConsentGrant in DB matches the token's consent_grant_id
-            if not peer.consent_grant_id or peer.consent_grant_id != token_payload.get("consent_grant_id"):
+            # Verify ConsentGrant in DB matches the token's consent_grant_id (prevent timing attacks)
+            peer_grant_id = peer.consent_grant_id or ""
+            token_grant_id = token_payload.get("consent_grant_id") or ""
+            if not peer.consent_grant_id or not secrets.compare_digest(peer_grant_id, token_grant_id):
                 raise HTTPException(
                     status_code=403, 
                     detail="ConsentGrant verification failed for sender-receiver pair"
@@ -304,11 +326,13 @@ async def receive_sync_data(
             
     # Process and save memories
     processed_count = 0
-    import hashlib
     for m in memories:
         memory_id = m.get("id")
         content = m.get("content", "")
-        content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        try:
+            content_hash = safe_hash(content)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         
         # Save to sync log
         if memory_id:

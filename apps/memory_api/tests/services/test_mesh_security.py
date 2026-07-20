@@ -26,12 +26,12 @@ def test_aes_gcm_token_encryption(mesh_service):
     assert decrypted_pub_key == public_key
 
 def test_key_pair_derivation_and_challenge_signing(mesh_service):
-    priv, pub = mesh_service.derive_key_pair()
+    priv, pub = mesh_service.derive_key_pair("peer-a")
     assert isinstance(priv, ed25519.Ed25519PrivateKey)
     assert isinstance(pub, ed25519.Ed25519PublicKey)
     
     # Generate and verify challenge
-    challenge_data = mesh_service.generate_challenge()
+    challenge_data = mesh_service.generate_challenge("peer-a")
     assert "challenge" in challenge_data
     assert "host_public_key" in challenge_data
     assert "challenge_signature" in challenge_data
@@ -74,7 +74,8 @@ def test_signed_invite_jwt_validation(mesh_service):
     with pytest.raises(ValueError):
         mesh_service.validate_invite(untrusted_code)
 
-def test_consent_token_generation_and_validation(mesh_service):
+@pytest.mark.asyncio
+async def test_consent_token_generation_and_validation(mesh_service):
     sender = "peer-a"
     receiver = "peer-b"
     grant_id = "grant-123"
@@ -82,20 +83,26 @@ def test_consent_token_generation_and_validation(mesh_service):
     token = mesh_service.generate_consent_token(sender, receiver, grant_id)
     
     # Verify valid token
-    payload = mesh_service.verify_consent_token(token, sender, receiver)
+    payload = await mesh_service.verify_consent_token(token, sender, receiver)
     assert payload["consent_grant_id"] == grant_id
     assert payload["iss"] == sender
     assert payload["aud"] == receiver
     
     # Verify validation fails for incorrect receiver
     with pytest.raises(ValueError, match="Audience doesn't match"):
-        mesh_service.verify_consent_token(token, sender, "peer-c")
+        await mesh_service.verify_consent_token(token, sender, "peer-c")
         
     # Verify validation fails for expired/exceeded TTL token
     # (Mocking time so that token appears expired)
     with patch("time.time", return_value=time.time() + 600):
         with pytest.raises(ValueError):
-            mesh_service.verify_consent_token(token, sender, receiver)
+            await mesh_service.verify_consent_token(token, sender, receiver)
+
+    # Verify replay protection via jti
+    token2 = mesh_service.generate_consent_token(sender, receiver, "grant-456")
+    await mesh_service.verify_consent_token(token2, sender, receiver)
+    with pytest.raises(ValueError, match="Replay attack detected"):
+        await mesh_service.verify_consent_token(token2, sender, receiver)
 
 @pytest.mark.asyncio
 async def test_data_classification_filtering_before_transmission(mesh_service):

@@ -13,6 +13,8 @@ import structlog
 from pydantic import BaseModel
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 
 logger = structlog.get_logger(__name__)
 
@@ -40,13 +42,15 @@ class MeshService:
     Stores trusted peers and active invite codes.
     """
 
-    def __init__(self, pool: Any = None, secret_key: str = "mesh-secret-change-me"):
+    def __init__(self, pool: Any = None, redis_client: Any = None, secret_key: str = "mesh-secret-change-me"):
         self.pool = pool
+        self.redis_client = redis_client
         self.secret_key = secret_key
         # In-memory fallback storage for peers and active invites
         self._peers: Dict[str, PeerInfo] = {}
         self._fallback_pubkeys: Dict[str, str] = {}
         self._active_invites: Dict[str, dict] = {}
+        self._used_jtis: Dict[str, float] = {}
 
     def _get_encryption_key(self) -> bytes:
         """Derive a 256-bit AES key from secret_key."""
@@ -80,13 +84,19 @@ class MeshService:
         data = json.loads(decrypted_json)
         return data.get("token", ""), data.get("public_key")
 
-    def derive_key_pair(self) -> tuple[ed25519.Ed25519PrivateKey, ed25519.Ed25519PublicKey]:
-        """Derive an Ed25519 key pair deterministically from SECRET_KEY."""
-        seed = hashlib.sha256(self.secret_key.encode("utf-8")).digest()
+    def derive_key_pair(self, peer_id: str) -> tuple[ed25519.Ed25519PrivateKey, ed25519.Ed25519PublicKey]:
+        """Derive an Ed25519 key pair deterministically from SECRET_KEY using HKDF and peer_id."""
+        hkdf = HKDF(
+            algorithm=hashes.SHA512(),
+            length=32,
+            salt=None,
+            info=peer_id.encode("utf-8")
+        )
+        seed = hkdf.derive(self.secret_key.encode("utf-8"))
         private_key = ed25519.Ed25519PrivateKey.from_private_bytes(seed)
         return private_key, private_key.public_key()
 
-    def generate_challenge(self) -> dict[str, Any]:
+    def generate_challenge(self, my_peer_id: str) -> dict[str, Any]:
         """Generate a challenge and host public key, signed by host's private key."""
         nonce = secrets.token_hex(16)
         timestamp = int(time.time())
@@ -94,7 +104,7 @@ class MeshService:
             "nonce": nonce,
             "timestamp": timestamp
         }
-        private_key, public_key = self.derive_key_pair()
+        private_key, public_key = self.derive_key_pair(my_peer_id)
         challenge_bytes = json.dumps(challenge, sort_keys=True).encode("utf-8")
         signature = private_key.sign(challenge_bytes)
         
@@ -117,9 +127,9 @@ class MeshService:
         except Exception as e:
             raise ValueError(f"Invalid challenge signature: {e}")
 
-    def sign_challenge(self, challenge: dict[str, Any]) -> str:
+    def sign_challenge(self, challenge: dict[str, Any], my_peer_id: str) -> str:
         """Sign a challenge using own private key."""
-        private_key, _ = self.derive_key_pair()
+        private_key, _ = self.derive_key_pair(my_peer_id)
         challenge_bytes = json.dumps(challenge, sort_keys=True).encode("utf-8")
         return private_key.sign(challenge_bytes).hex()
 
@@ -163,8 +173,8 @@ class MeshService:
             # 1. Enforce signature algorithm check by getting the unverified header first
             header = jwt.get_unverified_header(code)
             alg = header.get("alg")
-            if alg not in ["HS256", "RS256"]:
-                raise ValueError(f"Algorithm {alg} is not in the whitelist (HS256, RS256)")
+            if alg != "HS256":
+                raise ValueError(f"Algorithm {alg} is not allowed (only HS256)")
 
             if header.get("typ") != "mesh-invite-v1":
                 raise ValueError("Token typ must be 'mesh-invite-v1'")
@@ -174,7 +184,7 @@ class MeshService:
                 code,
                 self.secret_key,
                 audience="rae-mesh-peers",
-                algorithms=["HS256", "RS256"],
+                algorithms=["HS256"],
                 options={
                     "require": ["exp", "iat", "aud", "iss"],
                     "verify_signature": True,
@@ -376,7 +386,7 @@ class MeshService:
                 logger.error("failed_to_save_sync_log", error=str(e), peer_id=peer_id, memory_id=str(memory_id))
 
     def generate_consent_token(self, sender_id: str, receiver_id: str, consent_grant_id: str) -> str:
-        """Generate a short-lived (<= 5 minutes) consent token."""
+        """Generate a short-lived (<= 5 minutes) consent token containing a jti claim."""
         now = int(time.time())
         payload = {
             "iss": sender_id,
@@ -384,12 +394,13 @@ class MeshService:
             "iat": now,
             "exp": now + 300,  # 5 minutes
             "consent_grant_id": consent_grant_id,
+            "jti": secrets.token_hex(16),
             "typ": "mesh-consent-v1",
         }
         return jwt.encode(payload, self.secret_key, algorithm="HS256")
 
-    def verify_consent_token(self, token: str, expected_sender: str, expected_receiver: str) -> dict[str, Any]:
-        """Verify the consent token is active, valid, and has TTL <= 5 minutes."""
+    async def verify_consent_token(self, token: str, expected_sender: str, expected_receiver: str) -> dict[str, Any]:
+        """Verify the consent token is active, valid, has TTL <= 5 minutes, and prevents replay attacks using jti."""
         try:
             payload = jwt.decode(
                 token,
@@ -411,10 +422,29 @@ class MeshService:
             if exp - iat > 300:
                 raise ValueError("Consent token TTL exceeds 5 minutes limit")
                 
-            if payload.get("iss") != expected_sender:
+            # Timing attack prevention using compare_digest
+            if not secrets.compare_digest(payload.get("iss", ""), expected_sender):
                 raise ValueError("Consent token issuer does not match sender")
-            if payload.get("aud") != expected_receiver:
+            if not secrets.compare_digest(payload.get("aud", ""), expected_receiver):
                 raise ValueError("Consent token audience does not match receiver")
+                
+            jti = payload.get("jti")
+            if not jti:
+                raise ValueError("Consent token is missing jti claim")
+                
+            # Track used nonces to prevent replay attacks
+            jti_key = f"rae:mesh:jti:{jti}"
+            if self.redis_client is not None:
+                is_new = await self.redis_client.set(jti_key, "1", ex=300, nx=True)
+                if not is_new:
+                    raise ValueError("Replay attack detected: token has already been used")
+            else:
+                now = time.time()
+                # Clean up expired JTIs
+                self._used_jtis = {k: v for k, v in self._used_jtis.items() if v > now}
+                if jti in self._used_jtis:
+                    raise ValueError("Replay attack detected: token has already been used")
+                self._used_jtis[jti] = float(exp)
                 
             return payload
         except jwt.PyJWTError as e:
