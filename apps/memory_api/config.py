@@ -86,6 +86,7 @@ class Settings(BaseSettings):
     ENABLE_API_KEY_AUTH: bool = False
     ENABLE_JWT_AUTH: bool = False
     SECRET_KEY: str = "change-this-secret-key-in-production"
+    RAE_PEER_ID: str = "rae-host"
 
     # --- Keycloak Integration ---
     ENABLE_KEYCLOAK_AUTH: bool = False
