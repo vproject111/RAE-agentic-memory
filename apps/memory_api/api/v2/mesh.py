@@ -353,6 +353,25 @@ async def receive_sync_data(
         except ValueError as e:
             raise HTTPException(status_code=403, detail=f"Consent token validation failed: {str(e)}")
             
+    # Verify signature and provenance if peer public key is registered or signature is present
+    signature = payload.get("signature")
+    sender_pub_key = await service.get_peer_public_key(sender_id)
+    
+    if sender_pub_key and signature:
+        try:
+            from cryptography.hazmat.primitives.asymmetric import ed25519
+            pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(sender_pub_key))
+            memories_bytes = json.dumps(memories, sort_keys=True).encode("utf-8")
+            
+            payload_hash = hashlib.sha256(memories_bytes).hexdigest()
+            expected_hash = payload.get("payload_hash")
+            if expected_hash and expected_hash != payload_hash:
+                raise ValueError("Payload hash mismatch")
+                
+            pub_key.verify(bytes.fromhex(signature), memories_bytes)
+        except Exception as e:
+            raise HTTPException(status_code=403, detail=f"Invalid payload signature or provenance: {e}")
+
     # Process and save memories concurrently using Semaphore(50) and asyncio.gather
     sem = asyncio.Semaphore(50)
     
@@ -360,11 +379,168 @@ async def receive_sync_data(
         async with sem:
             memory_id = m.get("id")
             content = m.get("content", "")
+            
+            # NFKC Unicode Normalization
+            import unicodedata
+            normalized_content = unicodedata.normalize("NFKC", content)
+            
+            # HTML sanitization using nh3
+            import nh3
+            sanitized_content = nh3.clean(normalized_content)
+            
             try:
-                content_hash = safe_hash(content)
+                content_hash = safe_hash(sanitized_content)
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
                 
+            # If the database pool is available, store in postgres
+            pool = getattr(request.app.state, "pool", None)
+            m_id = None
+            if pool is not None:
+                from uuid import UUID
+                try:
+                    memory_uuid = UUID(str(memory_id)) if memory_id else uuid.uuid4()
+                except Exception:
+                    memory_uuid = uuid.uuid4()
+                    
+                layer = m.get("layer", "episodic")
+                tenant_id = m.get("tenant_id", "default")
+                agent_id = m.get("agent_id", "default")
+                tags = m.get("tags") or []
+                metadata = m.get("metadata") or {}
+                importance = m.get("importance", 0.5)
+                project = m.get("project", "default")
+                source = m.get("source", "sync")
+                human_label = m.get("human_label")
+                session_id = m.get("session_id")
+                memory_type = m.get("memory_type", "text")
+                info_class = m.get("info_class", "internal")
+                
+                expires_at = m.get("expires_at")
+                if expires_at and isinstance(expires_at, str):
+                    try:
+                        from datetime import datetime
+                        expires_at = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                    except Exception:
+                        expires_at = None
+                        
+                async with pool.acquire() as conn:
+                    # Check if ID exists
+                    existing_by_id = await conn.fetchval("SELECT id FROM memories WHERE id = $1", memory_uuid)
+                    if existing_by_id:
+                        await conn.execute(
+                            """
+                            UPDATE memories SET
+                                content = $1,
+                                content_hash = $2,
+                                layer = $3,
+                                agent_id = $4,
+                                tags = $5,
+                                metadata = memories.metadata || $6::jsonb,
+                                importance = GREATEST(memories.importance, $7),
+                                project = $8,
+                                source = $9,
+                                human_label = COALESCE($10, memories.human_label),
+                                session_id = $11,
+                                memory_type = $12,
+                                expires_at = $13,
+                                info_class = $14,
+                                last_accessed_at = NOW()
+                            WHERE id = $15
+                            """,
+                            sanitized_content,
+                            content_hash,
+                            layer,
+                            agent_id,
+                            tags,
+                            json.dumps(metadata),
+                            importance,
+                            project,
+                            source,
+                            human_label,
+                            session_id,
+                            memory_type,
+                            expires_at,
+                            info_class,
+                            memory_uuid
+                        )
+                        m_id = memory_uuid
+                    else:
+                        existing_by_hash = await conn.fetchval(
+                            "SELECT id FROM memories WHERE tenant_id = $1 AND content_hash = $2",
+                            tenant_id, content_hash
+                        )
+                        if existing_by_hash:
+                            await conn.execute(
+                                """
+                                UPDATE memories SET
+                                    importance = GREATEST(memories.importance, $1),
+                                    usage_count = memories.usage_count + 1,
+                                    last_accessed_at = NOW(),
+                                    source = memories.source || ', ' || $2,
+                                    human_label = COALESCE($3, memories.human_label),
+                                    metadata = memories.metadata || $4::jsonb || jsonb_build_object('witness_count', (COALESCE((memories.metadata->>'witness_count')::int, 1) + 1)),
+                                    info_class = $5
+                                WHERE id = $6
+                                """,
+                                importance,
+                                source,
+                                human_label,
+                                json.dumps(metadata),
+                                info_class,
+                                existing_by_hash
+                            )
+                            m_id = existing_by_hash
+                        else:
+                            await conn.execute(
+                                """
+                                INSERT INTO memories (
+                                    id, content, content_hash, layer, tenant_id, agent_id, tags, metadata, importance, created_at, project, source, human_label, session_id, memory_type, expires_at, info_class
+                                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12, $13, $14, $15, $16)
+                                """,
+                                memory_uuid,
+                                sanitized_content,
+                                content_hash,
+                                layer,
+                                tenant_id,
+                                agent_id,
+                                tags,
+                                json.dumps(metadata),
+                                importance,
+                                project,
+                                source,
+                                human_label,
+                                session_id,
+                                memory_type,
+                                expires_at,
+                                info_class
+                            )
+                            m_id = memory_uuid
+
+                # Store vector in Qdrant if rae_core_service is available and not operational layer
+                rae_service = getattr(request.app.state, "rae_core_service", None)
+                if rae_service and rae_service.qdrant_client and "operational" not in tags and m_id:
+                    try:
+                        if hasattr(rae_service.embedding_provider, "generate_all_embeddings"):
+                            embs_dict = await rae_service.embedding_provider.generate_all_embeddings(
+                                [sanitized_content], task_type="search_document"
+                            )
+                            emb = {name: e[0] for name, e in embs_dict.items() if e}
+                        else:
+                            emb = await rae_service.embedding_provider.embed_text(
+                                sanitized_content, task_type="search_document"
+                            )
+                        
+                        vector_meta = {
+                            "agent_id": agent_id,
+                            "session_id": session_id or "default",
+                            "layer": layer,
+                            "project": project,
+                        }
+                        await rae_service.qdrant_adapter.store_vector(m_id, emb, tenant_id, metadata=vector_meta)
+                    except Exception as q_err:
+                        logger.warning("failed_to_index_vector_in_sync", error=str(q_err), memory_id=str(m_id))
+            
             if memory_id:
                 await service.save_sync_log(
                     peer_id=sender_id,
