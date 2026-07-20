@@ -19,8 +19,7 @@ def test_client():
         yield client
 
 # 1. Test Celery task execution & lexicographical sorting
-@pytest.mark.asyncio
-async def test_sync_mesh_peers_task_execution():
+def test_sync_mesh_peers_task_execution():
     mock_rae_service = AsyncMock()
     mock_rae_service.postgres_pool = AsyncMock()
     mock_rae_service.redis_client = AsyncMock()
@@ -74,8 +73,7 @@ async def test_sync_mesh_peers_task_execution():
             assert calls[1][0][0] == "mesh_sync_peer-b"
 
 # 2. Test lock conflict safety
-@pytest.mark.asyncio
-async def test_sync_mesh_peers_task_lock_conflict():
+def test_sync_mesh_peers_task_lock_conflict():
     mock_rae_service = AsyncMock()
     mock_rae_service.postgres_pool = AsyncMock()
     mock_rae_service.redis_client = AsyncMock()
