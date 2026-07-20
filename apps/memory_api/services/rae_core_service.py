@@ -304,7 +304,9 @@ class RAECoreService:
         if graph_repo:
             from rae_core.search.strategies.graph import GraphTraversalStrategy
 
-            search_strategies["graph"] = GraphTraversalStrategy(graph_store=graph_repo)
+            search_strategies["graph"] = GraphTraversalStrategy(
+                graph_repo, self.postgres_adapter
+            )
 
         search_engine = HybridSearchEngine(
             strategies=search_strategies,

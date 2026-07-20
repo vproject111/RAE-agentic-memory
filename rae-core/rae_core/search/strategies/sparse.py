@@ -91,6 +91,7 @@ class SparseVectorStrategy(SearchStrategy):
         tenant_id: str,
         filters: dict[str, Any] | None = None,
         limit: int = 10,
+        **kwargs: Any,
     ) -> list[tuple[UUID, float]]:
         """Execute BM25 search.
 

@@ -3,7 +3,12 @@ import sys
 import time
 import asyncio
 import websockets
+import base64
+import hashlib
+import secrets
+import httpx
 from fastapi import Request
+from fastapi.responses import RedirectResponse
 from nicegui import ui, app, background_tasks
 
 # Add current directory to path for modules
@@ -22,26 +27,45 @@ from apps.hive_sandbox import HiveSandboxApp
 from apps.openclaw_escalation import OpenClawEscalationApp
 from apps.rae_crl import RaeCrlApp
 
-# --- Initialization ---
+# Load Keycloak configurations
+try:
+    from apps.memory_api.config import settings
+    ENABLE_KEYCLOAK_AUTH = settings.ENABLE_KEYCLOAK_AUTH
+    KEYCLOAK_URL = settings.KEYCLOAK_URL
+    KEYCLOAK_REALM = settings.KEYCLOAK_REALM
+    KEYCLOAK_FRONTEND_CLIENT_ID = settings.KEYCLOAK_FRONTEND_CLIENT_ID
+    KEYCLOAK_BACKEND_CLIENT_ID = settings.KEYCLOAK_BACKEND_CLIENT_ID
+except ImportError:
+    ENABLE_KEYCLOAK_AUTH = os.getenv("ENABLE_KEYCLOAK_AUTH", "False").lower() == "true"
+    KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8080")
+    KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "rae-realm")
+    KEYCLOAK_FRONTEND_CLIENT_ID = os.getenv("KEYCLOAK_FRONTEND_CLIENT_ID", "rae-portal")
+    KEYCLOAK_BACKEND_CLIENT_ID = os.getenv("KEYCLOAK_BACKEND_CLIENT_ID", "rae-memory-api")
+
+# --- Fallback Global Initialization ---
 client = RAESuiteClient()
 
 class RAESuitePortal:
-    def __init__(self):
+    def __init__(self, request: Request):
         self.current_page = "mission_control"
         self.system_profile = "Detecting..."
         
+        # Instantiate a context-specific client using the session's access token
+        token = request.cookies.get("access_token") if ENABLE_KEYCLOAK_AUTH else None
+        self.client = RAESuiteClient(token=token)
+        
         # Instantiate apps dynamically inside session to avoid memory leaks / deleted client exceptions
-        self.oracle_app = OracleApp(client)
-        self.wizard_app = ProceduralWizard(client)
-        self.mozilla_app = MozillaApp(client)
-        self.mission_control_app = MissionControlApp(client)
-        self.search_console_app = SearchConsoleApp(client)
-        self.decay_retention_app = DecayRetentionApp(client)
-        self.evolution_lab_app = EvolutionLabApp(client)
-        self.phoenix_repair_app = PhoenixRepairApp(client)
-        self.hive_sandbox_app = HiveSandboxApp(client)
-        self.openclaw_escalation_app = OpenClawEscalationApp(client)
-        self.rae_crl_app = RaeCrlApp(client)
+        self.oracle_app = OracleApp(self.client)
+        self.wizard_app = ProceduralWizard(self.client)
+        self.mozilla_app = MozillaApp(self.client)
+        self.mission_control_app = MissionControlApp(self.client)
+        self.search_console_app = SearchConsoleApp(self.client)
+        self.decay_retention_app = DecayRetentionApp(self.client)
+        self.evolution_lab_app = EvolutionLabApp(self.client)
+        self.phoenix_repair_app = PhoenixRepairApp(self.client)
+        self.hive_sandbox_app = HiveSandboxApp(self.client)
+        self.openclaw_escalation_app = OpenClawEscalationApp(self.client)
+        self.rae_crl_app = RaeCrlApp(self.client)
         
         # State variables for Faza 2
         self.connection_status = "Offline"
@@ -59,7 +83,7 @@ class RAESuitePortal:
         }
         
     async def detect_system(self):
-        stats = await client.get_stats()
+        stats = await self.client.get_stats()
         engine_info = stats.get("statistics", {}).get("engine", "RAE")
         self.system_profile = f"Active: {engine_info}"
         ui.update()
@@ -77,7 +101,7 @@ class RAESuitePortal:
 
     async def start_websocket_client(self):
         # Convert http/https RAE_API_URL to ws/wss
-        base_url = client.api_url
+        base_url = self.client.api_url
         ws_url = base_url.replace("http://", "ws://").replace("https://", "wss://") + "/v2/bridge/interact"
         
         attempt = 1
@@ -540,13 +564,127 @@ class RAESuitePortal:
         if cookie_accepted:
             cookie_banner.set_visibility(False)
 
+@app.get('/callback', name='auth_callback')
+async def auth_callback(request: Request, code: str = None, state: str = None, error: str = None):
+    if error:
+        return f"Authentication failed: {error}"
+        
+    # Verify state
+    stored_state = request.cookies.get("oauth_state")
+    if not stored_state or state != stored_state:
+        return "Invalid OAuth state. Potential CSRF attempt."
+        
+    # Retrieve and validate code verifier
+    code_verifier = request.cookies.get("oauth_verifier")
+    if not code_verifier or len(code_verifier) < 43 or len(code_verifier) > 128:
+        return "Invalid code verifier. Access denied."
+        
+    # Exchange authorization code for token
+    redirect_uri = str(request.url_for("auth_callback"))
+    token_url = f"{KEYCLOAK_URL.rstrip('/')}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+    
+    data = {
+        "grant_type": "authorization_code",
+        "client_id": KEYCLOAK_FRONTEND_CLIENT_ID,
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "code_verifier": code_verifier,
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(token_url, data=data)
+            response.raise_for_status()
+            token_data = response.json()
+            
+            access_token = token_data.get("access_token")
+            if not access_token:
+                return "Failed to retrieve access token from Keycloak."
+                
+            # Determine where to redirect back and validate it to prevent open redirect vulnerabilities
+            redirect_back = request.cookies.get("redirect_back", "/")
+            if redirect_back not in {"/", "/evidence"}:
+                redirect_back = "/"
+            
+            # Redirect user back to the application and save token in session cookie
+            res = RedirectResponse(redirect_back)
+            
+            # Set cookie securely: lax samesite, httponly, secure if HTTPS is used
+            is_secure = request.url.scheme == "https"
+            res.set_cookie(
+                "access_token",
+                access_token,
+                httponly=True,
+                secure=is_secure,
+                samesite="lax"
+            )
+            
+            # Clean up temporary OAuth cookies
+            res.delete_cookie("oauth_state")
+            res.delete_cookie("oauth_verifier")
+            res.delete_cookie("redirect_back")
+            
+            return res
+    except Exception as e:
+        return f"Token exchange failed: {str(e)}"
+
 @ui.page('/')
 def main_portal(request: Request):
-    portal = RAESuitePortal()
+    if ENABLE_KEYCLOAK_AUTH:
+        token = request.cookies.get("access_token")
+        if not token:
+            state = secrets.token_urlsafe(32)
+            code_verifier = secrets.token_urlsafe(64)
+            sha256_hash = hashlib.sha256(code_verifier.encode('ascii')).digest()
+            code_challenge = base64.urlsafe_b64encode(sha256_hash).decode('ascii').replace('=', '')
+            
+            redirect_uri = str(request.url_for("auth_callback"))
+            auth_url = (
+                f"{KEYCLOAK_URL.rstrip('/')}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth"
+                f"?response_type=code"
+                f"&client_id={KEYCLOAK_FRONTEND_CLIENT_ID}"
+                f"&redirect_uri={redirect_uri}"
+                f"&state={state}"
+                f"&code_challenge={code_challenge}"
+                f"&code_challenge_method=S256"
+                f"&scope=openid+profile+email"
+            )
+            response = RedirectResponse(auth_url)
+            response.set_cookie("oauth_state", state, max_age=300, httponly=True)
+            response.set_cookie("oauth_verifier", code_verifier, max_age=300, httponly=True)
+            response.set_cookie("redirect_back", "/", max_age=300, httponly=True)
+            return response
+
+    portal = RAESuitePortal(request)
     portal.render(request)
 
 @ui.page('/evidence')
 def evidence_portal(request: Request):
+    if ENABLE_KEYCLOAK_AUTH:
+        token = request.cookies.get("access_token")
+        if not token:
+            state = secrets.token_urlsafe(32)
+            code_verifier = secrets.token_urlsafe(64)
+            sha256_hash = hashlib.sha256(code_verifier.encode('ascii')).digest()
+            code_challenge = base64.urlsafe_b64encode(sha256_hash).decode('ascii').replace('=', '')
+            
+            redirect_uri = str(request.url_for("auth_callback"))
+            auth_url = (
+                f"{KEYCLOAK_URL.rstrip('/')}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth"
+                f"?response_type=code"
+                f"&client_id={KEYCLOAK_FRONTEND_CLIENT_ID}"
+                f"&redirect_uri={redirect_uri}"
+                f"&state={state}"
+                f"&code_challenge={code_challenge}"
+                f"&code_challenge_method=S256"
+                f"&scope=openid+profile+email"
+            )
+            response = RedirectResponse(auth_url)
+            response.set_cookie("oauth_state", state, max_age=300, httponly=True)
+            response.set_cookie("oauth_verifier", code_verifier, max_age=300, httponly=True)
+            response.set_cookie("redirect_back", "/evidence", max_age=300, httponly=True)
+            return response
+
     ui.add_head_html(r'''
     <script>
         document.documentElement.lang = "pl";
@@ -593,4 +731,5 @@ def evidence_portal(request: Request):
 
 if __name__ in {"__main__", "main"}:
     port = int(os.environ.get("PORT", 8080))
-    ui.run(title="RAE Suite Portal Quantum", port=port, reload=False, dark=False)
+    storage_secret = os.environ.get("STORAGE_SECRET_KEY") or secrets.token_hex(32)
+    ui.run(title="RAE Suite Portal Quantum", port=port, reload=False, dark=False, storage_secret=storage_secret)
