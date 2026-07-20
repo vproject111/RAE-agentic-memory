@@ -5,6 +5,7 @@ import hashlib
 import json
 import secrets
 import time
+import threading
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -51,6 +52,8 @@ class MeshService:
         self._fallback_pubkeys: Dict[str, str] = {}
         self._active_invites: Dict[str, dict] = {}
         self._used_jtis: Dict[str, float] = {}
+        self._key_cache: Dict[str, tuple[ed25519.Ed25519PrivateKey, ed25519.Ed25519PublicKey]] = {}
+        self._lock = threading.RLock()
 
     def _get_encryption_key(self) -> bytes:
         """Derive a 256-bit AES key from secret_key."""
@@ -85,16 +88,21 @@ class MeshService:
         return data.get("token", ""), data.get("public_key")
 
     def derive_key_pair(self, peer_id: str) -> tuple[ed25519.Ed25519PrivateKey, ed25519.Ed25519PublicKey]:
-        """Derive an Ed25519 key pair deterministically from SECRET_KEY using HKDF and peer_id."""
-        hkdf = HKDF(
-            algorithm=hashes.SHA512(),
-            length=32,
-            salt=None,
-            info=peer_id.encode("utf-8")
-        )
-        seed = hkdf.derive(self.secret_key.encode("utf-8"))
-        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(seed)
-        return private_key, private_key.public_key()
+        """Derive an Ed25519 key pair deterministically from SECRET_KEY using HKDF, a salt, and caching."""
+        with self._lock:
+            if peer_id in self._key_cache:
+                return self._key_cache[peer_id]
+            hkdf = HKDF(
+                algorithm=hashes.SHA512(),
+                length=32,
+                salt=b"rae-mesh-key-derivation-salt",
+                info=peer_id.encode("utf-8")
+            )
+            seed = hkdf.derive(self.secret_key.encode("utf-8"))
+            private_key = ed25519.Ed25519PrivateKey.from_private_bytes(seed)
+            result = (private_key, private_key.public_key())
+            self._key_cache[peer_id] = result
+            return result
 
     def generate_challenge(self, my_peer_id: str) -> dict[str, Any]:
         """Generate a challenge and host public key, signed by host's private key."""
@@ -439,12 +447,13 @@ class MeshService:
                 if not is_new:
                     raise ValueError("Replay attack detected: token has already been used")
             else:
-                now = time.time()
-                # Clean up expired JTIs
-                self._used_jtis = {k: v for k, v in self._used_jtis.items() if v > now}
-                if jti in self._used_jtis:
-                    raise ValueError("Replay attack detected: token has already been used")
-                self._used_jtis[jti] = float(exp)
+                with self._lock:
+                    now = time.time()
+                    # Clean up expired JTIs
+                    self._used_jtis = {k: v for k, v in self._used_jtis.items() if v > now}
+                    if jti in self._used_jtis:
+                        raise ValueError("Replay attack detected: token has already been used")
+                    self._used_jtis[jti] = float(exp)
                 
             return payload
         except jwt.PyJWTError as e:

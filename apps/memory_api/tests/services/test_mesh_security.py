@@ -1,4 +1,5 @@
 import time
+import json
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,6 +12,13 @@ from apps.memory_api.api.v2.mesh import receive_sync_data, get_handshake_challen
 @pytest.fixture
 def mesh_service():
     return MeshService(secret_key="my-test-secret-key-that-is-long-enough-32-chars")
+
+def make_mock_request(payload: dict) -> MagicMock:
+    mock_req = MagicMock()
+    body_data = json.dumps(payload).encode("utf-8")
+    mock_req.headers = {"content-length": str(len(body_data))}
+    mock_req.body = AsyncMock(return_value=body_data)
+    return mock_req
 
 def test_aes_gcm_token_encryption(mesh_service):
     token = "some-secure-uuid-token"
@@ -150,7 +158,7 @@ async def test_receiver_sync_handling_classification_guards(mesh_service):
         "receiver_id": "rae-host",
         "memories": [{"id": "1", "content": "some public info", "info_class": "public"}]
     }
-    resp = await receive_sync_data(payload_unrestricted, mesh_service)
+    resp = await receive_sync_data(make_mock_request(payload_unrestricted), mesh_service)
     assert resp["processed"] == 1
     
     # Case 2: Send restricted memories without consent token (should be blocked)
@@ -160,7 +168,7 @@ async def test_receiver_sync_handling_classification_guards(mesh_service):
         "memories": [{"id": "2", "content": "secret email content", "info_class": "restricted"}]
     }
     with pytest.raises(HTTPException) as excinfo:
-        await receive_sync_data(payload_restricted_no_token, mesh_service)
+        await receive_sync_data(make_mock_request(payload_restricted_no_token), mesh_service)
     assert excinfo.value.status_code == 403
     assert "no consent token was provided" in excinfo.value.detail
     
@@ -172,8 +180,19 @@ async def test_receiver_sync_handling_classification_guards(mesh_service):
         "consent_token": consent_token,
         "memories": [{"id": "2", "content": "secret email content", "info_class": "restricted"}]
     }
-    resp_ok = await receive_sync_data(payload_restricted_with_token, mesh_service)
+    resp_ok = await receive_sync_data(make_mock_request(payload_restricted_with_token), mesh_service)
     assert resp_ok["processed"] == 1
+
+@pytest.mark.asyncio
+async def test_receive_sync_payload_too_large(mesh_service):
+    # Test body size > 10MB fails with 413
+    mock_req = MagicMock()
+    mock_req.headers = {"content-length": str(11 * 1024 * 1024)} # 11MB
+    mock_req.body = AsyncMock(return_value=b"a" * (11 * 1024 * 1024))
+    
+    with pytest.raises(HTTPException) as excinfo:
+        await receive_sync_data(mock_req, mesh_service)
+    assert excinfo.value.status_code == 413
 
 @pytest.mark.asyncio
 async def test_db_persistence_calls():

@@ -2,6 +2,7 @@ import uuid
 import hashlib
 import secrets
 import threading
+import asyncio
 from typing import Any, Dict, List
 
 import structlog
@@ -119,6 +120,15 @@ async def join_mesh(
         host_url = payload.get("host")
         if not host_url:
             raise HTTPException(status_code=400, detail="Invalid invite: missing host")
+            
+        # Validate host_url scheme and netloc to prevent SSRF
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(host_url)
+            if parsed.scheme not in ["http", "https"] or not parsed.netloc:
+                raise ValueError("URL scheme must be http or https and netloc must be present")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid host URL: {e}")
 
         # 2. Retrieve challenge from Host
         import httpx
@@ -272,10 +282,29 @@ async def list_peers(service: MeshService = Depends(get_mesh_service)):
 
 @router.post("/sync/receive")
 async def receive_sync_data(
-    payload: Dict[str, Any], 
+    request: Request,
     service: MeshService = Depends(get_mesh_service)
 ):
     """Receive pushed memories from a peer, enforcing data classification and consent checks."""
+    # 1. Validate request payload size (limit to 10MB) before parsing
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Payload Too Large")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Content-Length header")
+            
+    body_bytes = await request.body()
+    if len(body_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Payload Too Large")
+        
+    import json
+    try:
+        payload = json.loads(body_bytes)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        
     sender_id = payload.get("sender_id")
     receiver_id = payload.get("receiver_id", settings.RAE_PEER_ID)
     consent_token = payload.get("consent_token")
@@ -324,24 +353,29 @@ async def receive_sync_data(
         except ValueError as e:
             raise HTTPException(status_code=403, detail=f"Consent token validation failed: {str(e)}")
             
-    # Process and save memories
-    processed_count = 0
-    for m in memories:
-        memory_id = m.get("id")
-        content = m.get("content", "")
-        try:
-            content_hash = safe_hash(content)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-        
-        # Save to sync log
-        if memory_id:
-            await service.save_sync_log(
-                peer_id=sender_id,
-                memory_id=memory_id,
-                content_hash=content_hash,
-                status="success"
-            )
-            processed_count += 1
+    # Process and save memories concurrently using Semaphore(50) and asyncio.gather
+    sem = asyncio.Semaphore(50)
+    
+    async def process_single_memory(m: Dict[str, Any]) -> int:
+        async with sem:
+            memory_id = m.get("id")
+            content = m.get("content", "")
+            try:
+                content_hash = safe_hash(content)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+                
+            if memory_id:
+                await service.save_sync_log(
+                    peer_id=sender_id,
+                    memory_id=memory_id,
+                    content_hash=content_hash,
+                    status="success"
+                )
+                return 1
+            return 0
+            
+    results = await asyncio.gather(*(process_single_memory(m) for m in memories))
+    processed_count = sum(results)
             
     return {"status": "accepted", "processed": processed_count}
