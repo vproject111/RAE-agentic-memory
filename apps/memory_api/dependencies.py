@@ -26,6 +26,7 @@ from .services.analytics import AnalyticsService
 from .services.budget_service import BudgetService
 from .services.community_detection import CommunityDetectionService
 from .services.compliance_service import ComplianceService
+from .services.audit_service import AuditService
 from .services.consistency_service import ConsistencyService
 from .services.entity_resolution import EntityResolutionService
 from .services.graph_algorithms import GraphAlgorithmsService
@@ -205,6 +206,20 @@ def get_compliance_service(request: Request) -> ComplianceService:
     """
     rae_service = get_rae_core_service(request)
     return ComplianceService(rae_service=rae_service)
+
+
+def get_audit_service(request: Request) -> AuditService:
+    """
+    Factory for AuditService.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        Configured AuditService
+    """
+    rae_service = get_rae_core_service(request)
+    return AuditService(rae_service=rae_service)
 
 
 def get_hybrid_search_service(request: Request) -> HybridSearchService:

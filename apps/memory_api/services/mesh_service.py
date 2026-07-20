@@ -28,6 +28,7 @@ class PeerInfo(BaseModel):
     created_at: float
     status: str = "active"
     consent_grant_id: Optional[str] = None
+    transport_type: str = "http"
 
 
 class MeshInvite(BaseModel):
@@ -35,6 +36,29 @@ class MeshInvite(BaseModel):
     expires_at: float
     host_url: str
     tenant_id: str
+
+
+from uuid import UUID, uuid4
+
+def parse_uuid(val: Any) -> UUID:
+    if isinstance(val, UUID):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return UUID(val)
+        except ValueError:
+            pass
+    return uuid4()
+
+def parse_datetime(val: Any) -> Optional[datetime]:
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return None
 
 
 class MeshService:
@@ -222,7 +246,8 @@ class MeshService:
         token: str, 
         public_key: Optional[str] = None, 
         consent_grant_id: Optional[str] = None,
-        status: str = "active"
+        status: str = "active",
+        transport_type: str = "http"
     ) -> None:
         """Register a trusted peer after successful handshake."""
         encrypted_token = self.encrypt_auth_data(token, public_key)
@@ -245,7 +270,7 @@ class MeshService:
                     """,
                     peer_id,
                     name,
-                    "http",
+                    transport_type,
                     url,
                     encrypted_token,
                     consent_grant_id,
@@ -262,7 +287,8 @@ class MeshService:
                 token=token,
                 created_at=time.time(),
                 status=status,
-                consent_grant_id=consent_grant_id
+                consent_grant_id=consent_grant_id,
+                transport_type=transport_type
             )
             self._fallback_pubkeys[peer_id] = public_key
 
@@ -297,7 +323,8 @@ class MeshService:
                     token=token,
                     created_at=row["created_at"].timestamp(),
                     status=row["status"],
-                    consent_grant_id=row["consent_grant_id"]
+                    consent_grant_id=row["consent_grant_id"],
+                    transport_type=row.get("transport_type", "http")
                 )
             except Exception as e:
                 logger.error("failed_to_get_peer_from_db", error=str(e), peer_id=peer_id)
@@ -347,7 +374,8 @@ class MeshService:
                             token=token,
                             created_at=row["created_at"].timestamp(),
                             status=row["status"],
-                            consent_grant_id=row["consent_grant_id"]
+                            consent_grant_id=row["consent_grant_id"],
+                            transport_type=row.get("transport_type", "http")
                         )
                     )
                 return peers
@@ -495,3 +523,147 @@ class MeshService:
             "consent_token": consent_token,
             "memories": filtered_memories
         }
+
+    async def push_memories_to_peer(self, peer_id: str) -> int:
+        """Package unsynced memories, compute SHA-256 hashes, sign data, and send payloads to the peer sync endpoint."""
+        import httpx
+        from apps.memory_api.config import settings
+        from urllib.parse import urlparse
+        
+        peer = await self.get_peer(peer_id)
+        if not peer:
+            raise ValueError(f"Peer {peer_id} is not registered")
+            
+        memories = []
+        if self.pool is not None:
+            try:
+                async with self.pool.acquire() as conn:
+                    rows = await conn.fetch(
+                        """
+                        SELECT id, content, layer, tenant_id, agent_id, tags, metadata, importance, created_at, last_accessed_at, expires_at, project, session_id, memory_type, source, info_class
+                        FROM memories
+                        WHERE id NOT IN (
+                            SELECT memory_id FROM mesh_sync_log WHERE peer_id = $1 AND status = 'success'
+                        )
+                        """,
+                        peer_id
+                    )
+                    
+                    for row in rows:
+                        memories.append({
+                            "id": str(parse_uuid(row["id"])),
+                            "content": row["content"],
+                            "layer": row["layer"],
+                            "tenant_id": row["tenant_id"],
+                            "agent_id": row["agent_id"],
+                            "tags": list(row["tags"]) if row["tags"] else [],
+                            "metadata": json.loads(row["metadata"]) if isinstance(row["metadata"], str) else (row["metadata"] or {}),
+                            "importance": float(row["importance"]) if row["importance"] is not None else 0.5,
+                            "created_at": parse_datetime(row["created_at"]).isoformat() if parse_datetime(row["created_at"]) else None,
+                            "last_accessed_at": parse_datetime(row["last_accessed_at"]).isoformat() if parse_datetime(row["last_accessed_at"]) else None,
+                            "expires_at": parse_datetime(row["expires_at"]).isoformat() if parse_datetime(row["expires_at"]) else None,
+                            "project": row["project"],
+                            "session_id": row["session_id"],
+                            "memory_type": row["memory_type"],
+                            "source": row["source"],
+                            "info_class": row["info_class"] if "info_class" in row else "internal"
+                        })
+            except Exception as e:
+                logger.error("failed_to_fetch_unsynced_memories", error=str(e), peer_id=peer_id)
+                return 0
+        else:
+            # Fallback (in-memory) mode
+            return 0
+            
+        if not memories:
+            return 0
+            
+        # Filter memories using prepare_sync_payload
+        payload = await self.prepare_sync_payload(peer_id, memories, sender_id=settings.RAE_PEER_ID)
+        
+        if not payload.get("memories"):
+            return 0
+            
+        # Compute SHA-256 hashes of memories
+        memories_bytes = json.dumps(payload["memories"], sort_keys=True).encode("utf-8")
+        payload_hash = hashlib.sha256(memories_bytes).hexdigest()
+        
+        # Sign the hash using Ed25519 sender private key
+        private_key, _ = self.derive_key_pair(settings.RAE_PEER_ID)
+        signature = private_key.sign(memories_bytes).hex()
+        
+        payload["payload_hash"] = payload_hash
+        payload["signature"] = signature
+        
+        # Determine transport routing
+        success = False
+        transport = peer.transport_type.lower() if peer.transport_type else "http"
+        
+        # 1. Tor Hidden Services (starts with .onion or transport == tor)
+        if transport == "tor" or ".onion" in peer.url:
+            proxy = "socks5h://127.0.0.1:9050"
+            async with httpx.AsyncClient(proxy=proxy) as client:
+                try:
+                    resp = await client.post(
+                        f"{peer.url}/v2/mesh/sync/receive",
+                        json=payload,
+                        headers={"Authorization": f"Bearer {peer.token}"},
+                        timeout=30.0
+                    )
+                    if resp.status_code == 200 and resp.json().get("status") == "accepted":
+                        success = True
+                except Exception as e:
+                    logger.error("tor_sync_failed", error=str(e), url=peer.url)
+                    
+        # 2. Relay Broker (nats or matrix)
+        elif transport in ("nats", "matrix", "relay"):
+            from apps.memory_api.services.relay_broker import MatrixRelay, NATSRelay
+            if "matrix" in peer.url or transport == "matrix":
+                # Matrix relay
+                relay = MatrixRelay(
+                    homeserver_url=peer.url,
+                    access_token=peer.token,
+                    room_id="default-room",
+                    secret_key=self.secret_key
+                )
+                success = await relay.publish(payload)
+            else:
+                # NATS relay
+                parsed_url = urlparse(peer.url)
+                host = parsed_url.hostname or "127.0.0.1"
+                port = parsed_url.port or 4222
+                relay = NATSRelay(
+                    nats_host=host,
+                    nats_port=port,
+                    subject="rae.mesh.sync",
+                    secret_key=self.secret_key
+                )
+                success = await relay.publish(payload)
+                
+        # 3. Direct/Tailscale/VPN
+        else:
+            async with httpx.AsyncClient() as client:
+                try:
+                    resp = await client.post(
+                        f"{peer.url}/v2/mesh/sync/receive",
+                        json=payload,
+                        headers={"Authorization": f"Bearer {peer.token}"},
+                        timeout=30.0
+                    )
+                    if resp.status_code == 200 and resp.json().get("status") == "accepted":
+                        success = True
+                except Exception as e:
+                    logger.error("direct_sync_failed", error=str(e), url=peer.url)
+                    
+        if success:
+            # Mark successfully synced in database
+            for m in payload["memories"]:
+                await self.save_sync_log(
+                    peer_id=peer_id,
+                    memory_id=m["id"],
+                    content_hash=hashlib.sha256(m["content"].encode('utf-8')).hexdigest(),
+                    status="success"
+                )
+            return len(payload["memories"])
+            
+        return 0

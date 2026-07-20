@@ -1,20 +1,25 @@
-import httpx
 import os
+
+import httpx
 import structlog
 
 logger = structlog.get_logger(__name__)
+
 
 class RAESuiteClient:
     """
     Unified API Client for RAE Portal.
     Enforces Tenant Isolation and Project Context.
     """
+
     def __init__(self, api_url=None, tenant_id=None, token=None):
         # Default to standard production values
         self.api_url = api_url or os.getenv("RAE_API_URL", "http://rae-api-dev:8000")
-        self.tenant_id = tenant_id or os.getenv("RAE_TENANT_ID", "66435998-b1d9-5521-9481-55a9fd10e014")
+        self.tenant_id = tenant_id or os.getenv(
+            "RAE_TENANT_ID", "66435998-b1d9-5521-9481-55a9fd10e014"
+        )
         self.token = token
-        self.timeout = 300.0 # Increased for CPU-heavy QWEN 3.5
+        self.timeout = 300.0  # Increased for CPU-heavy QWEN 3.5
 
     def _get_headers(self, extra=None):
         headers = {
@@ -26,21 +31,22 @@ class RAESuiteClient:
             headers.update(extra)
         return headers
 
-    async def execute_agent(self, prompt, project="default", model=None, mode="procedural"):
+    async def execute_agent(
+        self, prompt, project="default", model=None, mode="procedural"
+    ):
         """Calls AGIS v3.0 logic with specific reasoning mode."""
         url = f"{self.api_url}/v2/agent/execute"
         headers = self._get_headers({"Content-Type": "application/json"})
         payload = {
             "prompt": prompt,
             "project": project,
-            "metadata": {
-                "llm_model": model,
-                "mode": mode # analytical vs procedural
-            }
+            "metadata": {"llm_model": model, "mode": mode},  # analytical vs procedural
         }
         async with httpx.AsyncClient() as client:
             try:
-                r = await client.post(url, json=payload, headers=headers, timeout=self.timeout)
+                r = await client.post(
+                    url, json=payload, headers=headers, timeout=self.timeout
+                )
                 if r.status_code == 200:
                     return r.json()
                 return {"answer": f"Error {r.status_code}: {r.text[:200]}"}
@@ -68,7 +74,7 @@ class RAESuiteClient:
             "project": project,
             "source": source,
             "importance": 0.7,
-            "tags": ["portal_ingest"]
+            "tags": ["portal_ingest"],
         }
         async with httpx.AsyncClient() as client:
             try:
@@ -77,3 +83,58 @@ class RAESuiteClient:
             except Exception as e:
                 logger.error("ingestion_failed", error=str(e))
                 return False
+
+    async def get_compliance_report(
+        self, project="default", report_type="full", include_audit_trail=True
+    ):
+        """Fetches ISO 42001 / ISO 27001 compliance report."""
+        url = f"{self.api_url}/v2/dashboard/compliance/report"
+        headers = self._get_headers({"Content-Type": "application/json"})
+        payload = {
+            "tenant_id": self.tenant_id,
+            "project": project,
+            "report_type": report_type,
+            "include_audit_trail": include_audit_trail,
+        }
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.post(url, json=payload, headers=headers, timeout=30.0)
+                if r.status_code == 200:
+                    return r.json()
+                logger.error(
+                    "get_compliance_report_failed",
+                    status_code=r.status_code,
+                    response=r.text[:200],
+                )
+                return {}
+            except Exception as e:
+                logger.error("get_compliance_report_connection_failed", error=str(e))
+                return {}
+
+    async def get_compliance_audit_trail(self, project="default", page=1, page_size=20):
+        """Fetches compliance audit trail logs."""
+        url = f"{self.api_url}/v2/dashboard/compliance/audit-trail?tenant_id={self.tenant_id}&project={project}&page={page}&page_size={page_size}"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.get(url, headers=headers, timeout=10.0)
+                if r.status_code == 200:
+                    return r.json()
+                return {"items": []}
+            except Exception as e:
+                logger.error("get_compliance_audit_trail_failed", error=str(e))
+                return {"items": []}
+
+    async def get_rls_status(self):
+        """Fetches RLS status from the database security checks."""
+        url = f"{self.api_url}/v2/dashboard/compliance/rls-status?tenant_id={self.tenant_id}"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.get(url, headers=headers, timeout=10.0)
+                if r.status_code == 200:
+                    return r.json()
+                return {}
+            except Exception as e:
+                logger.error("get_rls_status_failed", error=str(e))
+                return {}

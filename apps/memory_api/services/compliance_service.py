@@ -291,12 +291,12 @@ class ComplianceService:
         """
         critical_tables = [
             "memories",
-            "semantic_nodes",
-            "graph_triples",
             "reflections",
-            "cost_logs",
-            "audit_logs",
-            "deletion_audit_log",
+            "access_logs",
+            "knowledge_graph_nodes",
+            "knowledge_graph_edges",
+            "token_savings_log",
+            "budgets",
         ]
 
         tables_with_rls = []
@@ -813,13 +813,18 @@ class ComplianceService:
             result = await conn.fetchrow(
                 """
                 SELECT
-                    COUNT(CASE WHEN trust_level = 'high' THEN 1 END) as high_trust,
-                    COUNT(CASE WHEN trust_level = 'medium' THEN 1 END) as medium_trust,
-                    COUNT(CASE WHEN trust_level = 'low' THEN 1 END) as low_trust,
-                    COUNT(CASE WHEN trust_level = 'unverified' THEN 1 END) as unverified,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'high' THEN 1 END) as high_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'medium' THEN 1 END) as medium_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'low' THEN 1 END) as low_trust,
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') = 'unverified' THEN 1 END) as unverified,
                     COUNT(*) as total
                 FROM memories
-                WHERE tenant_id = $1
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                )
                 """,
                 tenant_id,
             )
@@ -909,9 +914,14 @@ class ComplianceService:
                 """
                 SELECT
                     COUNT(*) as total,
-                    COUNT(CASE WHEN trust_level != 'unverified' THEN 1 END) as verified
+                    COUNT(CASE WHEN COALESCE(metadata->>'trust_level', 'unverified') != 'unverified' THEN 1 END) as verified
                 FROM memories
-                WHERE tenant_id = $1
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                )
                 """,
                 tenant_id,
             )
@@ -984,7 +994,7 @@ class ComplianceService:
                     COUNT(*) as total_checks,
                     COUNT(CASE WHEN compliant THEN 1 END) as compliant_checks
                 FROM policy_enforcement_results
-                WHERE tenant_id = $1
+                WHERE tenant_id = $1::text
                     AND checked_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1006,7 +1016,7 @@ class ComplianceService:
                     COUNT(CASE WHEN new_state = 'open' THEN 1 END) as times_opened,
                     COUNT(CASE WHEN new_state = 'closed' AND previous_state = 'half_open' THEN 1 END) as recoveries
                 FROM circuit_breaker_events
-                WHERE tenant_id = $1
+                WHERE tenant_id = $1::text
                     AND event_time >= NOW() - INTERVAL '7 days'
                 """,
                 tenant_id,
@@ -1037,7 +1047,12 @@ class ComplianceService:
                     AVG(coverage_score) as avg_coverage,
                     COUNT(*) as context_count
                 FROM decision_contexts
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND created_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1064,7 +1079,12 @@ class ComplianceService:
                 """
                 SELECT COUNT(*) as decision_count
                 FROM decision_records
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND decided_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1092,7 +1112,12 @@ class ComplianceService:
                     COUNT(*) as total_requests,
                     COUNT(CASE WHEN risk_level IN ('high', 'critical') THEN 1 END) as high_risk_requests
                 FROM approval_requests
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND requested_at >= NOW() - INTERVAL '30 days'
                 """,
                 tenant_id,
@@ -1115,7 +1140,12 @@ class ComplianceService:
                     COUNT(*) as total_high_risk,
                     COUNT(CASE WHEN status IN ('approved', 'auto_approved') THEN 1 END) as approved_count
                 FROM approval_requests
-                WHERE tenant_id = $1 AND project = $2
+                WHERE tenant_id::text = (
+                    CASE 
+                        WHEN $1 ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN $1::text
+                        ELSE (SELECT id::text FROM public.tenants WHERE name = $1 LIMIT 1)
+                    END
+                ) AND project_id = $2
                     AND risk_level IN ('high', 'critical')
                     AND requested_at >= NOW() - INTERVAL '30 days'
                 """,
