@@ -87,6 +87,13 @@ class Settings(BaseSettings):
     ENABLE_JWT_AUTH: bool = False
     SECRET_KEY: str = "change-this-secret-key-in-production"
 
+    # --- Keycloak Integration ---
+    ENABLE_KEYCLOAK_AUTH: bool = False
+    KEYCLOAK_URL: str = "http://localhost:8080"
+    KEYCLOAK_REALM: str = "rae-realm"
+    KEYCLOAK_FRONTEND_CLIENT_ID: str = "rae-portal"
+    KEYCLOAK_BACKEND_CLIENT_ID: str = "rae-memory-api"
+
     ENABLE_RATE_LIMITING: bool = False
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW: int = 60

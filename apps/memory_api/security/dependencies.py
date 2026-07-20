@@ -195,3 +195,69 @@ def require_tenant_role(min_role: str) -> Callable:
         return True
 
     return _check_role
+
+
+async def get_keycloak_claims(request: Request) -> dict:
+    """
+    Extract and parse Keycloak token claims.
+    If Keycloak auth is enabled, verifies the token and populates request.state.user.
+    Returns parsed claims dictionary or empty dictionary.
+    """
+    if settings.ENABLE_KEYCLOAK_AUTH:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            try:
+                from fastapi.security import HTTPAuthorizationCredentials
+                credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+                user = await auth.verify_token(credentials=credentials)
+                request.state.user = user
+                return user.get("claims", {})
+            except Exception as e:
+                logger.warning("keycloak_claims_extraction_failed", error=str(e))
+    return {}
+
+
+async def verify_linearizable_mutation(request: Request) -> None:
+    """
+    Enforce linearizability check for database and cache state on mutation requests (POST, PUT, DELETE).
+    Verifies that the database pool and Redis connection are online and healthy before mutations are allowed.
+    """
+    import os
+    if request.method in ("POST", "PUT", "DELETE"):
+        # 1. Verify PostgreSQL health
+        pool = getattr(request.app.state, "pool", None)
+        if not pool:
+            if settings.RAE_PROFILE != "lite" and os.getenv("RAE_DB_MODE") != "ignore":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Database pool is offline. Mutation rejected to enforce consistency.",
+                )
+        else:
+            try:
+                async with pool.acquire() as conn:
+                    await conn.execute("SELECT 1")
+            except Exception as e:
+                logger.error("linearizable_mutation_db_health_failed", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Database connection unhealthy: {str(e)}. Mutation rejected.",
+                )
+
+        # 2. Verify Redis health
+        redis_client = getattr(request.app.state, "redis_client", None)
+        if not redis_client:
+            if settings.RAE_PROFILE != "lite" and os.getenv("RAE_DB_MODE") != "ignore":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Redis client is offline. Mutation rejected to enforce consistency.",
+                )
+        else:
+            try:
+                await redis_client.ping()
+            except Exception as e:
+                logger.error("linearizable_mutation_redis_health_failed", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Redis is unreachable: {str(e)}. Mutation rejected.",
+                )

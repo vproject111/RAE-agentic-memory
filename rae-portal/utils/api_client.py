@@ -9,19 +9,27 @@ class RAESuiteClient:
     Unified API Client for RAE Portal.
     Enforces Tenant Isolation and Project Context.
     """
-    def __init__(self, api_url=None, tenant_id=None):
+    def __init__(self, api_url=None, tenant_id=None, token=None):
         # Default to standard production values
         self.api_url = api_url or os.getenv("RAE_API_URL", "http://rae-api-dev:8000")
         self.tenant_id = tenant_id or os.getenv("RAE_TENANT_ID", "66435998-b1d9-5521-9481-55a9fd10e014")
+        self.token = token
         self.timeout = 300.0 # Increased for CPU-heavy QWEN 3.5
+
+    def _get_headers(self, extra=None):
+        headers = {
+            "X-Tenant-Id": self.tenant_id,
+        }
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        if extra:
+            headers.update(extra)
+        return headers
 
     async def execute_agent(self, prompt, project="default", model=None, mode="procedural"):
         """Calls AGIS v3.0 logic with specific reasoning mode."""
         url = f"{self.api_url}/v2/agent/execute"
-        headers = {
-            "X-Tenant-Id": self.tenant_id,
-            "Content-Type": "application/json"
-        }
+        headers = self._get_headers({"Content-Type": "application/json"})
         payload = {
             "prompt": prompt,
             "project": project,
@@ -43,7 +51,7 @@ class RAESuiteClient:
     async def get_stats(self, project="default"):
         """Fetches knowledge base statistics for specific project context."""
         url = f"{self.api_url}/v2/memories/stats?project={project}"
-        headers = {"X-Tenant-Id": self.tenant_id}
+        headers = self._get_headers()
         async with httpx.AsyncClient() as client:
             try:
                 r = await client.get(url, headers=headers, timeout=10.0)
@@ -54,7 +62,7 @@ class RAESuiteClient:
     async def ingest_text(self, text, project="default", source="portal_upload"):
         """Universal text ingestion into specific context."""
         url = f"{self.api_url}/v2/memories/"
-        headers = {"X-Tenant-Id": self.tenant_id}
+        headers = self._get_headers()
         payload = {
             "content": text,
             "project": project,

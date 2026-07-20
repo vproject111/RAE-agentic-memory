@@ -18,7 +18,7 @@ except Exception as e:
     sys.exit(1)
 
 import structlog
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -38,6 +38,7 @@ from apps.memory_api.middleware.budget_enforcer import BudgetEnforcementMiddlewa
 from apps.memory_api.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from apps.memory_api.middleware.session import SessionContextMiddleware
 from apps.memory_api.middleware.tenant import TenantContextMiddleware
+from apps.memory_api.security.dependencies import verify_linearizable_mutation
 from apps.memory_api.observability import health_checks as health_router
 from apps.memory_api.observability import (
     instrument_fastapi,
@@ -195,6 +196,7 @@ app = FastAPI(
     description="Reflective Agentic Engine - Memory Control Plane API",
     version="3.6.1",
     docs_url="/docs",
+    dependencies=[Depends(verify_linearizable_mutation)],
     lifespan=lifespan,
 )
 
