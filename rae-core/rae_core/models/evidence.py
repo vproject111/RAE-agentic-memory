@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,7 +21,9 @@ class ActionRecord(BaseModel):
     action_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     department: str
     role: str
+    action_type: str
     goal: str
+    tools_used: list[str] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     trace_id: str
 
@@ -30,14 +32,21 @@ class DecisionEvidenceRecord(BaseModel):
     evidence_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     decision_summary: str
     reasoning_summary: str
+    policy_basis: str | None = None
+    input_refs: list[str] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
+    cost: float | None = None
     cost_vector: CostVector | None = None
 
 
 class OutcomeRecord(BaseModel):
     outcome_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     action_id: str
-    result: str
+    result: str  # success | failure | partial
+    quality_result: str | None = None
+    latency_ms: int | None = None
+    cost: float | None = None
+    observed_effect: str | None = None
     cost_vector: CostVector | None = None
 
 
