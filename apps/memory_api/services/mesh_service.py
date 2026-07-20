@@ -38,6 +38,29 @@ class MeshInvite(BaseModel):
     tenant_id: str
 
 
+from uuid import UUID, uuid4
+
+def parse_uuid(val: Any) -> UUID:
+    if isinstance(val, UUID):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return UUID(val)
+        except ValueError:
+            pass
+    return uuid4()
+
+def parse_datetime(val: Any) -> Optional[datetime]:
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, str) and val:
+        try:
+            return datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return None
+
+
 class MeshService:
     """
     Manages the 'Trust Handshake' protocol.
@@ -528,7 +551,7 @@ class MeshService:
                     
                     for row in rows:
                         memories.append({
-                            "id": str(row["id"]),
+                            "id": str(parse_uuid(row["id"])),
                             "content": row["content"],
                             "layer": row["layer"],
                             "tenant_id": row["tenant_id"],
@@ -536,9 +559,9 @@ class MeshService:
                             "tags": list(row["tags"]) if row["tags"] else [],
                             "metadata": json.loads(row["metadata"]) if isinstance(row["metadata"], str) else (row["metadata"] or {}),
                             "importance": float(row["importance"]) if row["importance"] is not None else 0.5,
-                            "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-                            "last_accessed_at": row["last_accessed_at"].isoformat() if row["last_accessed_at"] else None,
-                            "expires_at": row["expires_at"].isoformat() if row["expires_at"] else None,
+                            "created_at": parse_datetime(row["created_at"]).isoformat() if parse_datetime(row["created_at"]) else None,
+                            "last_accessed_at": parse_datetime(row["last_accessed_at"]).isoformat() if parse_datetime(row["last_accessed_at"]) else None,
+                            "expires_at": parse_datetime(row["expires_at"]).isoformat() if parse_datetime(row["expires_at"]) else None,
                             "project": row["project"],
                             "session_id": row["session_id"],
                             "memory_type": row["memory_type"],

@@ -12,9 +12,24 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 logger = logging.getLogger(__name__)
 
 
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+
+
+def _derive_relay_key(secret_key: str) -> bytes:
+    """Derive a 256-bit key from secret_key using HKDF with info block."""
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=b"rae-mesh-relay"
+    )
+    return hkdf.derive(secret_key.encode("utf-8"))
+
+
 def encrypt_payload(payload: Dict[str, Any], secret_key: str) -> str:
     """Encrypt payload using AES-256-GCM."""
-    key = hashlib.sha256(secret_key.encode("utf-8")).digest()
+    key = _derive_relay_key(secret_key)
     aesgcm = AESGCM(key)
     nonce = secrets.token_bytes(12)
     plaintext = json.dumps(payload).encode("utf-8")
@@ -25,7 +40,7 @@ def encrypt_payload(payload: Dict[str, Any], secret_key: str) -> str:
 
 def decrypt_payload(encrypted_b64: str, secret_key: str) -> Dict[str, Any]:
     """Decrypt payload using AES-256-GCM."""
-    key = hashlib.sha256(secret_key.encode("utf-8")).digest()
+    key = _derive_relay_key(secret_key)
     aesgcm = AESGCM(key)
     raw_data = base64.b64decode(encrypted_b64.encode("utf-8"))
     if len(raw_data) < 12:
