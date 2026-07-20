@@ -26,6 +26,7 @@ from apps.phoenix_repair import PhoenixRepairApp
 from apps.hive_sandbox import HiveSandboxApp
 from apps.openclaw_escalation import OpenClawEscalationApp
 from apps.rae_crl import RaeCrlApp
+from apps.mesh_federation import MeshFederationApp
 
 # Load Keycloak configurations
 try:
@@ -66,6 +67,7 @@ class RAESuitePortal:
         self.hive_sandbox_app = HiveSandboxApp(self.client)
         self.openclaw_escalation_app = OpenClawEscalationApp(self.client)
         self.rae_crl_app = RaeCrlApp(self.client)
+        self.mesh_federation_app = MeshFederationApp(self.client)
         
         # State variables for Faza 2
         self.connection_status = "Offline"
@@ -483,6 +485,8 @@ class RAESuitePortal:
                               on_click=lambda: self.set_page('openclaw_escalation')).props(f'flat align=left {"color=red" if self.current_page=="openclaw_escalation" else ""}').classes('w-full')
                     ui.button('RAE-CRL Console', icon='rule_folder', 
                               on_click=lambda: self.set_page('rae_crl')).props(f'flat align=left {"color=deep-orange" if self.current_page=="rae_crl" else ""}').classes('w-full')
+                    ui.button('Mesh Federation', icon='hub', 
+                              on_click=lambda: self.set_page('mesh_federation')).props(f'flat align=left {"color=indigo" if self.current_page=="mesh_federation" else ""}').classes('w-full')
 
                 ui.label('CAPABILITIES').classes('text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest')
                 with ui.column().classes('w-full gap-2'):
@@ -535,6 +539,9 @@ class RAESuitePortal:
             elif self.current_page == "rae_crl":
                 self.rae_crl_app.on_inspect = self.open_inspector
                 self.rae_crl_app.render()
+            elif self.current_page == "mesh_federation":
+                self.mesh_federation_app.on_inspect = self.open_inspector
+                self.mesh_federation_app.render()
             elif self.current_page == "oracle":
                 self.oracle_app.render(self.model_select, self.source_select)
             elif self.current_page == "wizard":

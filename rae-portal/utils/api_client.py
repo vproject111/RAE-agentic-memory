@@ -138,3 +138,104 @@ class RAESuiteClient:
             except Exception as e:
                 logger.error("get_rls_status_failed", error=str(e))
                 return {}
+
+    async def create_mesh_invite(self, host_url: str):
+        url = f"{self.api_url}/v2/mesh/invite"
+        headers = self._get_headers({"Content-Type": "application/json"})
+        payload = {"host_url": host_url, "tenant_id": self.tenant_id}
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.post(url, json=payload, headers=headers, timeout=30.0)
+                if r.status_code in [200, 201]:
+                    return r.json()
+                return {"error": r.text}
+            except Exception as e:
+                return {"error": str(e)}
+
+    async def join_mesh(self, invite_code: str, my_peer_id: str, my_public_url: str, my_name: str):
+        url = f"{self.api_url}/v2/mesh/join"
+        headers = self._get_headers({"Content-Type": "application/json"})
+        payload = {
+            "invite_code": invite_code,
+            "my_peer_id": my_peer_id,
+            "my_public_url": my_public_url,
+            "my_name": my_name
+        }
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.post(url, json=payload, headers=headers, timeout=60.0)
+                if r.status_code in [200, 201]:
+                    return r.json()
+                return {"error": r.text}
+            except Exception as e:
+                return {"error": str(e)}
+
+    async def list_mesh_peers(self):
+        url = f"{self.api_url}/v2/mesh/peers"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.get(url, headers=headers, timeout=10.0)
+                if r.status_code == 200:
+                    return r.json()
+                return []
+            except Exception as e:
+                logger.error("list_mesh_peers_failed", error=str(e))
+                return []
+
+    async def get_mesh_peer_status(self, peer_id: str):
+        url = f"{self.api_url}/v2/mesh/peers/{peer_id}/status"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.get(url, headers=headers, timeout=10.0)
+                if r.status_code == 200:
+                    return r.json()
+                return {"status": "offline", "latency_ms": -1, "sync_stats": {}}
+            except Exception as e:
+                logger.error("get_mesh_peer_status_failed", error=str(e))
+                return {"status": "offline", "latency_ms": -1, "sync_stats": {}}
+
+    async def trigger_mesh_peer_sync(self, peer_id: str):
+        url = f"{self.api_url}/v2/mesh/peers/{peer_id}/sync"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.post(url, headers=headers, timeout=120.0)
+                if r.status_code in [200, 201]:
+                    return r.json()
+                return {"error": r.text}
+            except Exception as e:
+                return {"error": str(e)}
+
+    async def register_mesh_peer(self, peer_id: str, name: str, url: str, token: str, transport_type: str):
+        endpoint = f"{self.api_url}/v2/mesh/peers"
+        headers = self._get_headers({"Content-Type": "application/json"})
+        payload = {
+            "peer_id": peer_id,
+            "name": name,
+            "url": url,
+            "token": token,
+            "transport_type": transport_type
+        }
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.post(endpoint, json=payload, headers=headers, timeout=30.0)
+                if r.status_code in [200, 201]:
+                    return r.json()
+                return {"error": r.text}
+            except Exception as e:
+                return {"error": str(e)}
+
+    async def revoke_mesh_peer(self, peer_id: str):
+        url = f"{self.api_url}/v2/mesh/peers/{peer_id}"
+        headers = self._get_headers()
+        async with httpx.AsyncClient() as client:
+            try:
+                r = await client.delete(url, headers=headers, timeout=30.0)
+                if r.status_code in [200, 201]:
+                    return r.json()
+                return {"error": r.text}
+            except Exception as e:
+                return {"error": str(e)}
+

@@ -612,3 +612,139 @@ async def receive_sync_data(
     processed_count = sum(results)
             
     return {"status": "accepted", "processed": processed_count}
+
+
+class PeerRegisterRequest(BaseModel):
+    peer_id: str
+    name: str
+    url: str
+    token: str
+    public_key: Optional[str] = None
+    consent_grant_id: Optional[str] = None
+    status: str = "active"
+    transport_type: str = "http"
+
+
+@router.post("/peers")
+async def register_peer(
+    request: PeerRegisterRequest,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Register or update a peer configuration."""
+    try:
+        await service.register_peer(
+            peer_id=request.peer_id,
+            name=request.name,
+            url=request.url,
+            token=request.token,
+            public_key=request.public_key,
+            consent_grant_id=request.consent_grant_id,
+            status=request.status,
+            transport_type=request.transport_type
+        )
+        return {"status": "success", "message": f"Peer {request.peer_id} registered/updated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/peers/{peer_id}")
+async def revoke_peer(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Revoke/Delete a peer configuration."""
+    try:
+        await service.revoke_peer(peer_id)
+        return {"status": "success", "message": f"Peer {peer_id} revoked"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/peers/{peer_id}/sync")
+async def trigger_peer_sync(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Trigger manual synchronization for a specific peer."""
+    # Enforce Redis advisory lock
+    lock_key = f"mesh_sync_{peer_id}"
+    locked = False
+    if service.redis_client is not None:
+        locked = await service.redis_client.set(lock_key, "1", ex=300, nx=True)
+        if not locked:
+            raise HTTPException(status_code=409, detail="Synchronization already in progress for this peer")
+            
+    try:
+        synced_count = await service.push_memories_to_peer(peer_id)
+        return {"status": "success", "synced_memories": synced_count}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error("manual_sync_failed", peer_id=peer_id, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if locked and service.redis_client is not None:
+            await service.redis_client.delete(lock_key)
+
+
+@router.get("/peers/{peer_id}/status")
+async def get_peer_status(
+    peer_id: str,
+    service: MeshService = Depends(get_mesh_service)
+):
+    """Get peer status including latency and sync statistics."""
+    peer = await service.get_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+        
+    # Measure latency
+    import time
+    import httpx
+    latency = -1
+    if peer.url:
+        start_time = time.time()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"{peer.url}/v2/mesh/handshake/challenge", timeout=5.0)
+                if response.status_code == 200:
+                    latency = int((time.time() - start_time) * 1000)
+        except Exception:
+            pass
+            
+    success_count = 0
+    failed_count = 0
+    last_synced_at = None
+    
+    if service.pool is not None:
+        try:
+            stats = await service.pool.fetch(
+                """
+                SELECT status, COUNT(*), MAX(synced_at) as last_sync
+                FROM mesh_sync_log
+                WHERE peer_id = $1
+                GROUP BY status
+                """,
+                peer_id
+            )
+            for row in stats:
+                if row["status"] == "success":
+                    success_count = row["count"]
+                else:
+                    failed_count = row["count"]
+                if row["last_sync"]:
+                    if not last_synced_at or row["last_sync"] > last_synced_at:
+                        last_synced_at = row["last_sync"]
+        except Exception as e:
+            logger.error("failed_to_fetch_sync_stats", peer_id=peer_id, error=str(e))
+            
+    return {
+        "peer_id": peer_id,
+        "status": "online" if latency >= 0 else "offline",
+        "latency_ms": latency,
+        "sync_stats": {
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "last_synced_at": last_synced_at.isoformat() if last_synced_at else None
+        }
+    }
+
