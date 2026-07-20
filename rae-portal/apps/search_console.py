@@ -7,6 +7,7 @@ class SearchConsoleApp:
     def __init__(self, client: RAESuiteClient):
         self.client = client
         self.query = ""
+        self.project = "default"
         self.manifold_mode = "silicon_oracle"
         self.enable_vector = True
         self.enable_semantic = True
@@ -30,7 +31,7 @@ class SearchConsoleApp:
         url = f"{self.client.api_url}/v2/search/hybrid"
         payload = {
             "tenant_id": self.client.tenant_id,
-            "project": "default",
+            "project": self.project,
             "query": self.query,
             "k": 10,
             "enable_vector_search": self.enable_vector,
@@ -129,6 +130,15 @@ class SearchConsoleApp:
                     "system_100_fluid": "System 100: Fluid",
                     "legacy_416": "Legacy 4.1.6"
                 }, value=self.manifold_mode, on_change=lambda e: setattr(self, 'manifold_mode', e.value)).classes('w-full').props('dark dense outlined')
+
+                ui.separator().classes('my-6 bg-slate-800')
+                ui.label('PROJECT CONTEXT').classes('text-xs font-black text-slate-400 mb-4 tracking-widest')
+                
+                self.proj_in = ui.input(
+                    label='Project Context',
+                    value=self.project,
+                    on_change=lambda e: setattr(self, 'project', e.value)
+                ).classes('w-full').props('dark dense outlined')
 
             # Right panel: query and results
             with ui.column().classes('flex-grow gap-y-4'):

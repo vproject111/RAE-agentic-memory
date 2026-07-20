@@ -12,7 +12,10 @@ from .redis_adapter import RedisAdapter as RedisCache
 from .sqlite.storage import SQLiteStorage
 from .sqlite.vector import SQLiteVectorStore
 from .openapi_adapter import OpenAPIAdapter, OpenAPIQueryParams
-from .git_adapter import GitRuntimeAdapter
+try:
+    from .git_adapter import GitRuntimeAdapter
+except ImportError:
+    GitRuntimeAdapter = None
 from .rae_memory_adapter import RAEAgenticMemoryAdapter, RAEMemoryQueryParams
 
 # Aliases for backwards compatibility

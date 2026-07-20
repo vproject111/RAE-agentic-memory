@@ -364,6 +364,14 @@ class HybridSearchService:
     # Strategy Implementations
     # ========================================================================
 
+    def _parse_metadata(self, metadata: Any) -> Dict[str, Any]:
+        if isinstance(metadata, str):
+            try:
+                return json.loads(metadata)
+            except Exception:
+                return {}
+        return metadata or {}
+
     async def _vector_search(
         self,
         tenant_id: str,
@@ -418,20 +426,12 @@ class HybridSearchService:
 
             results = []
             for record in records:
-                # SYSTEM 94.1: Robust JSONB parsing for metadata
-                meta = record.get("metadata", {})
-                if isinstance(meta, str):
-                    try:
-                        meta = json.loads(meta)
-                    except Exception:
-                        meta = {}
-
                 results.append(
                     {
                         "memory_id": record["id"],
                         "content": record["content"],
                         "score": float(record["similarity"]),
-                        "metadata": meta or {},
+                        "metadata": self._parse_metadata(record.get("metadata")),
                         "created_at": record["created_at"],
                     }
                 )
@@ -496,7 +496,7 @@ class HybridSearchService:
                                 "memory_id": mem["id"],
                                 "content": mem["content"],
                                 "score": float(record["importance_score"]),
-                                "metadata": mem.get("metadata", {}),
+                                "metadata": self._parse_metadata(mem.get("metadata")),
                                 "created_at": mem["created_at"],
                                 "semantic_node": str(record["id"]),
                             }
@@ -643,7 +643,7 @@ class HybridSearchService:
                         "memory_id": mem["id"],
                         "content": mem["content"],
                         "score": float(mem.get("importance", 0.5)),
-                        "metadata": mem.get("metadata", {}),
+                        "metadata": self._parse_metadata(mem.get("metadata")),
                         "created_at": mem["created_at"],
                         "source": "graph_traversal",
                     }
@@ -703,7 +703,7 @@ class HybridSearchService:
                     "memory_id": record["id"],
                     "content": record["content"],
                     "score": float(record["rank"]),
-                    "metadata": record.get("metadata", {}),
+                    "metadata": self._parse_metadata(record.get("metadata")),
                     "created_at": record["created_at"],
                 }
                 for record in records

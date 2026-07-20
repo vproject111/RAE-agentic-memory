@@ -48,7 +48,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y \
-    curl libpq5 procps \
+    curl libpq5 procps git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
