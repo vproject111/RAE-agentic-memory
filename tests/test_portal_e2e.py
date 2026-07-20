@@ -15,15 +15,42 @@ def run_portal():
     env = os.environ.copy()
     env["PORT"] = str(PORT)
     env["NICEGUI_SCREEN_TEST_PORT"] = str(PORT)
+    
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    env["PYTHONPATH"] = repo_root + (os.pathsep + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else "")
+    
+    log_file = open("/tmp/rae_portal_test.log", "w")
     proc = subprocess.Popen(
         [sys.executable, "rae-portal/main.py"],
-        env=env
+        env=env,
+        cwd=repo_root,
+        stdout=log_file,
+        stderr=log_file
     )
     # Wait for NiceGUI to start up
-    time.sleep(3.0)
+    import socket
+    start_time = time.time()
+    success = False
+    while time.time() - start_time < 15.0:
+        try:
+            with socket.create_connection(("127.0.0.1", PORT), timeout=1.0):
+                success = True
+                break
+        except (socket.timeout, ConnectionRefusedError):
+            time.sleep(0.5)
+            
+    if not success:
+        try:
+            with open("/tmp/rae_portal_test.log", "r") as f:
+                log_content = f.read()
+        except Exception:
+            log_content = "Could not read log file."
+        raise RuntimeError(f"Portal failed to start within 15 seconds. Log content:\n{log_content}")
+        
     yield
     proc.terminate()
     proc.wait()
+    log_file.close()
 
 def test_portal_navigation_and_wcga():
     with sync_playwright() as p:
