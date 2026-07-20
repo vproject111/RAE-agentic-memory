@@ -7,13 +7,20 @@ import sys
 import time
 
 import httpx
+import sys
+import os
+print("DEBUG: sys.path is:", sys.path, file=sys.stderr)
+if 'apps' in sys.modules:
+    print("DEBUG: apps is already in sys.modules:", sys.modules['apps'], file=sys.stderr)
+else:
+    print("DEBUG: apps is NOT in sys.modules", file=sys.stderr)
 import websockets
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from nicegui import app, background_tasks, ui
 
 # Add current directory to path for modules
-sys.path.append(os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from utils.api_client import RAESuiteClient
 

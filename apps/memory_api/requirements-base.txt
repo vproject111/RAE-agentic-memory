@@ -27,7 +27,7 @@ diskcache==5.6.3
 distro==1.9.0
 docstring_parser==0.17.0
 dparse==0.6.4
-ecdsa==0.19.1
+ecdsa==0.19.2
 fastapi==0.135.1
 fastuuid==0.14.0
 filelock==3.25.2
@@ -75,7 +75,7 @@ multidict==6.7.1
 mysql-connector-python==9.6.0
 networkx>=3.0
 nh3==0.3.6
-nltk>=3.8
+nltk>=3.10.0
 numpy>=2.0
 onnxruntime>=1.20.0
 openai>=1.50.0
@@ -105,10 +105,10 @@ pyasn1==0.6.3
 pyasn1_modules==0.4.2
 pycparser==3.0
 pydantic==2.12.5
-pydantic-settings==2.13.1
+pydantic-settings==2.14.2
 pydantic_core==2.41.5
 Pygments==2.19.2
-PyJWT==2.12.1
+PyJWT==2.13.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
