@@ -67,6 +67,9 @@ class RAECoreService:
         self.savings_service: Optional[TokenSavingsService] = None
         self.websocket_service: Optional[DashboardWebSocketService] = None
         self.tuning_service: Any = None  # Phase 4
+        from apps.memory_api.services.alert_service import AlertService
+
+        self.alert_service = AlertService()
 
         if postgres_pool:
             self.savings_service = TokenSavingsService(postgres_pool)
@@ -552,7 +555,10 @@ class RAECoreService:
         return EnhancedGraphRepository(self.db)
 
     def _enforce_security_policy(
-        self, info_class: str, target_layer: str | MemoryLayer
+        self,
+        info_class: str,
+        target_layer: str | MemoryLayer,
+        tenant_id: str = "unknown",
     ) -> None:
         """Enforce ISO 27000 security policies."""
         layer_value = (
@@ -565,6 +571,11 @@ class RAECoreService:
         # 1. RESTRICTED: Only allowed in Working layer
         if info_class == InformationClass.RESTRICTED:
             if layer_value != MemoryLayer.WORKING:
+                self.alert_service.trigger_security_alert(
+                    tenant_id,
+                    "RESTRICTED data promotion outside Working layer blocked",
+                    {"layer": str(layer_value), "info_class": str(info_class)},
+                )
                 logger.error(
                     "security_policy_violation",
                     reason="RESTRICTED data blocked outside Working layer",
@@ -579,6 +590,11 @@ class RAECoreService:
         # 2. CONFIDENTIAL: Blocked from Semantic layer
         elif info_class == InformationClass.CONFIDENTIAL:
             if layer_value == MemoryLayer.SEMANTIC:
+                self.alert_service.trigger_security_alert(
+                    tenant_id,
+                    "CONFIDENTIAL data promotion to Semantic layer blocked",
+                    {"layer": str(layer_value), "info_class": str(info_class)},
+                )
                 logger.error(
                     "security_policy_violation",
                     reason="CONFIDENTIAL data blocked from Semantic layer",
@@ -777,7 +793,7 @@ class RAECoreService:
         """
         # 1. Enforcement Logic (ISO 27000)
         target_layer = layer or MemoryLayer.EPISODIC
-        self._enforce_security_policy(info_class, target_layer)
+        self._enforce_security_policy(info_class, target_layer, tenant_id=tenant_id)
 
         # 2. Agentic Pattern Detection (Governance logic)
         tags = tags or []

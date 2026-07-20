@@ -38,6 +38,7 @@ from apps.memory_api.models.dashboard_models import (
     RLSVerificationStatus,
     SourceTrustMetric,
 )
+from apps.memory_api.services.alert_service import AlertService
 from apps.memory_api.services.rae_core_service import RAECoreService
 
 logger = logging.getLogger(__name__)
@@ -122,8 +123,11 @@ class ComplianceService:
         },
     }
 
-    def __init__(self, rae_service: RAECoreService):
+    def __init__(
+        self, rae_service: RAECoreService, alert_service: Optional[AlertService] = None
+    ):
         self.rae_service = rae_service
+        self.alert_service = alert_service or AlertService()
 
     async def generate_compliance_report(
         self,
@@ -275,6 +279,18 @@ class ComplianceService:
             },
         )
 
+        if overall_score < 80.0:
+            self.alert_service.trigger_compliance_alert(
+                tenant_id,
+                overall_score,
+                (
+                    overall_status.value
+                    if hasattr(overall_status, "value")
+                    else str(overall_status)
+                ),
+                [i.description for i in issues],
+            )
+
         return report
 
     async def verify_rls_status(self, tenant_id: str) -> RLSVerificationStatus:
@@ -342,6 +358,9 @@ class ComplianceService:
 
         # Determine verification status
         verification_passed = all_protected and active_policies > 0
+
+        if not verification_passed:
+            self.alert_service.trigger_rls_alert(tenant_id, tables_without_rls)
 
         # Generate issues and recommendations
         issues = []
