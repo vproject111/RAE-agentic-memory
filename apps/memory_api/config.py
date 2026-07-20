@@ -1,5 +1,4 @@
 import os
-import socket
 from pathlib import Path
 
 from pydantic import model_validator
@@ -163,23 +162,27 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_sandbox_mode(self):
-        if self.RAE_PROFILE == "lite":
-
-            def is_port_in_use(port):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    return s.connect_ex(("localhost", port)) == 0
-
-            if is_port_in_use(8000):
-                if self.MEMORY_API_URL == "http://localhost:8000":
-                    self.MEMORY_API_URL = "http://localhost:8010"
-        return self
-
-    @model_validator(mode="after")
-    def validate_sandbox_mode(self):
         """
         Detect if RAE and RAE-Lite are co-existing on the same machine.
         If port 8000 is occupied and we are in lite mode, force sandbox ports.
+        Also enforces that wildcard CORS origins are not allowed in production profile.
         """
+        if self.RAE_PROFILE in ["prod", "production"]:
+            if "*" in self.ALLOWED_ORIGINS:
+                raise ValueError(
+                    "Wildcard ALLOWED_ORIGINS ('*') is not allowed in production profile"
+                )
+            import re
+
+            origin_regex = re.compile(
+                r"^https?://([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|localhost)(:\d+)?$"
+            )
+            for origin in self.ALLOWED_ORIGINS:
+                if not origin_regex.match(origin):
+                    raise ValueError(
+                        f"Invalid CORS origin format: {origin}. Must be in format http(s)://domain.com(:port)"
+                    )
+
         if self.RAE_PROFILE == "lite":
             import socket
 
@@ -197,7 +200,6 @@ class Settings(BaseSettings):
                 # Force sandbox ports for infrastructure if they are still at standard defaults
                 if self.POSTGRES_HOST == "localhost":
                     self.POSTGRES_HOST = "localhost"  # Host stays same
-                # Ports are usually handled by docker-compose, but we ensure internal URLs are consistent
         return self
 
     @model_validator(mode="after")

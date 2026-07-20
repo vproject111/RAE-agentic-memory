@@ -30,12 +30,28 @@ class AlertService:
 
     def __init__(self):
         self.webhook_url = os.environ.get("COMPLIANCE_ALERT_WEBHOOK_URL", "")
-        if self.webhook_url and not self.webhook_url.lower().startswith("https://"):
-            logger.warning(
-                "COMPLIANCE_ALERT_WEBHOOK_URL must use HTTPS. Disabling webhook alerts."
-            )
-            self.webhook_url = ""
-
+        if self.webhook_url:
+            if not self.webhook_url.lower().startswith("https://"):
+                logger.warning("COMPLIANCE_ALERT_WEBHOOK_URL must use HTTPS. Disabling webhook alerts.")
+                self.webhook_url = ""
+            else:
+                from urllib.parse import urlparse
+                parsed = urlparse(self.webhook_url)
+                hostname = parsed.hostname or ""
+                # SSRF Protection: block local loopback, private class, and metadata IPs
+                unsafe_hosts = ["169.254.169.254", "127.0.0.1", "localhost", "0.0.0.0"]
+                if (any(h in hostname for h in unsafe_hosts) or 
+                    hostname.startswith("192.168.") or 
+                    hostname.startswith("10.") or 
+                    hostname.startswith("172.16.") or
+                    hostname.startswith("172.17.") or
+                    hostname.startswith("172.18.") or
+                    hostname.startswith("172.19.") or
+                    hostname.startswith("172.20.") or
+                    hostname.startswith("172.30.")):
+                    logger.warning(f"SSRF Alert: Webhook URL points to internal or metadata network host: {hostname}. Disabling webhook alerts.")
+                    self.webhook_url = ""
+        
         self.client = httpx.Client(timeout=10.0)
 
     def _hash_tenant_id(self, tenant_id: str) -> str:
