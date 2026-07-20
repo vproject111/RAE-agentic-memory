@@ -18,7 +18,7 @@ except Exception as e:
     sys.exit(1)
 
 import structlog
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -38,7 +38,6 @@ from apps.memory_api.middleware.budget_enforcer import BudgetEnforcementMiddlewa
 from apps.memory_api.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from apps.memory_api.middleware.session import SessionContextMiddleware
 from apps.memory_api.middleware.tenant import TenantContextMiddleware
-from apps.memory_api.security.dependencies import verify_linearizable_mutation
 from apps.memory_api.observability import health_checks as health_router
 from apps.memory_api.observability import (
     instrument_fastapi,
@@ -46,6 +45,7 @@ from apps.memory_api.observability import (
     setup_opentelemetry,
 )
 from apps.memory_api.routes import (
+    compliance,
     dashboard,
     evaluation,
     event_triggers,
@@ -59,6 +59,7 @@ from apps.memory_api.routes import (
     token_savings,
     tuning,
 )
+from apps.memory_api.security.dependencies import verify_linearizable_mutation
 from apps.memory_api.services.context_cache import rebuild_full_cache
 from apps.memory_api.services.rae_core_service import RAECoreService
 
@@ -331,6 +332,7 @@ app.include_router(procedural.router)  # /procedural
 
 # Helper Services (Migrated to V2 prefix)
 app.include_router(dashboard.router, prefix="/v2/dashboard", tags=["Dashboard"])
+app.include_router(compliance.router, prefix="/v2/dashboard", tags=["Compliance"])
 app.include_router(evaluation.router, prefix="/v2/evaluation", tags=["Evaluation"])
 app.include_router(event_triggers.router, prefix="/v2/automation", tags=["Automation"])
 app.include_router(graph_enhanced.router, prefix="/v2/graph", tags=["Knowledge Graph+"])

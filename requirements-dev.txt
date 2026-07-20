@@ -1,0 +1,28 @@
+# Development dependencies
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock  # For mocking in tests
+pytest-timeout
+pytest-sugar
+pytest-html
+pytest-json-report
+pytest-xdist
+pytest-testmon
+pytest-picked
+black
+isort
+ruff
+mypy
+pre-commit
+safety
+bandit
+types-requests
+types-PyYAML
+types-redis
+types-setuptools
+watchdog[watchmedo]
+locust
+# ML dependencies for benchmarks and tests
+pytest-benchmark
+asyncpg
