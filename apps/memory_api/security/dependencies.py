@@ -245,14 +245,15 @@ async def verify_linearizable_mutation(request: Request) -> None:
                 )
 
         # 2. Verify Redis health
-        redis_client = getattr(request.app.state, "redis_client", None)
-        if not redis_client:
-            if settings.RAE_PROFILE != "lite" and os.getenv("RAE_DB_MODE") != "ignore":
+        redis_mode = os.getenv("RAE_REDIS_MODE", "standard")
+        db_mode = os.getenv("RAE_DB_MODE", "standard")
+        if settings.RAE_PROFILE != "lite" and redis_mode != "ignore" and db_mode != "ignore":
+            redis_client = getattr(request.app.state, "redis_client", None)
+            if not redis_client:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Redis client is offline. Mutation rejected to enforce consistency.",
                 )
-        else:
             try:
                 await redis_client.ping()
             except Exception as e:

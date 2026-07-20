@@ -25,6 +25,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # Globals for Keycloak JWKS cache
 _jwks_cache: dict = {}
 _jwks_expires_at: float = 0.0
+_jwks_last_refreshed: float = 0.0
 _jwks_lock = asyncio.Lock()
 
 
@@ -33,7 +34,7 @@ async def _refresh_jwks() -> None:
     Fetch and cache JWKS from Keycloak.
     Uses Cache-Control max-age header to determine expiration time.
     """
-    global _jwks_cache, _jwks_expires_at
+    global _jwks_cache, _jwks_expires_at, _jwks_last_refreshed
 
     import httpx
     from jose import JWTError
@@ -67,6 +68,7 @@ async def _refresh_jwks() -> None:
                     
             _jwks_cache = new_cache
             _jwks_expires_at = time.time() + max_age
+            _jwks_last_refreshed = time.time()
             logger.info("keycloak_jwks_refreshed", keys_count=len(_jwks_cache), expires_in=max_age)
     except Exception as e:
         logger.error("failed_to_refresh_jwks", error=str(e))
@@ -77,7 +79,7 @@ async def get_keycloak_jwk(kid: str) -> dict:
     """
     Get public JWK for the given key ID (kid) from cache or Keycloak certs endpoint.
     """
-    global _jwks_cache, _jwks_expires_at
+    global _jwks_cache, _jwks_expires_at, _jwks_last_refreshed
 
     from jose import JWTError
 
@@ -90,6 +92,12 @@ async def get_keycloak_jwk(kid: str) -> dict:
         now = time.time()
         if _jwks_cache and now < _jwks_expires_at and kid in _jwks_cache:
             return _jwks_cache[kid]
+
+        # Rate limit refreshes to prevent thundering herd / DoS on missing keys
+        if now - _jwks_last_refreshed < 30.0:
+            if kid in _jwks_cache:
+                return _jwks_cache[kid]
+            raise JWTError(f"Public key for kid '{kid}' not found in Keycloak JWKS (recently refreshed)")
 
         # Refresh cache
         await _refresh_jwks()
@@ -188,30 +196,22 @@ async def verify_token(
                 key = await get_keycloak_jwk(kid)
 
                 # 3. Decode and verify the token signature
+                expected_issuer = f"{settings.KEYCLOAK_URL.rstrip('/')}/realms/{settings.KEYCLOAK_REALM}"
+                allowed_audiences = [settings.KEYCLOAK_BACKEND_CLIENT_ID, settings.KEYCLOAK_FRONTEND_CLIENT_ID]
+
+                # 3. Decode and verify the token signature, issuer, and audience
                 decoded = jwt.decode(
                     token,
                     key,
                     algorithms=["RS256"],
+                    audience=allowed_audiences,
+                    issuer=expected_issuer,
                     options={
-                        "verify_aud": False,
-                        "verify_iss": False,
+                        "verify_aud": True,
+                        "verify_iss": True,
                         "verify_signature": True,
                     }
                 )
-
-                # 4. Check issuer and audience claims
-                expected_issuer = f"{settings.KEYCLOAK_URL.rstrip('/')}/realms/{settings.KEYCLOAK_REALM}"
-                token_issuer = decoded.get("iss")
-                if not token_issuer or token_issuer.rstrip("/") != expected_issuer.rstrip("/"):
-                    raise JWTError(f"Invalid issuer: {token_issuer}. Expected: {expected_issuer}")
-
-                token_aud = decoded.get("aud")
-                if not token_aud:
-                    raise JWTError("Audience claim is missing")
-                token_auds = [token_aud] if isinstance(token_aud, str) else token_aud
-                allowed_audiences = {settings.KEYCLOAK_BACKEND_CLIENT_ID, settings.KEYCLOAK_FRONTEND_CLIENT_ID}
-                if not any(aud in allowed_audiences for aud in token_auds):
-                    raise JWTError(f"Invalid audience: {token_aud}. Expected one of: {allowed_audiences}")
 
                 if "sub" not in decoded:
                     raise JWTError("Keycloak token is missing 'sub' (subject) claim")

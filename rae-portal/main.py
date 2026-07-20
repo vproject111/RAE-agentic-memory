@@ -574,10 +574,10 @@ async def auth_callback(request: Request, code: str = None, state: str = None, e
     if not stored_state or state != stored_state:
         return "Invalid OAuth state. Potential CSRF attempt."
         
-    # Retrieve code verifier
+    # Retrieve and validate code verifier
     code_verifier = request.cookies.get("oauth_verifier")
-    if not code_verifier:
-        return "Missing code verifier. Session expired."
+    if not code_verifier or len(code_verifier) < 43 or len(code_verifier) > 128:
+        return "Invalid code verifier. Access denied."
         
     # Exchange authorization code for token
     redirect_uri = str(request.url_for("auth_callback"))
@@ -601,12 +601,23 @@ async def auth_callback(request: Request, code: str = None, state: str = None, e
             if not access_token:
                 return "Failed to retrieve access token from Keycloak."
                 
-            # Determine where to redirect back
+            # Determine where to redirect back and validate it to prevent open redirect vulnerabilities
             redirect_back = request.cookies.get("redirect_back", "/")
+            if redirect_back not in {"/", "/evidence"}:
+                redirect_back = "/"
             
             # Redirect user back to the application and save token in session cookie
             res = RedirectResponse(redirect_back)
-            res.set_cookie("access_token", access_token, httponly=True)
+            
+            # Set cookie securely: lax samesite, httponly, secure if HTTPS is used
+            is_secure = request.url.scheme == "https"
+            res.set_cookie(
+                "access_token",
+                access_token,
+                httponly=True,
+                secure=is_secure,
+                samesite="lax"
+            )
             
             # Clean up temporary OAuth cookies
             res.delete_cookie("oauth_state")
@@ -720,4 +731,5 @@ def evidence_portal(request: Request):
 
 if __name__ in {"__main__", "main"}:
     port = int(os.environ.get("PORT", 8080))
-    ui.run(title="RAE Suite Portal Quantum", port=port, reload=False, dark=False, storage_secret="rae-portal-storage-secret-key-182390234")
+    storage_secret = os.environ.get("STORAGE_SECRET_KEY") or secrets.token_hex(32)
+    ui.run(title="RAE Suite Portal Quantum", port=port, reload=False, dark=False, storage_secret=storage_secret)
