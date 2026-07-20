@@ -21,7 +21,7 @@ def _derive_relay_key(secret_key: str) -> bytes:
     hkdf = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=None,
+        salt=b"rae-mesh-relay-salt-98213",
         info=b"rae-mesh-relay"
     )
     return hkdf.derive(secret_key.encode("utf-8"))

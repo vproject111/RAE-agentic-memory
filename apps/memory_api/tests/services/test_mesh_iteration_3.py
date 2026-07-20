@@ -163,6 +163,40 @@ async def test_signature_verification_failure_altered_payload(mesh_service):
     assert "Invalid payload signature" in exc.value.detail
 
 
+@pytest.mark.asyncio
+async def test_signature_bypass_prevention(mesh_service):
+    sender_id = "sender-peer"
+    _, public_key = mesh_service.derive_key_pair(sender_id)
+    public_key_hex = public_key.public_bytes_raw().hex()
+
+    await mesh_service.register_peer(
+        sender_id, "Sender", "http://sender", "token-abc", public_key=public_key_hex
+    )
+
+    memories = [
+        {
+            "id": str(uuid4()),
+            "content": "Secret information",
+            "layer": "episodic",
+            "info_class": "public"
+        }
+    ]
+
+    # Send request completely missing the signature parameter
+    payload = {
+        "sender_id": sender_id,
+        "receiver_id": "rae-host",
+        "memories": memories
+    }
+
+    from fastapi import HTTPException
+    mock_req = make_mock_request(payload)
+    with pytest.raises(HTTPException) as exc:
+        await receive_sync_data(mock_req, mesh_service)
+    assert exc.value.status_code == 403
+    assert "Signature is required for registered peers" in exc.value.detail
+
+
 def test_ssh_tunnel_manager_exponential_backoff():
     manager = SSHTunnelManager(
         local_port=8080,

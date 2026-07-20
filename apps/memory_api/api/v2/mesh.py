@@ -377,11 +377,13 @@ async def receive_sync_data(
         except ValueError as e:
             raise HTTPException(status_code=403, detail=f"Consent token validation failed: {str(e)}")
             
-    # Verify signature and provenance if peer public key is registered or signature is present
+    # Verify signature and provenance if peer public key is registered
     signature = payload.get("signature")
     sender_pub_key = await service.get_peer_public_key(sender_id)
     
-    if sender_pub_key and signature:
+    if sender_pub_key:
+        if not signature:
+            raise HTTPException(status_code=403, detail="Signature is required for registered peers")
         try:
             from cryptography.hazmat.primitives.asymmetric import ed25519
             pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(sender_pub_key))
