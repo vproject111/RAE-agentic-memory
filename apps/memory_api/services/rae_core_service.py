@@ -910,6 +910,57 @@ class RAECoreService:
             envelope=resolved_envelope,
         )
 
+        # Stage 5: Multimodal Artifact Registration in Visual Search Strategy
+        if metadata and (
+            metadata.get("multimodal")
+            or metadata.get("screenshot_url")
+            or metadata.get("ocr_text")
+            or metadata.get("visual_artifact")
+        ):
+            try:
+                from rae_core.models.multimodal import MultimodalArtifact
+
+                m_info = (
+                    metadata.get("multimodal") or metadata.get("visual_artifact") or {}
+                )
+                if not isinstance(m_info, dict):
+                    m_info = {}
+
+                ocr_text = (
+                    metadata.get("ocr_text")
+                    or m_info.get("ocr_extracted_text")
+                    or m_info.get("ocr_text")
+                )
+                image_uri = (
+                    metadata.get("screenshot_url")
+                    or m_info.get("image_uri")
+                    or f"memory://{memory_id}"
+                )
+                raw_type = m_info.get("artifact_type") or (
+                    "screenshot"
+                    if metadata.get("screenshot_url")
+                    else "architecture_diagram"
+                )
+
+                artifact = MultimodalArtifact(
+                    artifact_id=str(m_info.get("artifact_id") or memory_id),
+                    artifact_type=raw_type,
+                    image_uri=str(image_uri),
+                    ocr_extracted_text=ocr_text,
+                    visual_embedding=m_info.get("visual_embedding"),
+                    text_embedding=m_info.get("text_embedding"),
+                    envelope=resolved_envelope,
+                )
+
+                if hasattr(self.engine, "search_engine") and hasattr(
+                    self.engine.search_engine, "strategies"
+                ):
+                    vis_strat = self.engine.search_engine.strategies.get("visual")
+                    if vis_strat and hasattr(vis_strat, "register_artifact"):
+                        vis_strat.register_artifact(UUID(str(memory_id)), artifact)
+            except Exception as e:
+                logger.warning("failed_to_register_multimodal_artifact", error=str(e))
+
         logger.info(
             "memory_stored_in_engine",
             memory_id=str(memory_id),
