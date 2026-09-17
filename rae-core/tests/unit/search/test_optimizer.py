@@ -155,3 +155,36 @@ def test_get_average_reward():
     avg_last_1 = optimizer.get_average_reward(last_n=1)
     last_reward = optimizer.history[-1]["reward"]
     assert avg_last_1 == pytest.approx(last_reward)
+
+
+def test_optimizer_dump_and_load_state():
+    opt = RetrievalOptimizer(mode=MaturityMode.ACTIVE)
+    opt.step("vector", quality=0.9, latency_ms=30.0)
+
+    state = opt.dump_state()
+    assert state["mode"] == "active"
+    assert "vector" in state["current_weights"]
+    assert len(state["history"]) == 1
+
+    opt_restored = RetrievalOptimizer(mode=MaturityMode.SHADOW)
+    opt_restored.load_state(state)
+    assert opt_restored.mode == MaturityMode.ACTIVE
+    assert opt_restored.current_weights == opt.current_weights
+    assert len(opt_restored.history) == 1
+
+
+def test_optimizer_save_and_load_file(tmp_path):
+    opt = RetrievalOptimizer(mode=MaturityMode.ACTIVE)
+    opt.step("fulltext", quality=0.85, latency_ms=40.0)
+    file_path = tmp_path / "optimizer_state.json"
+
+    opt.save_to_file(file_path)
+    assert file_path.exists()
+
+    opt2 = RetrievalOptimizer(mode=MaturityMode.SHADOW)
+    loaded = opt2.load_from_file(file_path)
+    assert loaded is True
+    assert opt2.current_weights["fulltext"] == opt.current_weights["fulltext"]
+
+    not_found = opt2.load_from_file(tmp_path / "non_existent.json")
+    assert not_found is False

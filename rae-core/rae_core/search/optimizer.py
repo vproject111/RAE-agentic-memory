@@ -125,3 +125,62 @@ class RetrievalOptimizer:
         if not records:
             return 0.0
         return sum(r["reward"] for r in records) / len(records)
+
+    def dump_state(self) -> dict[str, Any]:
+        """Serialize optimizer state for persistence."""
+        return {
+            "mode": self.mode.value,
+            "damping_factor": self.damping_factor,
+            "max_deviation": self.max_deviation,
+            "baseline_weights": dict(self.baseline_weights),
+            "current_weights": dict(self.current_weights),
+            "history": list(self.history[-100:]),
+        }
+
+    def load_state(self, state: dict[str, Any]) -> None:
+        """Restore optimizer state from dictionary."""
+        if "mode" in state:
+            try:
+                self.mode = MaturityMode(state["mode"])
+            except ValueError:
+                pass
+        if "damping_factor" in state:
+            self.damping_factor = float(state["damping_factor"])
+        if "max_deviation" in state:
+            self.max_deviation = float(state["max_deviation"])
+        if "baseline_weights" in state and isinstance(state["baseline_weights"], dict):
+            self.baseline_weights = {
+                k: float(v) for k, v in state["baseline_weights"].items()
+            }
+        if "current_weights" in state and isinstance(state["current_weights"], dict):
+            self.current_weights = {
+                k: float(v) for k, v in state["current_weights"].items()
+            }
+        if "history" in state and isinstance(state["history"], list):
+            self.history = list(state["history"])
+
+    def save_to_file(self, file_path: str | Any) -> None:
+        """Save state to a JSON file."""
+        import json
+        from pathlib import Path
+
+        p = Path(file_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(self.dump_state(), f, indent=2)
+
+    def load_from_file(self, file_path: str | Any) -> bool:
+        """Load state from a JSON file if it exists. Returns True if loaded."""
+        import json
+        from pathlib import Path
+
+        p = Path(file_path)
+        if not p.exists():
+            return False
+        try:
+            with open(p, encoding="utf-8") as f:
+                state = json.load(f)
+            self.load_state(state)
+            return True
+        except Exception:
+            return False
