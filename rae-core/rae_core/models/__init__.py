@@ -8,6 +8,7 @@ This module exports all Pydantic models used across RAE-core:
 - Sync models: SyncChange, SyncOperation, SyncState, SyncConflict
 """
 
+from .envelope import CodeAttribution, ContextEnvelope
 from .evidence import (
     ConflictSeverity,
     ConflictType,
@@ -40,6 +41,9 @@ from .search import (
 from .sync import SyncChange, SyncConflict, SyncOperation, SyncState
 
 __all__ = [
+    # Context Envelope models
+    "ContextEnvelope",
+    "CodeAttribution",
     # Memory models
     "MemoryItem",
     "MemoryLayer",
