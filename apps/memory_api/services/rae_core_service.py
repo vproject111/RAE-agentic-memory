@@ -5,7 +5,7 @@ Wraps RAEEngine and adapters for use in FastAPI application.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 import asyncpg
@@ -13,9 +13,6 @@ import redis.asyncio as redis
 import structlog
 from fastapi import Request
 from qdrant_client import AsyncQdrantClient
-
-if TYPE_CHECKING:
-    from apps.memory_api.services.dashboard_websocket import DashboardWebSocketService
 
 from apps.memory_api.services.embedding import (
     LocalEmbeddingProvider,
@@ -69,19 +66,17 @@ class RAECoreService:
         self.redis_adapter: ICacheProvider
         self.mcp_client: Optional[Any] = None
         self.savings_service: Optional[TokenSavingsService] = None
-        self.websocket_service: Optional[DashboardWebSocketService] = None
+        self.websocket_service: Optional[Any] = None
         self.tuning_service: Any = None  # Phase 4
         from apps.memory_api.services.alert_service import AlertService
 
         self.alert_service = AlertService()
 
         if postgres_pool:
-            from apps.memory_api.services.dashboard_websocket import (
-                DashboardWebSocketService,
-            )
+            from apps.memory_api.services import dashboard_websocket as ws_mod
 
             self.savings_service = TokenSavingsService(postgres_pool)
-            self.websocket_service = DashboardWebSocketService(postgres_pool)
+            self.websocket_service = ws_mod.DashboardWebSocketService(postgres_pool)
 
             # Phase 4: Self-improvement service
             from apps.memory_api.services.tuning_service import TuningService
@@ -288,7 +283,6 @@ class RAECoreService:
         reranker = self._create_reranker(settings)
 
         # Search Engine
-        from rae_core.search.engine import HybridSearchEngine
         from rae_core.search.strategies.anchor import AnchorStrategy
         from rae_core.search.strategies.fulltext import FullTextStrategy
         from rae_core.search.strategies.sparse import SparseVectorStrategy
@@ -334,13 +328,7 @@ class RAECoreService:
 
         from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 
-        engine_cls = (
-            AdaptiveSearchEngine
-            if AdaptiveSearchEngine.is_2pass_enabled()
-            else HybridSearchEngine
-        )
-
-        search_engine = engine_cls(
+        search_engine = AdaptiveSearchEngine(
             strategies=search_strategies,
             embedding_provider=self.embedding_provider,
             memory_storage=self.postgres_adapter,

@@ -86,14 +86,8 @@ class RAEEngine:
             self.search_engine = search_engine
         else:
             from rae_core.search.adaptive_engine import AdaptiveSearchEngine
-            from rae_core.search.engine import HybridSearchEngine
 
-            engine_cls = (
-                AdaptiveSearchEngine
-                if AdaptiveSearchEngine.is_2pass_enabled()
-                else HybridSearchEngine
-            )
-            self.search_engine = engine_cls(
+            self.search_engine = AdaptiveSearchEngine(
                 strategies=strategies,
                 embedding_provider=self.embedding_provider,
                 memory_storage=self.memory_storage,
