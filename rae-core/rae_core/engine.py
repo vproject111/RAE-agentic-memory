@@ -57,9 +57,6 @@ class RAEEngine:
             "sparse": self._init_sparse_strategy(),
         }
 
-        if self.graph_store:
-            strategies["graph"] = self._init_graph_strategy()
-
         # Dynamic Multi-Vector Registration
         from rae_core.embedding.manager import EmbeddingManager
         from rae_core.search.strategies.vector import VectorSearchStrategy
@@ -76,12 +73,21 @@ class RAEEngine:
                 self.vector_store, self.embedding_provider
             )
 
+        if self.graph_store:
+            strategies["graph"] = self._init_graph_strategy()
+            primary_seed = strategies.get("vector") or strategies.get("fulltext")
+            strategies["graph_lite"] = self._init_graph_lite_strategy(
+                seed_strategy=primary_seed
+            )
+
+        strategies["visual"] = self._init_visual_strategy()
+
         if search_engine:
             self.search_engine = search_engine
         else:
-            from rae_core.search.engine import HybridSearchEngine
+            from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 
-            self.search_engine = HybridSearchEngine(
+            self.search_engine = AdaptiveSearchEngine(
                 strategies=strategies,
                 embedding_provider=self.embedding_provider,
                 memory_storage=self.memory_storage,
@@ -123,7 +129,90 @@ class RAEEngine:
     def _init_graph_strategy(self):
         from rae_core.search.strategies.graph import GraphTraversalStrategy
 
-        return GraphTraversalStrategy(self.graph_store)
+        return GraphTraversalStrategy(self.graph_store, self.memory_storage)
+
+    def _init_graph_lite_strategy(self, seed_strategy: Any = None):
+        from rae_core.search.strategies.graph_lite import GraphLiteStrategy
+
+        return GraphLiteStrategy(
+            graph_store=self.graph_store,
+            memory_storage=self.memory_storage,
+            seed_strategy=seed_strategy,
+        )
+
+    def _init_visual_strategy(self):
+        from rae_core.search.strategies.visual import VisualSearchStrategy
+
+        return VisualSearchStrategy()
+
+    async def search_evidence(
+        self,
+        query: str,
+        tenant_id: str,
+        agent_id: str | None = None,
+        layer: str | None = None,
+        top_k: int = 10,
+        filters: dict[str, Any] | None = None,
+        project: str | None = None,
+        strategies: list[str] | None = None,
+        strategy_weights: dict[str, float] | None = None,
+        enable_reranking: bool = False,
+        auto_route: bool = False,
+        force_2pass: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Execute search and return an auditable EvidencePackage.
+        Supports automatic query intent routing and bounded 2-pass adaptive search.
+        """
+        search_filters = {**(filters or {})}
+        if agent_id:
+            search_filters["agent_id"] = agent_id
+        if project:
+            search_filters["project"] = project
+        if layer:
+            search_filters["layer"] = layer
+
+        from rae_core.search.adaptive_engine import AdaptiveSearchEngine
+
+        is_adaptive = isinstance(self.search_engine, AdaptiveSearchEngine) and (
+            self.search_engine.is_2pass_enabled() or force_2pass
+        )
+
+        if is_adaptive and hasattr(self.search_engine, "search_adaptive_evidence"):
+            return await self.search_engine.search_adaptive_evidence(
+                query=query,
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                filters=search_filters,
+                limit=top_k,
+                strategies=strategies,
+                strategy_weights=strategy_weights,
+                enable_reranking=enable_reranking,
+                math_controller=self.math_ctrl,
+                force_2pass=force_2pass,
+                auto_route=auto_route,
+                **kwargs,
+            )
+
+        if hasattr(self.search_engine, "search_evidence"):
+            return await self.search_engine.search_evidence(
+                query=query,
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                filters=search_filters,
+                limit=top_k,
+                strategies=strategies,
+                strategy_weights=strategy_weights,
+                enable_reranking=enable_reranking,
+                math_controller=self.math_ctrl,
+                auto_route=auto_route,
+                **kwargs,
+            )
+
+        raise AttributeError(
+            f"Configured search_engine {type(self.search_engine).__name__} does not support search_evidence"
+        )
 
     async def search_memories(
         self,
@@ -539,6 +628,19 @@ class RAEEngine:
 
         parent_id = str(uuid.uuid4())
         memory_ids = []
+
+        # Stage 2 (L3): Propagate ContextEnvelope into chunk metadata if provided
+        envelope = kwargs.get("envelope")
+        if envelope:
+            envelope_dict = (
+                envelope.model_dump()
+                if hasattr(envelope, "model_dump")
+                else (envelope if isinstance(envelope, dict) else None)
+            )
+            if envelope_dict:
+                if "metadata" not in kwargs or kwargs["metadata"] is None:
+                    kwargs["metadata"] = {}
+                kwargs["metadata"]["envelope"] = envelope_dict
 
         # Store chunks with full provenance
         for i, chunk in enumerate(chunks):

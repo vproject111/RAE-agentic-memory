@@ -3,6 +3,7 @@
 from rae_core.math.policy import (
     compute_coherence_reward,
     compute_reasoning_score_with_coherence,
+    compute_retrieval_reward,
     compute_score_with_custom_weights,
 )
 
@@ -76,3 +77,16 @@ def test_compute_reasoning_score_with_coherence():
     # (0.7 * 1.0) + (0.3 * 0.0) = 0.7
     score = compute_reasoning_score_with_coherence(1.0, 0.0)
     assert score == 0.7
+
+
+def test_compute_retrieval_reward():
+    """Test multi-objective retrieval reward calculation (Iteration 9)."""
+    # High quality retrieval
+    reward = compute_retrieval_reward(quality=1.0, latency_ms=50.0, token_cost=0.0)
+    assert reward > 0.6
+
+    # Failed retrieval
+    reward_fail = compute_retrieval_reward(
+        quality=0.0, latency_ms=500.0, is_failed=True
+    )
+    assert reward_fail < 0.0

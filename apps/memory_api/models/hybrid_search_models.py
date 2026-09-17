@@ -257,12 +257,44 @@ class HybridSearchRequest(BaseModel):
     # Context
     conversation_history: List[str] = Field(default_factory=list)
 
+    # Intelligent Query Routing (Iteration 5 / Stage 1)
+    auto_route: bool = Field(
+        False,
+        description="Enable automated query intent routing to select optimal strategies",
+    )
+
 
 class HybridSearchResponse(BaseModel):
     """Response from hybrid search"""
 
     search_result: HybridSearchResult
     message: str = "Hybrid search completed successfully"
+
+
+class EvidenceSearchRequest(BaseModel):
+    """Request for auditable EvidencePackage retrieval"""
+
+    query: str = Field(..., min_length=1, max_length=1024, description="Search query")
+    tenant_id: str = Field("default", description="Tenant ID")
+    project: Optional[str] = Field(None, description="Project identifier filter")
+    agent_id: Optional[str] = Field(None, description="Agent identifier filter")
+    layer: Optional[str] = Field(None, description="Memory layer filter")
+    limit: int = Field(10, gt=0, le=100, description="Number of results")
+    auto_route: bool = Field(
+        False,
+        description="Enable automated query intent routing to select optimal strategies",
+    )
+    strategies: Optional[List[str]] = Field(
+        None, description="Explicit strategies to execute"
+    )
+    custom_weights: Optional[Dict[str, float]] = Field(
+        None, description="Custom strategy weights"
+    )
+    enable_reranking: bool = Field(False, description="Enable re-ranking")
+    force_2pass: bool = Field(False, description="Force 2-pass adaptive search")
+    filters: Optional[Dict[str, Any]] = Field(
+        None, description="Additional metadata filters"
+    )
 
 
 # ============================================================================

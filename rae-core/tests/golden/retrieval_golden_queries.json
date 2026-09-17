@@ -1,0 +1,3262 @@
+{
+  "version": "1.0",
+  "count": 213,
+  "queries": [
+    {
+      "query_id": "exact_001",
+      "query": "RAE_DB_MODE",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/config.py",
+        "conftest.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [
+        "f51d8b92-2fb1-524c-86e4-c6f8f6f59872"
+      ],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_002",
+      "query": "QUALITY_GATE_STRICT",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/bootstrap_cloud.py",
+        "rae_core/governance/engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_003",
+      "query": "RAE_CONTEXT_ENVELOPE_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/models/envelope.py",
+        "PLAN_ROZWOJU_RAE_SUITE.md"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_004",
+      "query": "CVE-2026-12345",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "security_audit",
+        "vulnerability_advisory"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_005",
+      "query": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "bootstrap_dreamsoft_knowledge.py",
+        "tenants"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_006",
+      "query": "HTTP_422_UNPROCESSABLE_ENTITY",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/main.py",
+        "fastapi"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_007",
+      "query": "PROJECT_ROOT",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RAE-path-refactor.md",
+        "core/utils/paths.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_008",
+      "query": "100.68.166.117",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Node1",
+        "Lumina",
+        "connect_cluster.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_009",
+      "query": "100.70.32.40",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Node2",
+        "JULKA",
+        "connect_cluster.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_010",
+      "query": "172.30.15.11:11434",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Node3",
+        "Piotrek",
+        "Ollama"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_011",
+      "query": "fc8ab38f",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "git_commit",
+        "manager.py",
+        "policy.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_012",
+      "query": "a9355ea2",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "git_commit",
+        "federation/query"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_013",
+      "query": "dac1fa65",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "git_commit",
+        "requirements-dev.txt",
+        "black"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_014",
+      "query": "f2131a66",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "git_commit",
+        "ci_lint",
+        "apps/memory_api/main.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_015",
+      "query": "RAE_EVIDENCE_PACKAGE_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "PLAN_ROZWOJU_RAE_SUITE.md",
+        "evidence_package.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_016",
+      "query": "RAE_ADAPTIVE_2PASS_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "PLAN_ROZWOJU_RAE_SUITE.md",
+        "adaptive_engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_017",
+      "query": "RAE_EVIDENCE_GATE_MODE",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "sufficiency_gate.py",
+        "PLAN_ROZWOJU_RAE_SUITE.md"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_018",
+      "query": "RAE_QUERY_ROUTING_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "router.py",
+        "classifier.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_019",
+      "query": "RAE_GRAPHRAG_LITE_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "graph_lite.py",
+        "engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_020",
+      "query": "RAE_MULTIMODAL_SEARCH_ENABLED",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "visual.py",
+        "multimodal.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_021",
+      "query": "53717286-fe94-4c8f-baf9-c4d2758eb672",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ScreenWatcher",
+        "Analiza Produkcji 20 Stycznia"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_022",
+      "query": "1f537912-f1a3-4b6d-a4a0-75c3d4ac2df0",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ScreenWatcher",
+        "TrueJet2 dashboard"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_023",
+      "query": "4cc35876-cf49-493e-b16a-b8dcf44801d3",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ScreenWatcher",
+        "Machine TJ02"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_024",
+      "query": "f51d8b92-2fb1-524c-86e4-c6f8f6f59872",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "deterministic Tenant UUID",
+        "cloud"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "exact_025",
+      "query": "ISO_42001_COMPLIANCE",
+      "category": "exact_identifier",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "AGENT_CORE_PROTOCOL.md",
+        "audit_accounting.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_001",
+      "query": "HybridSearchEngine",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_002",
+      "query": "EmeraldReranker",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_003",
+      "query": "GraphTraversalStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/graph.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_004",
+      "query": "FullTextStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/fulltext.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_005",
+      "query": "VectorSearchStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/vector.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_006",
+      "query": "BayesianPolicyTuner",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/tuning.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_007",
+      "query": "LogicGateway",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/logic_gateway.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_008",
+      "query": "MetadataInjector",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/metadata_injector.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_009",
+      "query": "CommunityDetectionService",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/community_detection.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_010",
+      "query": "ContextBroker",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/context_broker.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_011",
+      "query": "EvidenceBundle",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/models/evidence.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_012",
+      "query": "MemoryItem",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/models/memory.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_013",
+      "query": "RAECoreService",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/rae_core_service.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_014",
+      "query": "ReflectionEngineV2",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/reflection_engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_015",
+      "query": "PostgreSQLStorage",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_adapters/postgresql.py",
+        "adapters/postgres.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_016",
+      "query": "QdrantAdapter",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_adapters/qdrant.py",
+        "adapters/qdrant.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_017",
+      "query": "FusionStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/fusion.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_018",
+      "query": "MathController",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/controller.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_019",
+      "query": "ExecutionAuditLedger",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/audit_accounting.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_020",
+      "query": "MultiSeriesChartProvider",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/dashboards/services/widget_data.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_021",
+      "query": "MachineGanttProvider",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/dashboards/services/widget_data.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_022",
+      "query": "ProductionTrendProvider",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/dashboards/services/production.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_023",
+      "query": "SparseSearchStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/sparse.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_024",
+      "query": "MultiVectorStrategy",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/multi_vector.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "symbol_025",
+      "query": "SmartReranker",
+      "category": "code_symbol",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/reranker.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_001",
+      "query": "Where is HybridSearchEngine instantiated in memory api?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/rae_core_service.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_002",
+      "query": "How is reciprocal rank fusion implemented in search engine?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/fusion.py",
+        "math/fusion.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_003",
+      "query": "How are memories decay and importance calculated?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/scoring/decay.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_004",
+      "query": "How does batch memory retrieval avoid N+1 queries in postgres?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "get_memories_batch",
+        "PostgreSQLStorage"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_005",
+      "query": "Where is the API health endpoint registered?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/main.py",
+        "routers/health.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_006",
+      "query": "How does semantic cosine similarity compare text in EmeraldReranker?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_007",
+      "query": "Where are Celery workers and background tasks defined?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/tasks.py",
+        "apps/memory_api/workers.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_008",
+      "query": "How is knowledge graph BFS traversal implemented?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/graph.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_009",
+      "query": "Where is the reflection engine consolidation FSM located?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/reflection/consolidation_fsm.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_010",
+      "query": "How is tenant isolation enforced on database queries?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "tenant_id",
+        "PostgreSQLStorage",
+        "models/memory.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_011",
+      "query": "Where are the four reflection layers operational structural meta cognitive?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/reflection/layers/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_012",
+      "query": "How is context pruning handled by ContextBroker?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/context_broker.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_013",
+      "query": "How does Louvain algorithm group nodes into communities?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/community_detection.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_014",
+      "query": "Where is the hash calculation for EvidenceBundle audit trail?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/governance/hashing.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_015",
+      "query": "Where is the Thompson sampling algorithm for weight optimization?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/tuning.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_016",
+      "query": "How is speed integration used to compute production area in ScreenWatcher?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Speed Integration",
+        "ProductionTrendProvider"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_017",
+      "query": "How does Billboard Splitter calculate PDF separation lines?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "splitter.py",
+        "main.pyw"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_018",
+      "query": "How are named vectors mapped in Qdrant collections?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Named Vectors",
+        "QdrantAdapter"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_019",
+      "query": "Where is the token savings calculation logged?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "token_savings_log",
+        "core/audit_accounting.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_020",
+      "query": "Where is the memory encryption and decryption handled?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/sync/encryption.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_021",
+      "query": "How does OpenClaw orchestrator connect with supervisor?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "supervisor_mcp.py",
+        "rae_mcp_server.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_022",
+      "query": "Where is the safe rollout manager in RAE-Lab?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-lab/src/rae_lab/safe_rollout_manager.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_023",
+      "query": "Where is the failure mining engine in RAE-Lab?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-lab/src/rae_lab/failure_mining_engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_024",
+      "query": "Where is the quality scanner for security vulnerabilities?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-quality/scanners/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "semantic_025",
+      "query": "How does memory sync diff calculate delta between instances?",
+      "category": "semantic_code",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/sync/diff.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_001",
+      "query": "Why was query enrichment disabled in SYSTEM 43.0?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Enrichment dilutes technical signal",
+        "engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_002",
+      "query": "Why was ml-service and torch removed from RAE?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "LiteLLM",
+        "One Image",
+        "sentence-transformers forbidden"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_003",
+      "query": "Why do we use Named Vectors instead of vector truncation in Qdrant?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Named Vectors",
+        "Multi-Vector",
+        "Model Agnostic"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_004",
+      "query": "Why was math_controller profile switched from research to cheap?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "performance regression",
+        "8ms",
+        "L1 heuristics"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_005",
+      "query": "Why did we mandate Container-First and forbid host execution?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "AGENT_CORE_PROTOCOL.md",
+        "Reproducibility"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_006",
+      "query": "Why was RAE_DB_MODE set to ignore in conftest unit tests?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Fail Fast",
+        "apps/memory_api/tests/conftest.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_007",
+      "query": "Why were hardcoded filesystem paths forbidden in RAE?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RAE-path-refactor.md",
+        "PROJECT_ROOT",
+        "Docker-compatible"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_008",
+      "query": "Why is RESTRICTED data prohibited from leaving Working layer unencrypted?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ISO 27000",
+        "ISO 42001",
+        "Smart Black Box"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_009",
+      "query": "Why was programmatic Alembic migration disabled during StatReload?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "API hang",
+        "StatReload",
+        "develop"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_010",
+      "query": "Why was the One Image strategy implemented for Docker deployment?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-api",
+        "celery-worker",
+        "celery-beat",
+        "build time"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_011",
+      "query": "Why did we introduce the Zero Warning Policy in AGENT_CORE_PROTOCOL?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Zero Warning Policy",
+        "ruff",
+        "black",
+        "mypy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_012",
+      "query": "Why was the Cluster-First strategy adopted for Node1 Lumina and Node3 Piotrek?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RTX 4080",
+        "128GB RAM",
+        "cluster.yaml",
+        "offloading"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_013",
+      "query": "Why were explicit database columns restored instead of pure JSON metadata?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "PLAN_DB_REFACTOR_ISO_PERFORMANCE.md",
+        "indexing",
+        "retention"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_014",
+      "query": "Why was wildcard support added to FullTextStrategy?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Dashboard empty state",
+        "FullTextStrategy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_015",
+      "query": "Why was Industrial Large benchmark generator logic corrected?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "MRR 0.0156",
+        "MRR 0.7634",
+        "content filtering"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_016",
+      "query": "Why was Speed Integration used instead of delta calculation in TrueJet2?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "noise",
+        "2882m2",
+        "MAX_GAP 60s"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_017",
+      "query": "Why did we pin linter versions in requirements-dev.txt?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "black version drift",
+        "CI Lint failure",
+        "26.1.0 vs 25.12.0"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_018",
+      "query": "Why was separation line length feature added to Billboard Splitter?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "camera detection",
+        "sep_line_length",
+        "scaling"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_019",
+      "query": "Why was Partial Regex added to Jan 20 ScreenWatcher import script?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "15 to 3900 data points",
+        "partial regex",
+        "OCR logs"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_020",
+      "query": "Why did we adopt 3-tier multi-model coding hierarchy in RAE?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Generate",
+        "Review Repair",
+        "Judge Consensus",
+        "models-for-rae.md"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_021",
+      "query": "Why was record_task_completion mandated after every task?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Triple-Node Mesh",
+        "SHA-256",
+        "provenance",
+        "audit"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_022",
+      "query": "Why was strict scope isolation and zero drift introduced in GEMINI rules?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "No Drive-By Refactoring",
+        "Strict UI & Layout Freeze"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_023",
+      "query": "Why did we disable legacy documentation translation in favor of AGENT_CORE_PROTOCOL?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docs-refactor-v2",
+        "single source of truth"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_024",
+      "query": "Why was git merge --no-ff mandated for all feature branches?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Git Flow",
+        "Zero-Diff Check",
+        "history visibility"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "hist_025",
+      "query": "Why were Hard Contract Git Hooks armed across 36 repositories?",
+      "category": "historical_decision",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "hard_contract_gatekeeper.py",
+        "pre-commit",
+        "commit-msg"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_001",
+      "query": "How is HybridSearchEngine connected with LogicGateway and MetadataInjector?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "search/engine.py",
+        "math/logic_gateway.py",
+        "math/metadata_injector.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_002",
+      "query": "How does RAECoreService inject PostgreSQLStorage and QdrantAdapter into SearchEngine?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/rae_core_service.py",
+        "rae_adapters/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_003",
+      "query": "How is Celery worker task linked to rae_service summarization?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/tasks.py",
+        "apps/memory_api/services/rae_core_service.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_004",
+      "query": "How does ContextBroker enforce token limits based on ContextEnvelope schema?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/context_broker.py",
+        "rae_contracts/autonomy.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_005",
+      "query": "How does ReflectionEngine use CommunityDetectionService to store super nodes?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/reflection_engine.py",
+        "apps/memory_api/services/community_detection.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_006",
+      "query": "How do memory API routes call RAECoreService search methods?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/routers/search.py",
+        "apps/memory_api/services/rae_core_service.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_007",
+      "query": "How does BayesianPolicyTuner update weights used by FusionStrategy?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/math/tuning.py",
+        "rae-core/rae_core/math/fusion.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_008",
+      "query": "How does ExecutionAuditLedger write receipts to RAE memory via HTTP client?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/audit_accounting.py",
+        "scripts/record_task_completion.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_009",
+      "query": "How does mesh_sync_cli coordinate memory replication with peer nodes?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/mesh_sync_cli.py",
+        "core/audit_accounting.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_010",
+      "query": "How does the MCP server expose tools from rae_suite_orchestrator?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_mcp_server.py",
+        "rae_suite_orchestrator.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_011",
+      "query": "How are database migrations tracked between alembic.ini and models/memory.py?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "alembic.ini",
+        "rae-core/rae_core/models/memory.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_012",
+      "query": "How does quality_daemon trigger security scanners on pull requests?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-quality/quality_daemon.py",
+        "packages/rae-quality/scanners/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_013",
+      "query": "How does hive_engine communicate with Phoenix behavior comparison engine?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-hive/hive_engine.py",
+        "packages/rae-phoenix/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_014",
+      "query": "How are tenant IDs validated across memory routers and database adapters?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/routers/memory.py",
+        "rae_adapters/postgresql.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_015",
+      "query": "How does GraphTraversalStrategy query IGraphStore and fetch memories from IMemoryStorage?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/strategies/graph.py",
+        "rae_core/interfaces/graph.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_016",
+      "query": "How are custom profiles in math_controller.yaml loaded into MathController?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "config/math_controller.yaml",
+        "rae-core/rae_core/math/controller.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_017",
+      "query": "How does bootstrap_cloud script invoke validate_git_flow and bootstrap_dreamsoft_knowledge?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/bootstrap_cloud.py",
+        "scripts/validate_git_flow.py",
+        "scripts/bootstrap_dreamsoft_knowledge.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_018",
+      "query": "How does the memory dashboard interface connect to FastAPI backend endpoints?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "tools/memory-dashboard/",
+        "apps/memory_api/main.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_019",
+      "query": "How does redis cache layer wrap HybridSearchEngine queries?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/cache.py",
+        "apps/memory_api/services/cache_service.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_020",
+      "query": "How does hard_contract_gatekeeper check imposition lock and commit messages?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/hard_contract_gatekeeper.py",
+        "scripts/imposition_lock.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_021",
+      "query": "How does memory decay scoring affect search strategy ranking weights?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/scoring/decay.py",
+        "rae-core/rae_core/search/engine.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_022",
+      "query": "How does telemetry aggregator in rae-lab collect metrics from memory_api?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-lab/metrics_aggregator.py",
+        "apps/memory_api/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_023",
+      "query": "How does openclaw gateway authenticate assistant sessions?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "packages/rae-open-claw/src/gateway/assistant-identity.ts",
+        "keycloak"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_024",
+      "query": "How is the Emerald semantic score combined with original fusion rank in EmeraldReranker?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae-core/rae_core/search/engine.py",
+        "rae_core/interfaces/reranking.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "cross_025",
+      "query": "How does EvidenceBundle link with SHA-256 hash chaining in governance?",
+      "category": "cross_file",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/models/evidence.py",
+        "rae_core/governance/hashing.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_001",
+      "query": "How does Dreamsoft modern Next.js frontend authenticate against backend API?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory",
+        "authApp",
+        "editornext"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_002",
+      "query": "How does ScreenWatcher BI dashboard ingest telemetry from machine PLC logs?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "screenwatcher_project",
+        "ProductionTrendProvider",
+        "import_jan20_data.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_003",
+      "query": "How does Billboard Splitter export tiled PDF files using PyMuPDF and ReportLab?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "billboard-splitter",
+        "splitter.py",
+        "main.pyw"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_004",
+      "query": "How does Billboard Marker place QR and barcodes on billboard slices?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "billboard-marker",
+        "marker.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_005",
+      "query": "How does bootstrap_dreamsoft_knowledge inject architecture rules into RAE Bridge API?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/bootstrap_dreamsoft_knowledge.py",
+        "RAE Bridge API V3"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_006",
+      "query": "Where is the GeometricalEngine and CalculateAdapter in Dreamsoft Dockerized backend?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/Dockerized/backend",
+        "GeometricalEngine.php"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_007",
+      "query": "Where is the SheetImpositionVisualizer located in managernext?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/manager",
+        "SheetImpositionVisualizer.tsx"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_008",
+      "query": "How does ScreenWatcher Celery worker process OCR logs in Docker?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "screenwatcher_project",
+        "celery",
+        "django 5.2"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_009",
+      "query": "How does RAE-Suite interact with k8s-cloud-repo deployment manifests?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "k8s-cloud-repo",
+        "helm",
+        "kubernetes"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_010",
+      "query": "How does RAE supervisor manage OpenClaw gateway processes?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RAE-Suite",
+        "rae-open-claw",
+        "supervisor_mcp.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_011",
+      "query": "How is Yjs synchronization handled in editornext canvas?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/editornext",
+        "yjs",
+        "webrtc"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_012",
+      "query": "How does Billboard Splitter handle 1:10 scaling for large billboards?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "billboard-splitter",
+        "scaling",
+        "1:10 standard"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_013",
+      "query": "How does ScreenWatcher calculate micro-stops in Gantt chart from speed thresholds?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "screenwatcher_project",
+        "MachineGanttProvider",
+        "clean_speed"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_014",
+      "query": "How does Dreamsoft backend-service integrate with Rendertron for SSR?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/rendertron",
+        "backend-service"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_015",
+      "query": "Where is the LabelImposition model defined in Dreamsoft backend?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/backend",
+        "LabelImposition.php"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_016",
+      "query": "How does ScreenWatcher historical aggregation fallback query the database directly?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "screenwatcher_project",
+        "metrics_repository.py",
+        "Live Fallback"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_017",
+      "query": "How does Billboard Splitter support camera detection with extended separation lines?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "billboard-splitter",
+        "sep_line_length",
+        "line extension"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_018",
+      "query": "Where is the Dreamsoft website repository located in cloud root?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/dreamsoft-website"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_019",
+      "query": "How does node-backend in dreamsoft_factory coordinate socket events?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/node-backend"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_020",
+      "query": "Where are the pre-commit git hooks deployed across the 36 submodules?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/bootstrap_cloud.py",
+        "git-hooks"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_021",
+      "query": "How does Dreamsoft authApp manage JWT tokens and sessions?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "dreamsoft_factory/authApp"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "repo_022",
+      "query": "How does ScreenWatcher expose MCP tools for production metrics?",
+      "category": "cross_repository",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "screenwatcher_project",
+        "mcp_server"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_001",
+      "query": "What architectural fixes were released in RAE v2.6.0 on 2025-12-24?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RAE v2.6.0",
+        "Remote Windows Connection",
+        "CORS ALLOWED_ORIGINS"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_002",
+      "query": "What was the benchmark baseline established on 2025-12-21?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Academic Lite MRR 1.0",
+        "Industrial Small MRR 0.8056",
+        "LECT 0.9995"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_003",
+      "query": "What changes stabilized develop branch on 2025-12-31?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "914 passed",
+        "Zero Warning Policy",
+        "Hybrid Reranking Strategy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_004",
+      "query": "What was accomplished on 2026-01-01 regarding federation and routing?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "federation/query",
+        "double routing prefixes",
+        "a9355ea2"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_005",
+      "query": "How was Industrial Large benchmark repaired on 2026-01-02?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "MRR 0.0156 to 0.7634",
+        "content filtering",
+        "ground truth"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_006",
+      "query": "What was the outcome of RAE-core test coverage sprint on 2026-01-02?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "99% coverage",
+        "700 core tests passed",
+        "policy.py",
+        "manager.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_007",
+      "query": "What recovery migration normalized layer names in database?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "normalize_layer_names",
+        "18995 semantic",
+        "131 episodic"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_008",
+      "query": "What was the result of the database code audit regarding dead columns?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "session_id",
+        "qdrant_point_id",
+        "ttl",
+        "PLAN_DB_REFACTOR_ISO_PERFORMANCE.md"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_009",
+      "query": "What sandbox ports were stabilized on 2026-01-06?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Lite port 8010",
+        "Full port 8020",
+        "100% pokrycia testami"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_010",
+      "query": "What was the milestone achieved in Iteration 2 benchmark plan regarding MMIT?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "MMIT 0.0000 interference",
+        "agent_id isolation",
+        "ORB Auto-Tuner"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_011",
+      "query": "When was Phase 3 Enforcement completed for RAE ISO security contract?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "2026-01-17",
+        "Phase 3 Enforcement",
+        "Working layer restriction"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_012",
+      "query": "When was the ScreenWatcher Jan 20 production dashboard created?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "53717286-fe94-4c8f-baf9-c4d2758eb672",
+        "Analiza Produkcji 20 Stycznia"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_013",
+      "query": "What was fixed in TrueJet2 dashboard between Jan 9 and Jan 16 2026?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Speed Integration",
+        "MAX_GAP 60s",
+        "1f537912-f1a3-4b6d-a4a0-75c3d4ac2df0"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_014",
+      "query": "When was the black linter version conflict resolved in develop?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "black==25.12.0",
+        "dac1fa65",
+        "pinned versions"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_015",
+      "query": "When was the isort ruff conflict in memory_api main.py resolved?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "f2131a66",
+        "isort --check in make lint"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_016",
+      "query": "What was the status of RAE-Core on 2026-01-15?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Lite Profile Math-only mode",
+        "DB UUIDs refactored",
+        "99% coverage"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_017",
+      "query": "What was the mypy cleanup progress from 1290 to 462 errors?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "mypy cleanup",
+        "structlog",
+        "Pydantic plugins"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_018",
+      "query": "When was Node 1 Lumina verified with 0.1504s benchmark for 1k memories?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Node 1 Lumina",
+        "0.1504s",
+        "MCP over SSH"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_019",
+      "query": "What was the result of the Jan 20 ScreenWatcher import script upgrade?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "partial regex",
+        "15 to ~3900 data points",
+        "import_jan20_data.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_020",
+      "query": "When was the Billboard Splitter session ended with 30 tests and 21% coverage?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Billboard Splitter Session End",
+        "30 tests",
+        "10 MRU profiles"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_021",
+      "query": "When was the master agent core protocol refactored to v2.1?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "AGENT_CORE_PROTOCOL.md",
+        "Documentation V2"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "temp_022",
+      "query": "What was the RAE state after phase 4 down_revision Postgres fix?",
+      "category": "temporal",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "phase4 down_revision",
+        "Postgres adapter unit tests passed"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_001",
+      "query": "Which embedding model and vector dimension are configured for dev environment?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "config",
+        ".env",
+        "QdrantAdapter",
+        "EmbeddingService"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_002",
+      "query": "What is the token pricing and model configuration for 3-tier coding hierarchy?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "models-for-rae.md",
+        "GEMINI.md",
+        "tier1_generate",
+        "tier3_judge"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_003",
+      "query": "How is Keycloak OAuth2 client ID configured in docker-compose.suite.yml and gateway?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docker-compose.suite.yml",
+        "keycloak",
+        "rae-open-claw"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_004",
+      "query": "What are the database connection pools and max connections across memory services?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/config.py",
+        "postgresql_pool",
+        "docker-compose.yml"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_005",
+      "query": "How are Prometheus metrics and OpenTelemetry trace exporters configured in FastAPI?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/main.py",
+        "opentelemetry_config.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_006",
+      "query": "What is the Redis cache TTL configuration for search query results?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/config.py",
+        "cache.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_007",
+      "query": "What are the exact IP addresses and SSH users configured for Node1 Node2 Node3?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/connect_cluster.py",
+        "config/cluster.yaml",
+        "Lumina",
+        "JULKA",
+        "Piotrek"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_008",
+      "query": "How does the Celery beat schedule trigger memory summarization and decay tasks?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/celery_app.py",
+        "tasks.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_009",
+      "query": "What are the CORS allowed origins and host bindings in docker-compose dev environment?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ALLOWED_ORIGINS",
+        "docker-compose.dev.yml"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_010",
+      "query": "How does SonarQube quality gate enforce coverage and code smells in CI?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docker-compose.suite.yml",
+        "packages/rae-quality/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_011",
+      "query": "What are the rate limit configurations for RAE Bridge API endpoints?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/routers/bridge.py",
+        "config.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_012",
+      "query": "What is the Qdrant point storage path in docker volume bindings?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docker-compose.yml",
+        "qdrant_storage"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_013",
+      "query": "How are execution audit ledger logs stored in local sqlite or json file?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/audit_accounting.py",
+        ".audit_ledger"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_014",
+      "query": "What is the token cost calculation formula for different model families in RAE?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/audit_accounting.py",
+        "rae-core/rae_core/models/cost.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_015",
+      "query": "How are Docker sandbox ports 8010 and 8020 mapped in docker-compose.sandbox-full.yml?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docker-compose.sandbox-full.yml",
+        "8010",
+        "8020"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_016",
+      "query": "What are the default weights for alpha, beta, gamma in math_controller.yaml?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "config/math_controller.yaml",
+        "tuning.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_017",
+      "query": "What is the supervisor MCP port and entrypoint command in RAE Suite?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "supervisor_mcp.py",
+        "docker-compose.suite.yml",
+        "8005"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_018",
+      "query": "Where is the Grafana embed broker configuration defined in portal architecture?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "RAE_PORTAL_CONSENSUS_AUDIT_TRAIL.md",
+        "Grafana Embed Broker"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_019",
+      "query": "How are Keycloak client secrets injected into environment variables?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        ".env",
+        "docker-compose.suite.yml",
+        "KEYCLOAK_SECRET"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_020",
+      "query": "What is the health check interval and timeout in docker-compose healthchecks?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "docker-compose.yml",
+        "interval",
+        "timeout"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_021",
+      "query": "How does bootstrap_dreamsoft_knowledge set up correlation ID and session ID?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "scripts/bootstrap_dreamsoft_knowledge.py",
+        "session-dreamsoft-"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "multi_022",
+      "query": "How are git hook exemptions configured in .pre-commit-exemptions.json?",
+      "category": "multi_source",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        ".pre-commit-exemptions.json",
+        "hard_contract_gatekeeper.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_001",
+      "query": "Which classes inherit from SearchStrategy in rae-core search strategies?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "VectorSearchStrategy",
+        "FullTextStrategy",
+        "GraphTraversalStrategy",
+        "SparseSearchStrategy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_002",
+      "query": "What components depend directly on IMemoryStorage interface?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "HybridSearchEngine",
+        "EmeraldReranker",
+        "LogicGateway",
+        "GraphTraversalStrategy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_003",
+      "query": "What is the relationship between RAECoreService and IDatabaseProvider?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "apps/memory_api/services/rae_core_service.py",
+        "IDatabaseProvider"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_004",
+      "query": "Which entities are connected to HybridSearchEngine in RAE knowledge graph?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "engine.py",
+        "FusionStrategy",
+        "EmeraldReranker",
+        "MetadataInjector"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_005",
+      "query": "What classes implement IReranker interface in RAE-core?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "EmeraldReranker",
+        "SmartReranker",
+        "interfaces/reranking.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_006",
+      "query": "What layers compose the ReflectionEngine architecture hierarchy?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "l1_operational",
+        "l2_structural",
+        "l3_meta",
+        "l4_cognitive"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_007",
+      "query": "Which modules call the LogicGateway fuse method?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "FusionStrategy",
+        "HybridSearchEngine"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_008",
+      "query": "What components are consumers of MemoryItem pydantic model?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "IMemoryStorage",
+        "PostgreSQLStorage",
+        "RAECoreService",
+        "ReflectionEngine"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_009",
+      "query": "Which modules produce EvidenceBundle records in governance?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_core/governance/engine.py",
+        "hashing.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_010",
+      "query": "What is the dependency chain of ContextBroker?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "rae_contracts",
+        "ContextEnvelope",
+        "context_trust_evaluator.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_011",
+      "query": "Which services depend on CommunityDetectionService?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "GraphRepository",
+        "ReflectionEngine",
+        "RAECoreService"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_012",
+      "query": "What is the relationship between BayesianPolicyTuner and Dirichlet distribution?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "Dirichlet-Multinomial",
+        "Thompson Sampling",
+        "tuning.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_013",
+      "query": "What classes implement IEmbeddingProvider interface?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "EmbeddingService",
+        "LiteLLM",
+        "interfaces/embedding.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_014",
+      "query": "Which classes connect to the Redis memory cache?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "CacheService",
+        "HybridSearchEngine",
+        "cache.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_015",
+      "query": "What is the caller hierarchy of record_task_completion.py?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "ExecutionAuditLedger",
+        "mesh_sync_cli.py",
+        "LOCAL_RAE_URL"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_016",
+      "query": "What classes inherit from BaseRepository in memory_api repositories?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "MemoryRepository",
+        "GraphRepository",
+        "TenantRepository"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_017",
+      "query": "Which services depend on LiteLLM provider in RAE?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "EmbeddingService",
+        "ReflectionEngine",
+        "LLMRouter"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_018",
+      "query": "What modules consume the QualityGate validation results?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "quality_daemon.py",
+        "governance/engine.py",
+        "audit_accounting.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_019",
+      "query": "What is the dependency path between RAE-Hive and Playwright?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "hive_engine.py",
+        "Playwright",
+        "visual_ingest.py"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_020",
+      "query": "Which components write to token_savings_log database table?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "core/audit_accounting.py",
+        "apps/memory_api/services/"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_021",
+      "query": "What is the relationship between MathController and LogicGateway?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "controller.py",
+        "logic_gateway.py",
+        "FusionStrategy"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    },
+    {
+      "query_id": "graph_022",
+      "query": "Which modules in ScreenWatcher inherit from DashboardWidgetProvider?",
+      "category": "graph_relation",
+      "tenant_id": "07ebf29a-4eb9-5d67-a7f1-91fd1a72e582",
+      "expected_sources": [
+        "MultiSeriesChartProvider",
+        "MachineGanttProvider",
+        "ProductionTrendProvider"
+      ],
+      "expected_memory_ids": [],
+      "forbidden_sources": [],
+      "metadata": {
+        "generated": true
+      }
+    }
+  ]
+}

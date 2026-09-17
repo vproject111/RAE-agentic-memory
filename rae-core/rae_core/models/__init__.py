@@ -8,14 +8,18 @@ This module exports all Pydantic models used across RAE-core:
 - Sync models: SyncChange, SyncOperation, SyncState, SyncConflict
 """
 
+from .envelope import CodeAttribution, ContextEnvelope
 from .evidence import (
     ConflictSeverity,
     ConflictType,
     EvidenceBundle,
-    EvidenceItem,
+)
+from .evidence import EvidenceItem as GovernanceEvidenceItem
+from .evidence import (
     KnowledgeConflict,
     ResolutionStatus,
 )
+from .evidence_package import EvidenceConflict, EvidenceItem, EvidencePackage
 from .graph import EdgeType, GraphEdge, GraphNode, GraphPath, NodeType, Subgraph
 from .knowledge import (
     AuthorityLevel,
@@ -24,6 +28,7 @@ from .knowledge import (
     KnowledgeSourceType,
 )
 from .memory import MemoryItem, MemoryLayer, MemoryStats, MemoryType, ScoredMemoryItem
+from .multimodal import MultimodalArtifact
 from .reflection import Reflection, ReflectionPolicy, ReflectionPriority, ReflectionType
 from .registry import (
     KnowledgeRegistryRecord,
@@ -40,12 +45,16 @@ from .search import (
 from .sync import SyncChange, SyncConflict, SyncOperation, SyncState
 
 __all__ = [
+    # Context Envelope models
+    "ContextEnvelope",
+    "CodeAttribution",
     # Memory models
     "MemoryItem",
     "MemoryLayer",
     "MemoryType",
     "ScoredMemoryItem",
     "MemoryStats",
+    "MultimodalArtifact",
     # Search models
     "SearchQuery",
     "SearchStrategy",
@@ -80,6 +89,9 @@ __all__ = [
     "KnowledgeRevisionRecord",
     # Evidence models
     "EvidenceItem",
+    "GovernanceEvidenceItem",
+    "EvidencePackage",
+    "EvidenceConflict",
     "EvidenceBundle",
     "KnowledgeConflict",
     "ConflictType",

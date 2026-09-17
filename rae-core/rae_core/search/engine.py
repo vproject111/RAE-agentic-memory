@@ -1,6 +1,7 @@
 """Hybrid search engine implementation."""
 
 import math
+import os
 from typing import Any
 from uuid import UUID
 
@@ -11,7 +12,10 @@ from rae_core.interfaces.reranking import IReranker
 from rae_core.interfaces.storage import IMemoryStorage
 from rae_core.math.fusion import FusionStrategy
 from rae_core.math.metadata_injector import MetadataInjector
+from rae_core.models.evidence_package import EvidenceItem, EvidencePackage
+from rae_core.search.router import RoutingPlan, StrategyRouter
 from rae_core.search.strategies import SearchStrategy
+from rae_core.search.sufficiency_gate import EvidenceSufficiencyGate
 
 logger = structlog.get_logger(__name__)
 
@@ -113,6 +117,7 @@ class HybridSearchEngine:
         graph_store: Any | None = None,
         math_controller: Any | None = None,
         cache: Any | None = None,
+        router: StrategyRouter | None = None,
     ):
         self.strategies = strategies
         self.embedding_provider = embedding_provider
@@ -121,6 +126,7 @@ class HybridSearchEngine:
         self._reranker = reranker
         self.math_controller = math_controller
         self.cache = cache
+        self.router = router or StrategyRouter()
         self.injector = MetadataInjector()
 
         # Initialize Fusion Strategy (LogicGateway wrapper)
@@ -147,7 +153,21 @@ class HybridSearchEngine:
         Execute search across active strategies and fuse results.
         Supports System 7.2 gateway_config override.
         """
-        active_strategies = strategies or list(self.strategies.keys())
+        # Intelligent routing support (Iteration 5)
+        auto_route = kwargs.get(
+            "auto_route",
+            os.getenv("RAE_QUERY_ROUTING_ENABLED", "false").lower()
+            in ("1", "true", "yes", "on"),
+        )
+        if auto_route and strategies is None:
+            available = list(self.strategies.keys())
+            routing_plan = self.router.route(query, available_strategies=available)
+            active_strategies = routing_plan.active_strategies
+            if strategy_weights is None:
+                strategy_weights = routing_plan.strategy_weights
+        else:
+            active_strategies = strategies or list(self.strategies.keys())
+
         weights = {}
         for name in active_strategies:
             if strategy_weights and name in strategy_weights:
@@ -331,6 +351,145 @@ class HybridSearchEngine:
             )
 
         return [(r[0], r[1]) for r in results][:limit]
+
+    async def search_evidence(
+        self,
+        query: str,
+        tenant_id: str,
+        agent_id: str | None = None,
+        filters: dict[str, Any] | None = None,
+        limit: int = 10,
+        strategies: list[str] | None = None,
+        strategy_weights: dict[str, float] | None = None,
+        enable_reranking: bool = False,
+        math_controller: Any = None,
+        **kwargs: Any,
+    ) -> EvidencePackage:
+        """
+        Execute search and assemble results into an auditable EvidencePackage.
+        Guarantees 100% ID and score parity with search() candidates.
+        """
+        auto_route = kwargs.get(
+            "auto_route",
+            os.getenv("RAE_QUERY_ROUTING_ENABLED", "false").lower()
+            in ("1", "true", "yes", "on"),
+        )
+        routing_plan: RoutingPlan | None = None
+        if auto_route and strategies is None:
+            available = list(self.strategies.keys())
+            routing_plan = self.router.route(query, available_strategies=available)
+            active_strategies = routing_plan.active_strategies
+            if strategy_weights is None:
+                strategy_weights = routing_plan.strategy_weights
+        else:
+            active_strategies = strategies or list(self.strategies.keys())
+
+        candidates = await self.search(
+            query=query,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            filters=filters,
+            limit=limit,
+            strategies=active_strategies,
+            strategy_weights=strategy_weights,
+            enable_reranking=enable_reranking,
+            math_controller=math_controller,
+            **kwargs,
+        )
+
+        items: list[EvidenceItem] = []
+
+        candidate_ids = [c[0] for c in candidates if len(c) > 0]
+        memory_map: dict[UUID, Any] = {}
+
+        if candidate_ids and hasattr(self.memory_storage, "get_memories_batch"):
+            try:
+                mems = await self.memory_storage.get_memories_batch(
+                    candidate_ids, tenant_id
+                )
+                for mem in mems:
+                    m_id = (
+                        mem.get("id")
+                        if isinstance(mem, dict)
+                        else getattr(mem, "id", None)
+                    )
+                    if m_id:
+                        if isinstance(m_id, str):
+                            try:
+                                m_id = UUID(m_id)
+                            except ValueError:
+                                pass
+                        memory_map[m_id] = mem
+            except Exception as e:
+                logger.warning("evidence_batch_fetch_failed", error=str(e))
+
+        for cand in candidates:
+            m_id = cand[0]
+            m_uid: UUID | None = None
+            if isinstance(m_id, UUID):
+                m_uid = m_id
+            elif isinstance(m_id, str):
+                try:
+                    m_uid = UUID(m_id)
+                except ValueError:
+                    pass
+
+            score = float(cand[1]) if len(cand) > 1 else 0.0
+            mem_data = memory_map.get(m_uid) if m_uid else None
+
+            content = ""
+            envelope = None
+            trust_score = 1.0
+
+            if isinstance(mem_data, dict):
+                content = mem_data.get("content", "")
+                envelope = mem_data.get("envelope")
+                trust_score = mem_data.get("importance", 1.0)
+            elif mem_data is not None:
+                content = getattr(mem_data, "content", "")
+                envelope = getattr(mem_data, "envelope", None)
+                trust_score = getattr(mem_data, "importance", 1.0)
+
+            item = EvidenceItem.from_memory_and_score(
+                memory_id=m_id,
+                content=content,
+                score=score,
+                strategy="hybrid_fused",
+                trust_score=trust_score,
+                envelope=envelope,
+            )
+            items.append(item)
+
+        avg_score = (
+            float(sum(i.relevance_score for i in items) / len(items)) if items else 0.0
+        )
+
+        # Automatic conflict detection across evidence items (Phase 3)
+        from rae_core.search.conflict_detector import EvidenceConflictDetector
+
+        detector = EvidenceConflictDetector()
+        conflicts = detector.detect_conflicts(items)
+
+        package = EvidencePackage(
+            query=query,
+            tenant_id=tenant_id,
+            items=items,
+            strategies_used=active_strategies,
+            confidence_score=avg_score,
+            conflicts=conflicts,
+        )
+
+        # Iteration 3: Evidence Sufficiency Gate evaluation
+        gate = EvidenceSufficiencyGate()
+        assessment = gate.evaluate(package)
+        package.metadata["sufficiency_assessment"] = assessment.model_dump()
+        package.confidence_score = assessment.composite_score
+        package.missing_aspects = assessment.missing_aspects
+
+        if routing_plan:
+            package.metadata["routing_plan"] = routing_plan.model_dump()
+
+        return package
 
 
 class NoiseAwareSearchEngine(HybridSearchEngine):

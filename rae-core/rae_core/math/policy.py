@@ -407,3 +407,23 @@ class PolicyRouter:
             score = top_item.get("score") or top_item.get("final_score") or 0.0
 
         return score < self.confidence_threshold
+
+
+def compute_retrieval_reward(
+    quality: float,
+    latency_ms: float,
+    token_cost: float = 0.0,
+    is_failed: bool = False,
+    max_acceptable_latency_ms: float = 500.0,
+) -> float:
+    """
+    Multi-objective retrieval reward calculation (Iteration 9):
+    Reward = 0.65 * Quality - 0.10 * LatencyPenalty - 0.10 * TokenCost - 0.15 * FailedRetrieval
+    """
+    q = max(0.0, min(1.0, quality))
+    lat_penalty = min(1.0, max(0.0, latency_ms / max_acceptable_latency_ms))
+    cost_penalty = min(1.0, max(0.0, token_cost))
+    fail_penalty = 1.0 if is_failed else 0.0
+
+    reward = 0.65 * q - 0.10 * lat_penalty - 0.10 * cost_penalty - 0.15 * fail_penalty
+    return max(-1.0, min(1.0, reward))

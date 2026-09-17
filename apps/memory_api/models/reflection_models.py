@@ -477,7 +477,39 @@ class ReflectionUsageLog(BaseModel):
     # Metadata
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    # Timestamp
     timestamp: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# Community Synthesis Models (Stage 3 / L5)
+# ============================================================================
+
+
+class SynthesizeCommunitiesRequest(BaseModel):
+    """Request to trigger community synthesis into reflective memory"""
+
+    tenant_id: str = Field("default", description="Tenant ID")
+    project: str = Field("default", description="Project identifier")
+    min_community_size: int = Field(
+        3, ge=1, le=50, description="Minimum nodes per community cluster"
+    )
+
+
+class SynthesizedCommunityItem(BaseModel):
+    """Summary of a single synthesized community"""
+
+    community_id: str
+    domain: str
+    member_count: int
+    memory_id: str
+    summary: str
+
+
+class SynthesizeCommunitiesResponse(BaseModel):
+    """Response containing synthesized reflective community memories"""
+
+    synthesized_count: int
+    communities: List[SynthesizedCommunityItem] = Field(default_factory=list)
+    message: str = "Community synthesis completed successfully"

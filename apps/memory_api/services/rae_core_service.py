@@ -14,7 +14,6 @@ import structlog
 from fastapi import Request
 from qdrant_client import AsyncQdrantClient
 
-from apps.memory_api.services.dashboard_websocket import DashboardWebSocketService
 from apps.memory_api.services.embedding import (
     LocalEmbeddingProvider,
 )
@@ -32,6 +31,8 @@ from rae_core.interfaces.database import IDatabaseProvider
 from rae_core.interfaces.reranking import IReranker
 from rae_core.interfaces.storage import IMemoryStorage
 from rae_core.interfaces.vector import IVectorStore
+from rae_core.models.envelope import ContextEnvelope
+from rae_core.models.evidence_package import EvidencePackage
 from rae_core.models.interaction import AgentAction, RAEInput
 from rae_core.models.search import SearchResponse
 from rae_core.runtime import RAERuntime
@@ -65,15 +66,17 @@ class RAECoreService:
         self.redis_adapter: ICacheProvider
         self.mcp_client: Optional[Any] = None
         self.savings_service: Optional[TokenSavingsService] = None
-        self.websocket_service: Optional[DashboardWebSocketService] = None
+        self.websocket_service: Optional[Any] = None
         self.tuning_service: Any = None  # Phase 4
         from apps.memory_api.services.alert_service import AlertService
 
         self.alert_service = AlertService()
 
         if postgres_pool:
+            from apps.memory_api.services import dashboard_websocket as ws_mod
+
             self.savings_service = TokenSavingsService(postgres_pool)
-            self.websocket_service = DashboardWebSocketService(postgres_pool)
+            self.websocket_service = ws_mod.DashboardWebSocketService(postgres_pool)
 
             # Phase 4: Self-improvement service
             from apps.memory_api.services.tuning_service import TuningService
@@ -280,7 +283,6 @@ class RAECoreService:
         reranker = self._create_reranker(settings)
 
         # Search Engine
-        from rae_core.search.engine import HybridSearchEngine
         from rae_core.search.strategies.anchor import AnchorStrategy
         from rae_core.search.strategies.fulltext import FullTextStrategy
         from rae_core.search.strategies.sparse import SparseVectorStrategy
@@ -306,12 +308,27 @@ class RAECoreService:
 
         if graph_repo:
             from rae_core.search.strategies.graph import GraphTraversalStrategy
+            from rae_core.search.strategies.graph_lite import GraphLiteStrategy
 
             search_strategies["graph"] = GraphTraversalStrategy(
                 graph_repo, self.postgres_adapter
             )
+            primary_seed = search_strategies.get("vector") or search_strategies.get(
+                "fulltext"
+            )
+            search_strategies["graph_lite"] = GraphLiteStrategy(
+                graph_store=graph_repo,
+                memory_storage=self.postgres_adapter,
+                seed_strategy=primary_seed,
+            )
 
-        search_engine = HybridSearchEngine(
+        from rae_core.search.strategies.visual import VisualSearchStrategy
+
+        search_strategies["visual"] = VisualSearchStrategy()
+
+        from rae_core.search.adaptive_engine import AdaptiveSearchEngine
+
+        search_engine = AdaptiveSearchEngine(
             strategies=search_strategies,
             embedding_provider=self.embedding_provider,
             memory_storage=self.postgres_adapter,
@@ -327,6 +344,7 @@ class RAECoreService:
             settings=self.settings,
             cache_provider=self.redis_adapter,
             search_engine=search_engine,
+            graph_store=graph_repo,
         )
 
         logger.info(
@@ -769,6 +787,26 @@ class RAECoreService:
 
         return "default"
 
+    @staticmethod
+    def _contains_code(text: str) -> bool:
+        """Heuristic check for code presence in memory content."""
+        if not text:
+            return False
+        import re
+
+        code_patterns = [
+            r"\bdef\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(",
+            r"\bclass\s+[a-zA-Z_][a-zA-Z0-9_]*[\s:\(]",
+            r"\bimport\s+[a-zA-Z_]",
+            r"\bfrom\s+[a-zA-Z_][a-zA-Z0-9_.]*\s+import",
+            r"```[a-zA-Z]*\n",
+            r"\bfunction\s+[a-zA-Z_]",
+            r"\bconst\s+[a-zA-Z_][a-zA-Z0-9_]*\s*=",
+            r"\blet\s+[a-zA-Z_][a-zA-Z0-9_]*\s*=",
+            r"\bpublic\s+(?:static\s+)?(?:void|class|function)",
+        ]
+        return any(re.search(pat, text) for pat in code_patterns)
+
     async def store_memory(
         self,
         tenant_id: str,
@@ -787,6 +825,7 @@ class RAECoreService:
         metadata: Optional[dict] = None,
         agent_id: Optional[str] = None,
         human_label: Optional[str] = None,
+        envelope: Optional[ContextEnvelope] = None,
     ) -> str:
         """
         Store memory using RAEEngine.
@@ -819,10 +858,34 @@ class RAECoreService:
             except Exception as e:
                 logger.warning("audit_failed", error=str(e))
 
-        # 3. Context Resolution (Best Practice: Avoid 'default' pollution)
+        # 3. Context Resolution & Envelope Enrichment (Stage 2 / L3)
         project_canonical = self._resolve_project_context(project)
         agent_canonical = agent_id or "default"
         metadata = metadata or {}
+
+        from rae_core.ingestion.context_enricher import ContextEnricher
+
+        enricher = ContextEnricher(default_project=project_canonical)
+        resolved_envelope = envelope
+        if not resolved_envelope and (
+            enricher.is_enabled or self._contains_code(content)
+        ):
+            file_path = metadata.get("file_path") if metadata else None
+            resolved_envelope = enricher.build_envelope(
+                content=content,
+                file_path=file_path,
+                project=project_canonical,
+                task_id=metadata.get("task_id") if metadata else None,
+                trace_id=metadata.get("trace_id") if metadata else None,
+            )
+
+        if resolved_envelope:
+            envelope_dict = (
+                resolved_envelope.model_dump()
+                if hasattr(resolved_envelope, "model_dump")
+                else resolved_envelope
+            )
+            metadata["envelope"] = envelope_dict
 
         # Store in RAEEngine
         if layer == "sensory" and ttl is None:
@@ -844,7 +907,59 @@ class RAECoreService:
             source=source,
             info_class=info_class,
             governance=governance,
+            envelope=resolved_envelope,
         )
+
+        # Stage 5: Multimodal Artifact Registration in Visual Search Strategy
+        if metadata and (
+            metadata.get("multimodal")
+            or metadata.get("screenshot_url")
+            or metadata.get("ocr_text")
+            or metadata.get("visual_artifact")
+        ):
+            try:
+                from rae_core.models.multimodal import MultimodalArtifact
+
+                m_info = (
+                    metadata.get("multimodal") or metadata.get("visual_artifact") or {}
+                )
+                if not isinstance(m_info, dict):
+                    m_info = {}
+
+                ocr_text = (
+                    metadata.get("ocr_text")
+                    or m_info.get("ocr_extracted_text")
+                    or m_info.get("ocr_text")
+                )
+                image_uri = (
+                    metadata.get("screenshot_url")
+                    or m_info.get("image_uri")
+                    or f"memory://{memory_id}"
+                )
+                raw_type = m_info.get("artifact_type") or (
+                    "screenshot"
+                    if metadata.get("screenshot_url")
+                    else "architecture_diagram"
+                )
+
+                artifact = MultimodalArtifact(
+                    artifact_id=str(m_info.get("artifact_id") or memory_id),
+                    artifact_type=raw_type,
+                    image_uri=str(image_uri),
+                    ocr_extracted_text=ocr_text,
+                    visual_embedding=m_info.get("visual_embedding"),
+                    text_embedding=m_info.get("text_embedding"),
+                    envelope=resolved_envelope,
+                )
+
+                if hasattr(self.engine, "search_engine") and hasattr(
+                    self.engine.search_engine, "strategies"
+                ):
+                    vis_strat = self.engine.search_engine.strategies.get("visual")
+                    if vis_strat and hasattr(vis_strat, "register_artifact"):
+                        vis_strat.register_artifact(UUID(str(memory_id)), artifact)
+            except Exception as e:
+                logger.warning("failed_to_register_multimodal_artifact", error=str(e))
 
         logger.info(
             "memory_stored_in_engine",
@@ -1154,6 +1269,8 @@ class RAECoreService:
         limit: int = 10,
         enable_reranking: bool = False,
         filters: Optional[dict] = None,
+        auto_route: bool = False,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Search memories across layers using RAE Core Engine.
@@ -1180,16 +1297,59 @@ class RAECoreService:
             filters=filters,
             custom_weights=weights,
             enable_reranking=enable_reranking,
+            auto_route=auto_route,
+            **kwargs,
         )
 
-        # 4. AUDIT: Record this search in the Working Layer (DISABLED FOR PERFORMANCE/NOISE)
-        # try:
-        #     audit_content = f"Search Query: {query} | Results: {len(results_list)} | Weights: {weights}"
-        #     await self.engine.store_memory(...)
-        # except Exception as e:
-        #     logger.warning("search_audit_failed", error=str(e))
+    async def search_evidence(
+        self,
+        query: str,
+        tenant_id: str = "default",
+        project: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        layer: Optional[str] = None,
+        limit: int = 10,
+        strategies: Optional[List[str]] = None,
+        custom_weights: Optional[Dict[str, float]] = None,
+        auto_route: bool = False,
+        enable_reranking: bool = False,
+        force_2pass: bool = False,
+        filters: Optional[dict] = None,
+        **kwargs: Any,
+    ) -> EvidencePackage:
+        """
+        Search memories across layers returning an auditable EvidencePackage.
+        """
+        weights: Any = custom_weights
+        if not weights and self.tuning_service:
+            try:
+                weights = await self.tuning_service.get_current_weights(str(tenant_id))
+            except Exception as e:
+                logger.warning("failed_to_get_tuning_weights", error=str(e))
 
-        return response
+        if not weights and self.szubar_mode:
+            from rae_core.math.structure import ScoringWeights
+
+            weights = ScoringWeights.szubar_profile()
+
+        return cast(
+            EvidencePackage,
+            await self.engine.search_evidence(
+                query=query,
+                tenant_id=str(tenant_id),
+                agent_id=agent_id or "default",
+                project=project,
+                layer=layer,
+                top_k=limit,
+                filters=filters,
+                strategies=strategies,
+                strategy_weights=weights,
+                auto_route=auto_route,
+                enable_reranking=enable_reranking,
+                force_2pass=force_2pass,
+                **kwargs,
+            ),
+        )
 
     async def consolidate_memories(
         self,

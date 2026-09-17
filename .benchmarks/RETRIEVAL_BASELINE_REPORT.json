@@ -1,0 +1,88 @@
+{
+  "total_queries": 213,
+  "recall_at_5": 0.0,
+  "recall_at_10": 0.0,
+  "mrr": 0.0,
+  "ndcg_at_10": 0.0,
+  "latency_p50_ms": 0.009933952242136002,
+  "latency_p95_ms": 0.01299255527555942,
+  "reranker_gain": 0.0,
+  "empty_result_rate": 0.0,
+  "wrong_tenant_count": 0,
+  "category_breakdown": {
+    "exact_identifier": {
+      "count": 25.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.011155381798744202
+    },
+    "code_symbol": {
+      "count": 25.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.011037448421120644
+    },
+    "semantic_code": {
+      "count": 25.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.009800787083804607
+    },
+    "historical_decision": {
+      "count": 25.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.009854789823293686
+    },
+    "cross_file": {
+      "count": 25.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.011830441653728485
+    },
+    "cross_repository": {
+      "count": 22.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.010031037328934128
+    },
+    "temporal": {
+      "count": 22.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.010749647944149647
+    },
+    "multi_source": {
+      "count": 22.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.010379992256110365
+    },
+    "graph_relation": {
+      "count": 22.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_10": 0.0,
+      "latency_avg_ms": 0.011986285575072874
+    }
+  },
+  "timestamp": "2026-09-17T12:43:53.548940+00:00",
+  "engine_profile": "standard"
+}

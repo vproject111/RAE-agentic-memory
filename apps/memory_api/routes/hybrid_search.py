@@ -8,13 +8,16 @@ This module provides FastAPI routes for hybrid search operations including:
 - Search analytics
 """
 
+import time
 from typing import Dict
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from apps.memory_api.middleware.telemetry_bridge import get_telemetry_bridge
 from apps.memory_api.models.hybrid_search_models import (
     DEFAULT_WEIGHT_PROFILES,
+    EvidenceSearchRequest,
     HybridSearchRequest,
     HybridSearchResponse,
     QueryAnalysisRequest,
@@ -26,6 +29,7 @@ from apps.memory_api.services.rae_core_service import (
     RAECoreService,
     get_rae_core_service,
 )
+from rae_core.models.evidence_package import EvidencePackage
 
 logger = structlog.get_logger(__name__)
 
@@ -90,6 +94,53 @@ async def hybrid_search(
 
     except Exception as e:
         logger.error("hybrid_search_failed", error=str(e), query=request.query)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidence", response_model=EvidencePackage)
+async def search_evidence(
+    request: EvidenceSearchRequest,
+    rae_service: RAECoreService = Depends(get_rae_core_service),
+):
+    """
+    Execute evidence retrieval returning an auditable EvidencePackage.
+    Guarantees 100% ID and score parity with search() candidates,
+    provenance attribution, and optional bounded 2-pass adaptive enrichment.
+    """
+    try:
+        start_time = time.perf_counter()
+        package = await rae_service.search_evidence(
+            query=request.query,
+            tenant_id=request.tenant_id,
+            project=request.project,
+            agent_id=request.agent_id,
+            layer=request.layer,
+            limit=request.limit,
+            strategies=request.strategies,
+            custom_weights=request.custom_weights,
+            auto_route=request.auto_route,
+            enable_reranking=request.enable_reranking,
+            force_2pass=request.force_2pass,
+            filters=request.filters,
+        )
+        latency_ms = (time.perf_counter() - start_time) * 1000.0
+
+        bridge = get_telemetry_bridge()
+        primary_strategy = (
+            request.strategies[0]
+            if request.strategies and len(request.strategies) == 1
+            else "hybrid"
+        )
+        await bridge.record_search_evidence(
+            package=package,
+            latency_ms=latency_ms,
+            token_cost=0.0,
+            strategy=primary_strategy,
+        )
+
+        return package
+    except Exception as e:
+        logger.error("search_evidence_failed", error=str(e), query=request.query)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
