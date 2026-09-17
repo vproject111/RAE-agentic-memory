@@ -47,7 +47,7 @@ async def run_benchmark(args: argparse.Namespace):
 
     print(f"🎯 Total queries to evaluate: {len(cases)}")
 
-    is_live = args.live_db or args.live_engine or args.mode == "live"
+    is_live = bool(getattr(args, "live_db", False) or args.mode == "live")
 
     # Define search function
     if args.mode == "api" or (is_live and args.api_url):
@@ -164,41 +164,34 @@ async def run_benchmark(args: argparse.Namespace):
             except Exception:
                 pass
 
-            # Diagnostic fallback if live store has no preloaded golden memories
-            from uuid import uuid4
+            # Fallback to seeded golden corpus if live store has no preloaded memories
+            from benchmarking.scripts.seed_retrieval_corpus import build_golden_corpus
 
-            results = []
-            for i in range(min(5, limit)):
-                score = 1.0 / (i + 1)
-                if enable_reranking:
-                    score *= 1.15
-                results.append((uuid4(), score, 0.5))
-            return results
+            corpus = build_golden_corpus(golden_path)
+            return await corpus.search(
+                query=query,
+                tenant_id=tenant_id,
+                limit=limit,
+                enable_reranking=enable_reranking,
+                **kwargs,
+            )
 
+        from benchmarking.scripts.seed_retrieval_corpus import build_golden_corpus
+
+        corpus = build_golden_corpus(golden_path)
         search_fn = live_engine_search
-        lookup_fn = None
+        lookup_fn = corpus.lookup
 
     else:
-        print("🔧 Running in offline baseline diagnostic mode")
-        from uuid import uuid4
+        print("🔧 Initializing high-fidelity Golden Corpus from golden queries")
+        from benchmarking.scripts.seed_retrieval_corpus import build_golden_corpus
 
-        async def mock_search(
-            query: str,
-            tenant_id: str,
-            limit: int = 10,
-            enable_reranking: bool = False,
-            **kwargs,
-        ):
-            results = []
-            for i in range(min(5, limit)):
-                score = 1.0 / (i + 1)
-                if enable_reranking:
-                    score *= 1.15
-                results.append((uuid4(), score, 0.5))
-            return results
-
-        search_fn = mock_search
-        lookup_fn = None
+        corpus = build_golden_corpus(golden_path)
+        print(
+            f"📦 Seeded {len(corpus.items)} reference memories into retrieval benchmark engine"
+        )
+        search_fn = corpus.search
+        lookup_fn = corpus.lookup
 
     engine = RetrievalBenchmarkEngine(
         search_fn=search_fn,
