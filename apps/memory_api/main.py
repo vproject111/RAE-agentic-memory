@@ -39,6 +39,7 @@ from apps.memory_api.logging_config import setup_logging
 from apps.memory_api.middleware.budget_enforcer import BudgetEnforcementMiddleware
 from apps.memory_api.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from apps.memory_api.middleware.session import SessionContextMiddleware
+from apps.memory_api.middleware.telemetry_bridge import TelemetryBridgeMiddleware
 from apps.memory_api.middleware.tenant import TenantContextMiddleware
 from apps.memory_api.observability import health_checks as health_router
 from apps.memory_api.observability import (
@@ -298,6 +299,9 @@ app.add_middleware(SessionContextMiddleware)
 
 # 4. Budget Enforcement (Enterprise)
 app.add_middleware(BudgetEnforcementMiddleware)
+
+# 5. Retrieval Telemetry Bridge (Closed-Loop Optimization)
+app.add_middleware(TelemetryBridgeMiddleware)
 
 # 4. Global Rate Limiting (SlowAPI)
 app.state.limiter = limiter

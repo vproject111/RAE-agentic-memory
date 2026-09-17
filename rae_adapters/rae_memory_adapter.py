@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
-from apps.memory_api.services.rae_core_service import RAECoreService
+if TYPE_CHECKING:
+    from apps.memory_api.services.rae_core_service import RAECoreService
 from rae_core.interfaces.adapter import (
     IKnowledgeAdapter,
     RetrievalContext,
@@ -73,7 +75,12 @@ class RAEAgenticMemoryAdapter(IKnowledgeAdapter[RAEMemoryQueryParams]):
             authority = authority_map.get(info_class_str, AuthorityLevel.UNTRUSTED)
 
             # Extract score, falling back to math_score or search_score or a default
-            score_val = memory.get("math_score") or memory.get("search_score") or memory.get("score") or 0.5
+            score_val = (
+                memory.get("math_score")
+                or memory.get("search_score")
+                or memory.get("score")
+                or 0.5
+            )
 
             observed_at_val = memory.get("created_at")
             if isinstance(observed_at_val, str):

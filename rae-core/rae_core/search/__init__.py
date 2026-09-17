@@ -11,6 +11,11 @@ from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 from rae_core.search.cache import SearchCache
 from rae_core.search.classifier import ClassificationResult, QueryClassifier
 from rae_core.search.engine import HybridSearchEngine
+from rae_core.search.optimizer import (
+    MaturityMode,
+    OptimizationRecommendation,
+    RetrievalOptimizer,
+)
 from rae_core.search.rewriter import QueryRewriter, RewritePlan
 from rae_core.search.router import RoutingPlan, StrategyRouter
 from rae_core.search.strategies import SearchStrategy
@@ -38,4 +43,7 @@ __all__ = [
     "StrategyRouter",
     "RoutingPlan",
     "SearchCache",
+    "RetrievalOptimizer",
+    "MaturityMode",
+    "OptimizationRecommendation",
 ]
