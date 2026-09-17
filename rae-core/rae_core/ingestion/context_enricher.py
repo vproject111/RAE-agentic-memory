@@ -167,9 +167,33 @@ class ContextEnricher:
                 end_line=e_line,
             )
             detected_summary = doc_sum
+        else:
+            c_name, f_name, s_line, e_line, doc_sum = self.extract_python_symbols(
+                content
+            )
+            lang = "python" if (c_name or f_name) else None
+            if not c_name and not f_name:
+                c_name, f_name, s_line, e_line, doc_sum = self.extract_generic_symbols(
+                    content, None
+                )
+            if c_name or f_name:
+                attribution = CodeAttribution(
+                    repository=resolved_repo,
+                    branch=resolved_branch,
+                    commit_sha=resolved_commit,
+                    file_path=None,
+                    language=lang,
+                    class_name=c_name,
+                    function_name=f_name,
+                    start_line=s_line,
+                    end_line=e_line,
+                )
+                detected_summary = doc_sum
 
         # Infer source type if not provided
-        resolved_source_type = source_type or ("code" if file_path else "doc")
+        resolved_source_type = source_type or (
+            "code" if (file_path or attribution) else "doc"
+        )
         if file_path and ("test" in file_path.lower() or "tests/" in file_path.lower()):
             resolved_source_type = "test"
 

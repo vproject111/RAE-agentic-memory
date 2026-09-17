@@ -32,6 +32,7 @@ from rae_core.interfaces.database import IDatabaseProvider
 from rae_core.interfaces.reranking import IReranker
 from rae_core.interfaces.storage import IMemoryStorage
 from rae_core.interfaces.vector import IVectorStore
+from rae_core.models.envelope import ContextEnvelope
 from rae_core.models.evidence_package import EvidencePackage
 from rae_core.models.interaction import AgentAction, RAEInput
 from rae_core.models.search import SearchResponse
@@ -792,6 +793,26 @@ class RAECoreService:
 
         return "default"
 
+    @staticmethod
+    def _contains_code(text: str) -> bool:
+        """Heuristic check for code presence in memory content."""
+        if not text:
+            return False
+        import re
+
+        code_patterns = [
+            r"\bdef\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(",
+            r"\bclass\s+[a-zA-Z_][a-zA-Z0-9_]*[\s:\(]",
+            r"\bimport\s+[a-zA-Z_]",
+            r"\bfrom\s+[a-zA-Z_][a-zA-Z0-9_.]*\s+import",
+            r"```[a-zA-Z]*\n",
+            r"\bfunction\s+[a-zA-Z_]",
+            r"\bconst\s+[a-zA-Z_][a-zA-Z0-9_]*\s*=",
+            r"\blet\s+[a-zA-Z_][a-zA-Z0-9_]*\s*=",
+            r"\bpublic\s+(?:static\s+)?(?:void|class|function)",
+        ]
+        return any(re.search(pat, text) for pat in code_patterns)
+
     async def store_memory(
         self,
         tenant_id: str,
@@ -810,6 +831,7 @@ class RAECoreService:
         metadata: Optional[dict] = None,
         agent_id: Optional[str] = None,
         human_label: Optional[str] = None,
+        envelope: Optional[ContextEnvelope] = None,
     ) -> str:
         """
         Store memory using RAEEngine.
@@ -842,10 +864,34 @@ class RAECoreService:
             except Exception as e:
                 logger.warning("audit_failed", error=str(e))
 
-        # 3. Context Resolution (Best Practice: Avoid 'default' pollution)
+        # 3. Context Resolution & Envelope Enrichment (Stage 2 / L3)
         project_canonical = self._resolve_project_context(project)
         agent_canonical = agent_id or "default"
         metadata = metadata or {}
+
+        from rae_core.ingestion.context_enricher import ContextEnricher
+
+        enricher = ContextEnricher(default_project=project_canonical)
+        resolved_envelope = envelope
+        if not resolved_envelope and (
+            enricher.is_enabled or self._contains_code(content)
+        ):
+            file_path = metadata.get("file_path") if metadata else None
+            resolved_envelope = enricher.build_envelope(
+                content=content,
+                file_path=file_path,
+                project=project_canonical,
+                task_id=metadata.get("task_id") if metadata else None,
+                trace_id=metadata.get("trace_id") if metadata else None,
+            )
+
+        if resolved_envelope:
+            envelope_dict = (
+                resolved_envelope.model_dump()
+                if hasattr(resolved_envelope, "model_dump")
+                else resolved_envelope
+            )
+            metadata["envelope"] = envelope_dict
 
         # Store in RAEEngine
         if layer == "sensory" and ttl is None:
@@ -867,6 +913,7 @@ class RAECoreService:
             source=source,
             info_class=info_class,
             governance=governance,
+            envelope=resolved_envelope,
         )
 
         logger.info(
