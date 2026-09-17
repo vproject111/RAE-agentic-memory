@@ -26,6 +26,8 @@ from apps.memory_api.models.reflection_models import (
     QueryReflectionsResponse,
     ReflectionStatistics,
     ReflectionUnit,
+    SynthesizeCommunitiesRequest,
+    SynthesizeCommunitiesResponse,
 )
 from apps.memory_api.repositories import reflection_repository
 from apps.memory_api.services.ml_service_client import MLServiceClient
@@ -45,6 +47,40 @@ router = APIRouter(tags=["Reflections"])
 async def get_pool(request: Request):
     """Get database connection pool from app state"""
     return request.app.state.pool
+
+
+# ============================================================================
+# Community Reflection Synthesis (Stage 3 / L5)
+# ============================================================================
+
+
+@router.post("/communities/synthesize", response_model=SynthesizeCommunitiesResponse)
+async def synthesize_communities_endpoint(
+    request: SynthesizeCommunitiesRequest,
+    rae_service: RAECoreService = Depends(get_rae_core_service),
+):
+    """
+    Synthesize knowledge graph communities into the Reflective memory layer.
+    Extracts graph clusters, generates structural community summaries,
+    and stores them as reflective memories.
+    """
+    try:
+        from apps.memory_api.workers.community_worker import (
+            CommunitySynthesisWorker,
+        )
+
+        worker = CommunitySynthesisWorker(
+            rae_service=rae_service,
+            min_community_size=request.min_community_size,
+        )
+        result = await worker.run_synthesis(
+            tenant_id=request.tenant_id,
+            project=request.project,
+        )
+        return result
+    except Exception as e:
+        logger.error("community_synthesis_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
