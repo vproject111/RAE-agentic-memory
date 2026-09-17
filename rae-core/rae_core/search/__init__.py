@@ -16,6 +16,7 @@ from rae_core.search.router import RoutingPlan, StrategyRouter
 from rae_core.search.strategies import SearchStrategy
 from rae_core.search.strategies.fulltext import FullTextStrategy
 from rae_core.search.strategies.graph import GraphTraversalStrategy
+from rae_core.search.strategies.graph_lite import GraphLiteStrategy
 from rae_core.search.strategies.sparse import SparseVectorStrategy
 from rae_core.search.strategies.vector import VectorSearchStrategy
 
@@ -23,6 +24,7 @@ __all__ = [
     "SearchStrategy",
     "VectorSearchStrategy",
     "GraphTraversalStrategy",
+    "GraphLiteStrategy",
     "SparseVectorStrategy",
     "FullTextStrategy",
     "HybridSearchEngine",
