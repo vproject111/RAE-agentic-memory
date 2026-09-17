@@ -39,12 +39,11 @@ def mock_llm_provider():
 
 @pytest.fixture
 def mock_search_engine():
-    with patch("rae_core.search.engine.HybridSearchEngine") as mock:
-        instance = mock.return_value
-        instance.search = AsyncMock()
-        instance.rerank = AsyncMock()
-        instance.strategies = {"vector": Mock(), "fulltext": Mock()}
-        yield instance
+    mock = Mock()
+    mock.search = AsyncMock()
+    mock.rerank = AsyncMock()
+    mock.strategies = {"vector": Mock(), "fulltext": Mock()}
+    return mock
 
 
 @pytest.fixture
@@ -83,6 +82,7 @@ def rae_engine(
         embedding_provider=mock_embedding_provider,
         llm_provider=mock_llm_provider,
         settings=settings,
+        search_engine=mock_search_engine,
     )
 
 
