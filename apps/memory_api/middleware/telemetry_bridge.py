@@ -37,6 +37,9 @@ class RetrievalTelemetryBridge:
             except ValueError:
                 maturity = MaturityMode.ADVISORY
             self.optimizer = RetrievalOptimizer(mode=maturity)
+        self.state_file = os.getenv("RAE_OPTIMIZER_STATE_PATH")
+        if self.state_file:
+            self.optimizer.load_from_file(self.state_file)
 
     async def record_search_evidence(
         self,
@@ -89,6 +92,12 @@ class RetrievalTelemetryBridge:
             quality=round(confidence, 4),
             mode=rec.mode.value,
         )
+
+        if self.state_file:
+            try:
+                self.optimizer.save_to_file(self.state_file)
+            except Exception as err:
+                logger.warning("failed_to_persist_optimizer_state", error=str(err))
 
         return reward
 

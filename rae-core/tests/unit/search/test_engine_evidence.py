@@ -75,7 +75,9 @@ def test_rae_engine_initializes_adaptive_search_engine_when_env_enabled(
         assert isinstance(engine.search_engine, AdaptiveSearchEngine)
 
 
-def test_rae_engine_initializes_hybrid_search_engine_by_default(mock_dependencies):
+def test_rae_engine_initializes_adaptive_search_engine_with_single_pass_by_default(
+    mock_dependencies,
+):
     storage, vector, embedding, graph = mock_dependencies
 
     with patch.dict(os.environ, {"RAE_ADAPTIVE_2PASS_ENABLED": "false"}):
@@ -86,8 +88,38 @@ def test_rae_engine_initializes_hybrid_search_engine_by_default(mock_dependencie
             graph_store=graph,
         )
 
+        assert isinstance(engine.search_engine, AdaptiveSearchEngine)
         assert isinstance(engine.search_engine, HybridSearchEngine)
-        assert not isinstance(engine.search_engine, AdaptiveSearchEngine)
+        assert not engine.search_engine.is_2pass_enabled()
+
+
+@pytest.mark.asyncio
+async def test_rae_engine_force_2pass_triggers_adaptive_search_when_env_disabled():
+    mock_search_engine = MagicMock(spec=AdaptiveSearchEngine)
+    mock_search_engine.is_2pass_enabled.return_value = False
+    expected_package = EvidencePackage(
+        query="test query",
+        tenant_id="tenant-123",
+        items=[],
+    )
+    mock_search_engine.search_adaptive_evidence = AsyncMock(
+        return_value=expected_package
+    )
+
+    engine = RAEEngine(
+        memory_storage=MagicMock(),
+        vector_store=MagicMock(),
+        embedding_provider=MagicMock(),
+        search_engine=mock_search_engine,
+    )
+
+    result = await engine.search_evidence(
+        query="test query",
+        tenant_id="tenant-123",
+        force_2pass=True,
+    )
+    assert result == expected_package
+    mock_search_engine.search_adaptive_evidence.assert_awaited_once()
 
 
 @pytest.mark.asyncio

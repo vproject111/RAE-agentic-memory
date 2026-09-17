@@ -159,3 +159,36 @@ def test_evidence_search_api_with_telemetry(mock_pool):
         assert "x-retrieval-latency-ms" in response.headers
     finally:
         app.dependency_overrides.pop(get_rae_core_service, None)
+
+
+@pytest.mark.asyncio
+async def test_telemetry_bridge_state_file_persistence(tmp_path):
+    import json
+
+    state_file = tmp_path / "bridge_optimizer.json"
+    bridge = RetrievalTelemetryBridge(mode=MaturityMode.ACTIVE)
+    bridge.state_file = str(state_file)
+
+    dummy_item = EvidenceItem.from_memory_and_score(
+        memory_id=uuid4(),
+        content="State file persistence test content",
+        score=0.9,
+    )
+    dummy_package = EvidencePackage(
+        query="state test",
+        tenant_id="tenant-1",
+        items=[dummy_item],
+        confidence_score=0.9,
+    )
+
+    await bridge.record_search_evidence(
+        package=dummy_package,
+        latency_ms=15.0,
+        strategy="vector",
+    )
+
+    assert state_file.exists()
+    with open(state_file, "r") as f:
+        data = json.load(f)
+    assert data["mode"] == "active"
+    assert "vector" in data["current_weights"]
