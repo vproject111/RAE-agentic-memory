@@ -32,6 +32,7 @@ from rae_core.interfaces.database import IDatabaseProvider
 from rae_core.interfaces.reranking import IReranker
 from rae_core.interfaces.storage import IMemoryStorage
 from rae_core.interfaces.vector import IVectorStore
+from rae_core.models.evidence_package import EvidencePackage
 from rae_core.models.interaction import AgentAction, RAEInput
 from rae_core.models.search import SearchResponse
 from rae_core.runtime import RAERuntime
@@ -306,12 +307,33 @@ class RAECoreService:
 
         if graph_repo:
             from rae_core.search.strategies.graph import GraphTraversalStrategy
+            from rae_core.search.strategies.graph_lite import GraphLiteStrategy
 
             search_strategies["graph"] = GraphTraversalStrategy(
                 graph_repo, self.postgres_adapter
             )
+            primary_seed = search_strategies.get("vector") or search_strategies.get(
+                "fulltext"
+            )
+            search_strategies["graph_lite"] = GraphLiteStrategy(
+                graph_store=graph_repo,
+                memory_storage=self.postgres_adapter,
+                seed_strategy=primary_seed,
+            )
 
-        search_engine = HybridSearchEngine(
+        from rae_core.search.strategies.visual import VisualSearchStrategy
+
+        search_strategies["visual"] = VisualSearchStrategy()
+
+        from rae_core.search.adaptive_engine import AdaptiveSearchEngine
+
+        engine_cls = (
+            AdaptiveSearchEngine
+            if AdaptiveSearchEngine.is_2pass_enabled()
+            else HybridSearchEngine
+        )
+
+        search_engine = engine_cls(
             strategies=search_strategies,
             embedding_provider=self.embedding_provider,
             memory_storage=self.postgres_adapter,
@@ -327,6 +349,7 @@ class RAECoreService:
             settings=self.settings,
             cache_provider=self.redis_adapter,
             search_engine=search_engine,
+            graph_store=graph_repo,
         )
 
         logger.info(
@@ -1154,6 +1177,8 @@ class RAECoreService:
         limit: int = 10,
         enable_reranking: bool = False,
         filters: Optional[dict] = None,
+        auto_route: bool = False,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Search memories across layers using RAE Core Engine.
@@ -1180,16 +1205,59 @@ class RAECoreService:
             filters=filters,
             custom_weights=weights,
             enable_reranking=enable_reranking,
+            auto_route=auto_route,
+            **kwargs,
         )
 
-        # 4. AUDIT: Record this search in the Working Layer (DISABLED FOR PERFORMANCE/NOISE)
-        # try:
-        #     audit_content = f"Search Query: {query} | Results: {len(results_list)} | Weights: {weights}"
-        #     await self.engine.store_memory(...)
-        # except Exception as e:
-        #     logger.warning("search_audit_failed", error=str(e))
+    async def search_evidence(
+        self,
+        query: str,
+        tenant_id: str = "default",
+        project: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        layer: Optional[str] = None,
+        limit: int = 10,
+        strategies: Optional[List[str]] = None,
+        custom_weights: Optional[Dict[str, float]] = None,
+        auto_route: bool = False,
+        enable_reranking: bool = False,
+        force_2pass: bool = False,
+        filters: Optional[dict] = None,
+        **kwargs: Any,
+    ) -> EvidencePackage:
+        """
+        Search memories across layers returning an auditable EvidencePackage.
+        """
+        weights: Any = custom_weights
+        if not weights and self.tuning_service:
+            try:
+                weights = await self.tuning_service.get_current_weights(str(tenant_id))
+            except Exception as e:
+                logger.warning("failed_to_get_tuning_weights", error=str(e))
 
-        return response
+        if not weights and self.szubar_mode:
+            from rae_core.math.structure import ScoringWeights
+
+            weights = ScoringWeights.szubar_profile()
+
+        return cast(
+            EvidencePackage,
+            await self.engine.search_evidence(
+                query=query,
+                tenant_id=str(tenant_id),
+                agent_id=agent_id or "default",
+                project=project,
+                layer=layer,
+                top_k=limit,
+                filters=filters,
+                strategies=strategies,
+                strategy_weights=weights,
+                auto_route=auto_route,
+                enable_reranking=enable_reranking,
+                force_2pass=force_2pass,
+                **kwargs,
+            ),
+        )
 
     async def consolidate_memories(
         self,
