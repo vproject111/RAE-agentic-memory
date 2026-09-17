@@ -11,6 +11,7 @@ from rae_core.interfaces.reranking import IReranker
 from rae_core.interfaces.storage import IMemoryStorage
 from rae_core.math.fusion import FusionStrategy
 from rae_core.math.metadata_injector import MetadataInjector
+from rae_core.models.evidence_package import EvidenceItem, EvidencePackage
 from rae_core.search.strategies import SearchStrategy
 
 logger = structlog.get_logger(__name__)
@@ -331,6 +332,112 @@ class HybridSearchEngine:
             )
 
         return [(r[0], r[1]) for r in results][:limit]
+
+    async def search_evidence(
+        self,
+        query: str,
+        tenant_id: str,
+        agent_id: str | None = None,
+        filters: dict[str, Any] | None = None,
+        limit: int = 10,
+        strategies: list[str] | None = None,
+        strategy_weights: dict[str, float] | None = None,
+        enable_reranking: bool = False,
+        math_controller: Any = None,
+        **kwargs: Any,
+    ) -> EvidencePackage:
+        """
+        Execute search and assemble results into an auditable EvidencePackage.
+        Guarantees 100% ID and score parity with search() candidates.
+        """
+        candidates = await self.search(
+            query=query,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            filters=filters,
+            limit=limit,
+            strategies=strategies,
+            strategy_weights=strategy_weights,
+            enable_reranking=enable_reranking,
+            math_controller=math_controller,
+            **kwargs,
+        )
+
+        active_strategies = strategies or list(self.strategies.keys())
+        items: list[EvidenceItem] = []
+
+        candidate_ids = [c[0] for c in candidates if len(c) > 0]
+        memory_map: dict[UUID, Any] = {}
+
+        if candidate_ids and hasattr(self.memory_storage, "get_memories_batch"):
+            try:
+                mems = await self.memory_storage.get_memories_batch(
+                    candidate_ids, tenant_id
+                )
+                for mem in mems:
+                    m_id = (
+                        mem.get("id")
+                        if isinstance(mem, dict)
+                        else getattr(mem, "id", None)
+                    )
+                    if m_id:
+                        if isinstance(m_id, str):
+                            try:
+                                m_id = UUID(m_id)
+                            except ValueError:
+                                pass
+                        memory_map[m_id] = mem
+            except Exception as e:
+                logger.warning("evidence_batch_fetch_failed", error=str(e))
+
+        for cand in candidates:
+            m_id = cand[0]
+            m_uid: UUID | None = None
+            if isinstance(m_id, UUID):
+                m_uid = m_id
+            elif isinstance(m_id, str):
+                try:
+                    m_uid = UUID(m_id)
+                except ValueError:
+                    pass
+
+            score = float(cand[1]) if len(cand) > 1 else 0.0
+            mem_data = memory_map.get(m_uid) if m_uid else None
+
+            content = ""
+            envelope = None
+            trust_score = 1.0
+
+            if isinstance(mem_data, dict):
+                content = mem_data.get("content", "")
+                envelope = mem_data.get("envelope")
+                trust_score = mem_data.get("importance", 1.0)
+            elif mem_data is not None:
+                content = getattr(mem_data, "content", "")
+                envelope = getattr(mem_data, "envelope", None)
+                trust_score = getattr(mem_data, "importance", 1.0)
+
+            item = EvidenceItem.from_memory_and_score(
+                memory_id=m_id,
+                content=content,
+                score=score,
+                strategy="hybrid_fused",
+                trust_score=trust_score,
+                envelope=envelope,
+            )
+            items.append(item)
+
+        avg_score = (
+            float(sum(i.relevance_score for i in items) / len(items)) if items else 0.0
+        )
+
+        return EvidencePackage(
+            query=query,
+            tenant_id=tenant_id,
+            items=items,
+            strategies_used=active_strategies,
+            confidence_score=avg_score,
+        )
 
 
 class NoiseAwareSearchEngine(HybridSearchEngine):

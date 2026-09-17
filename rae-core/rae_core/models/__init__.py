@@ -13,10 +13,13 @@ from .evidence import (
     ConflictSeverity,
     ConflictType,
     EvidenceBundle,
-    EvidenceItem,
+)
+from .evidence import EvidenceItem as GovernanceEvidenceItem
+from .evidence import (
     KnowledgeConflict,
     ResolutionStatus,
 )
+from .evidence_package import EvidenceConflict, EvidenceItem, EvidencePackage
 from .graph import EdgeType, GraphEdge, GraphNode, GraphPath, NodeType, Subgraph
 from .knowledge import (
     AuthorityLevel,
@@ -84,6 +87,9 @@ __all__ = [
     "KnowledgeRevisionRecord",
     # Evidence models
     "EvidenceItem",
+    "GovernanceEvidenceItem",
+    "EvidencePackage",
+    "EvidenceConflict",
     "EvidenceBundle",
     "KnowledgeConflict",
     "ConflictType",
