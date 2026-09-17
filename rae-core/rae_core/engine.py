@@ -635,6 +635,19 @@ class RAEEngine:
         parent_id = str(uuid.uuid4())
         memory_ids = []
 
+        # Stage 2 (L3): Propagate ContextEnvelope into chunk metadata if provided
+        envelope = kwargs.get("envelope")
+        if envelope:
+            envelope_dict = (
+                envelope.model_dump()
+                if hasattr(envelope, "model_dump")
+                else (envelope if isinstance(envelope, dict) else None)
+            )
+            if envelope_dict:
+                if "metadata" not in kwargs or kwargs["metadata"] is None:
+                    kwargs["metadata"] = {}
+                kwargs["metadata"]["envelope"] = envelope_dict
+
         # Store chunks with full provenance
         for i, chunk in enumerate(chunks):
             chunk_kwargs = kwargs.copy()

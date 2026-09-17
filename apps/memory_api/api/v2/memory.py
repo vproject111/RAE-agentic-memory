@@ -20,6 +20,7 @@ from rae_core.exceptions.base import (
     ContractViolationError,
     SecurityPolicyViolationError,
 )
+from rae_core.models.envelope import ContextEnvelope
 
 router = APIRouter(prefix="/v2/memories", tags=["Memory v2 (RAE-Core)"])
 logger = structlog.get_logger(__name__)
@@ -44,6 +45,7 @@ class StoreMemoryRequestV2(BaseModel):
     agent_id: str | None = "default"
     info_class: str | None = "internal"
     governance: dict[str, Any] | None = None
+    envelope: Optional[ContextEnvelope] = None
 
 
 class StoreMemoryResponseV2(BaseModel):
@@ -127,6 +129,10 @@ async def store_memory(
                 ttl=request.ttl,
                 metadata=request.metadata,
                 human_label=request.human_label,
+                agent_id=request.agent_id,
+                info_class=request.info_class or "internal",
+                governance=request.governance,
+                envelope=request.envelope,
             )
 
             if memory_id is None:
