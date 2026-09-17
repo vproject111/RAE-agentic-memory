@@ -12,6 +12,7 @@ from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 from rae_core.search.rewriter import QueryRewriter, RewritePlan
 from rae_core.search.strategies import SearchStrategy
 from rae_core.search.sufficiency_gate import (
+    EvidenceSufficiencyGate,
     GateDecision,
     SufficiencyAssessment,
 )
@@ -194,3 +195,76 @@ async def test_adaptive_engine_hard_max_passes_cap():
         max_passes=5,  # Attempts to configure 5 passes
     )
     assert engine.max_passes == 2  # Hard limit capped at 2
+
+
+@pytest.mark.asyncio
+async def test_adaptive_engine_boost_and_focus_filters():
+    from unittest.mock import MagicMock
+
+    uid_shared = uuid4()
+    uid_other = uuid4()
+    strat = MockSearchStrategy(
+        "vector",
+        [
+            [(uid_shared, 0.3, 0.3), (uid_other, 0.9, 0.9)],
+            [(uid_shared, 0.5, 0.5)],
+        ],
+    )
+    strategies = {"vector": strat}
+    mock_storage = AsyncMock()
+
+    def get_memories(ids, tenant_id):
+        res = []
+        for i in ids:
+            if i == uid_shared:
+                res.append(
+                    {"id": uid_shared, "content": "Shared content", "importance": 0.5}
+                )
+            elif i == uid_other:
+                res.append(
+                    {"id": uid_other, "content": "Other content", "importance": 0.9}
+                )
+        return res
+
+    mock_storage.get_memories_batch.side_effect = get_memories
+
+    mock_rewriter = MagicMock(spec=QueryRewriter)
+    mock_rewriter.create_rewrite_plan.return_value = RewritePlan(
+        original_query="test",
+        refined_queries=["refined test"],
+        strategy_weight_adjustments={"vector": 1.2},
+        focus_filters={"layer": "semantic"},
+    )
+
+    mock_gate = MagicMock(spec=EvidenceSufficiencyGate)
+    mock_gate.evaluate.return_value = SufficiencyAssessment(
+        decision=GateDecision.INSUFFICIENT,
+        composite_score=0.3,
+        relevance_component=0.3,
+        coverage_component=0.2,
+        diversity_component=0.3,
+        trust_component=0.5,
+        temporal_component=0.5,
+        conflict_penalty=0.0,
+        missing_aspects=["semantic"],
+        rationale="Insufficient evidence",
+    )
+
+    engine = AdaptiveSearchEngine(
+        strategies=strategies,
+        memory_storage=mock_storage,
+        rewriter=mock_rewriter,
+        sufficiency_gate=mock_gate,
+    )
+
+    package = await engine.search_adaptive_evidence(
+        query="test",
+        tenant_id="tenant-1",
+        filters={"project": "proj-a"},
+        force_2pass=True,
+    )
+
+    assert package.metadata.get("pass_count") == 2
+    assert len(package.items) == 2
+    shared_item = next(it for it in package.items if it.memory_id == uid_shared)
+    assert shared_item.relevance_score > 0.0
