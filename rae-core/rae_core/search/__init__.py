@@ -7,8 +7,10 @@ Provides hybrid search capabilities combining multiple strategies:
 - Full-text (keyword matching)
 """
 
+from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 from rae_core.search.cache import SearchCache
 from rae_core.search.engine import HybridSearchEngine
+from rae_core.search.rewriter import QueryRewriter, RewritePlan
 from rae_core.search.strategies import SearchStrategy
 from rae_core.search.strategies.fulltext import FullTextStrategy
 from rae_core.search.strategies.graph import GraphTraversalStrategy
@@ -22,5 +24,8 @@ __all__ = [
     "SparseVectorStrategy",
     "FullTextStrategy",
     "HybridSearchEngine",
+    "AdaptiveSearchEngine",
+    "QueryRewriter",
+    "RewritePlan",
     "SearchCache",
 ]
