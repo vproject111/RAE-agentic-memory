@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from rae_core.models.envelope import ContextEnvelope
 from rae_core.types.enums import (
     InformationClass,
     MemoryLayer,
@@ -98,6 +99,12 @@ class MemoryItem(BaseModel):
     sync_metadata: dict[str, Any] | None = Field(
         default_factory=dict,
         description="Sync protocol data (e.g., version, path, conflict info)",
+    )
+
+    # ContextEnvelope (Adaptive Evidence Retrieval - Iteration 1)
+    envelope: ContextEnvelope | None = Field(
+        default=None,
+        description="Structured context envelope encapsulating provenance without polluting raw content",
     )
 
     model_config = ConfigDict(
