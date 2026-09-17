@@ -10,6 +10,7 @@ Provides hybrid search capabilities combining multiple strategies:
 from rae_core.search.adaptive_engine import AdaptiveSearchEngine
 from rae_core.search.cache import SearchCache
 from rae_core.search.classifier import ClassificationResult, QueryClassifier
+from rae_core.search.conflict_detector import EvidenceConflictDetector
 from rae_core.search.engine import HybridSearchEngine
 from rae_core.search.optimizer import (
     MaturityMode,
@@ -43,6 +44,7 @@ __all__ = [
     "StrategyRouter",
     "RoutingPlan",
     "SearchCache",
+    "EvidenceConflictDetector",
     "RetrievalOptimizer",
     "MaturityMode",
     "OptimizationRecommendation",

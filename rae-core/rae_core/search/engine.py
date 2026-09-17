@@ -464,12 +464,19 @@ class HybridSearchEngine:
             float(sum(i.relevance_score for i in items) / len(items)) if items else 0.0
         )
 
+        # Automatic conflict detection across evidence items (Phase 3)
+        from rae_core.search.conflict_detector import EvidenceConflictDetector
+
+        detector = EvidenceConflictDetector()
+        conflicts = detector.detect_conflicts(items)
+
         package = EvidencePackage(
             query=query,
             tenant_id=tenant_id,
             items=items,
             strategies_used=active_strategies,
             confidence_score=avg_score,
+            conflicts=conflicts,
         )
 
         # Iteration 3: Evidence Sufficiency Gate evaluation
