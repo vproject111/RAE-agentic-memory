@@ -13,6 +13,7 @@ from rae_core.math.fusion import FusionStrategy
 from rae_core.math.metadata_injector import MetadataInjector
 from rae_core.models.evidence_package import EvidenceItem, EvidencePackage
 from rae_core.search.strategies import SearchStrategy
+from rae_core.search.sufficiency_gate import EvidenceSufficiencyGate
 
 logger = structlog.get_logger(__name__)
 
@@ -431,13 +432,22 @@ class HybridSearchEngine:
             float(sum(i.relevance_score for i in items) / len(items)) if items else 0.0
         )
 
-        return EvidencePackage(
+        package = EvidencePackage(
             query=query,
             tenant_id=tenant_id,
             items=items,
             strategies_used=active_strategies,
             confidence_score=avg_score,
         )
+
+        # Iteration 3: Evidence Sufficiency Gate evaluation
+        gate = EvidenceSufficiencyGate()
+        assessment = gate.evaluate(package)
+        package.metadata["sufficiency_assessment"] = assessment.model_dump()
+        package.confidence_score = assessment.composite_score
+        package.missing_aspects = assessment.missing_aspects
+
+        return package
 
 
 class NoiseAwareSearchEngine(HybridSearchEngine):
