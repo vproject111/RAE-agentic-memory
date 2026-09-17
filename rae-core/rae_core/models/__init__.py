@@ -28,6 +28,7 @@ from .knowledge import (
     KnowledgeSourceType,
 )
 from .memory import MemoryItem, MemoryLayer, MemoryStats, MemoryType, ScoredMemoryItem
+from .multimodal import MultimodalArtifact
 from .reflection import Reflection, ReflectionPolicy, ReflectionPriority, ReflectionType
 from .registry import (
     KnowledgeRegistryRecord,
@@ -53,6 +54,7 @@ __all__ = [
     "MemoryType",
     "ScoredMemoryItem",
     "MemoryStats",
+    "MultimodalArtifact",
     # Search models
     "SearchQuery",
     "SearchStrategy",
