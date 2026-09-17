@@ -5,7 +5,7 @@ Wraps RAEEngine and adapters for use in FastAPI application.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 import asyncpg
@@ -14,7 +14,9 @@ import structlog
 from fastapi import Request
 from qdrant_client import AsyncQdrantClient
 
-from apps.memory_api.services.dashboard_websocket import DashboardWebSocketService
+if TYPE_CHECKING:
+    from apps.memory_api.services.dashboard_websocket import DashboardWebSocketService
+
 from apps.memory_api.services.embedding import (
     LocalEmbeddingProvider,
 )
@@ -74,6 +76,10 @@ class RAECoreService:
         self.alert_service = AlertService()
 
         if postgres_pool:
+            from apps.memory_api.services.dashboard_websocket import (
+                DashboardWebSocketService,
+            )
+
             self.savings_service = TokenSavingsService(postgres_pool)
             self.websocket_service = DashboardWebSocketService(postgres_pool)
 

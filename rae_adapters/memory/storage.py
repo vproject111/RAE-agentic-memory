@@ -119,7 +119,7 @@ class InMemoryStorage(IMemoryStorage):
         self,
         query: str,
         tenant_id: str,
-        agent_id: str,
+        agent_id: str = "default",
         layer: str | None = None,
         limit: int = 10,
         **kwargs: Any,

@@ -8,11 +8,13 @@ This module provides FastAPI routes for hybrid search operations including:
 - Search analytics
 """
 
+import time
 from typing import Dict
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from apps.memory_api.middleware.telemetry_bridge import get_telemetry_bridge
 from apps.memory_api.models.hybrid_search_models import (
     DEFAULT_WEIGHT_PROFILES,
     EvidenceSearchRequest,
@@ -106,6 +108,7 @@ async def search_evidence(
     provenance attribution, and optional bounded 2-pass adaptive enrichment.
     """
     try:
+        start_time = time.perf_counter()
         package = await rae_service.search_evidence(
             query=request.query,
             tenant_id=request.tenant_id,
@@ -120,6 +123,21 @@ async def search_evidence(
             force_2pass=request.force_2pass,
             filters=request.filters,
         )
+        latency_ms = (time.perf_counter() - start_time) * 1000.0
+
+        bridge = get_telemetry_bridge()
+        primary_strategy = (
+            request.strategies[0]
+            if request.strategies and len(request.strategies) == 1
+            else "hybrid"
+        )
+        await bridge.record_search_evidence(
+            package=package,
+            latency_ms=latency_ms,
+            token_cost=0.0,
+            strategy=primary_strategy,
+        )
+
         return package
     except Exception as e:
         logger.error("search_evidence_failed", error=str(e), query=request.query)
