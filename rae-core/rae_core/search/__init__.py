@@ -19,6 +19,7 @@ from rae_core.search.strategies.graph import GraphTraversalStrategy
 from rae_core.search.strategies.graph_lite import GraphLiteStrategy
 from rae_core.search.strategies.sparse import SparseVectorStrategy
 from rae_core.search.strategies.vector import VectorSearchStrategy
+from rae_core.search.strategies.visual import VisualSearchStrategy
 
 __all__ = [
     "SearchStrategy",
@@ -27,6 +28,7 @@ __all__ = [
     "GraphLiteStrategy",
     "SparseVectorStrategy",
     "FullTextStrategy",
+    "VisualSearchStrategy",
     "HybridSearchEngine",
     "AdaptiveSearchEngine",
     "QueryRewriter",
