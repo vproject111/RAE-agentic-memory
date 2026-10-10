@@ -92,3 +92,38 @@ async def test_embedded_rae_file_persistence(tmp_path):
     assert "Critical fact" in results[0]["content"]
 
     await rae2.close()
+
+
+@pytest.mark.asyncio
+async def test_embedded_rae_crud_lifecycle():
+    rae = await EmbeddedRAE.open(":memory:", tenant_id="t_crud", project="p_crud")
+
+    # 1. Store
+    mem_id = await rae.store(
+        content="Testing EmbeddedRAE CRUD lifecycle operations.",
+        layer="episodic",
+        importance=0.85,
+        tags=["crud", "test"],
+    )
+    assert mem_id is not None
+
+    # 2. Get
+    item = await rae.get(mem_id)
+    assert item is not None
+    assert item["content"] == "Testing EmbeddedRAE CRUD lifecycle operations."
+    assert item["layer"] == "episodic"
+
+    # 3. List
+    items = await rae.list(layer="episodic")
+    assert len(items) >= 1
+    assert any(str(i["id"]) == str(mem_id) for i in items)
+
+    # 4. Delete
+    deleted = await rae.delete(mem_id)
+    assert deleted is True
+
+    # 5. Verify deleted
+    item_after = await rae.get(mem_id)
+    assert item_after is None
+
+    await rae.close()

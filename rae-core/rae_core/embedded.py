@@ -5,6 +5,8 @@ cognitive memory (working, episodic, semantic, reflective) with zero Docker
 dependencies, powered by SQLite and NumPy vector indexing.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -101,7 +103,7 @@ class EmbeddedRAE:
         llm_provider: Any = None,
         tenant_id: str = "default",
         project: str = "default",
-    ) -> "EmbeddedRAE":
+    ) -> EmbeddedRAE:
         """Open or create an Embedded RAE storage engine.
 
         Args:
@@ -208,6 +210,31 @@ class EmbeddedRAE:
             **kwargs,
         )
         return UUID(str(mem_id))
+
+    async def get(self, memory_id: UUID) -> dict[str, Any] | None:
+        """Get a memory by ID from embedded storage."""
+        return await self.storage.get_memory(memory_id, self.tenant_id)
+
+    async def delete(self, memory_id: UUID) -> bool:
+        """Delete a memory by ID from storage and vector store."""
+        del_storage = await self.storage.delete_memory(memory_id, self.tenant_id)
+        del_vector = await self.vector_store.delete_vector(memory_id, self.tenant_id)
+        return bool(del_storage or del_vector)
+
+    async def list(
+        self,
+        layer: str | None = None,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        """List memories for the current project and tenant."""
+        return await self.storage.list_memories(
+            tenant_id=self.tenant_id,
+            project=self.project,
+            layer=layer,
+            limit=limit,
+            **kwargs,
+        )
 
     async def query(
         self,
