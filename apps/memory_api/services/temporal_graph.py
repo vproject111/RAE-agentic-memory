@@ -89,16 +89,20 @@ class GraphChange:
 class TemporalGraphService:
     """Service for temporal graph operations"""
 
-    def __init__(self, graph_repo: Optional[GraphRepository] = None):
+    def __init__(self, graph_repo: Optional[GraphRepository] = None, storage_path: Optional[str] = None):
         """
         Initialize temporal graph service
 
         Args:
             graph_repo: Graph repository for persistence
+            storage_path: Optional file path for durable snapshot metadata persistence
         """
+        import os
+        import json
         self.graph_repo = graph_repo
+        self.storage_path = storage_path or os.getenv("RAE_TEMPORAL_GRAPH_STORAGE_PATH")
 
-        # In-memory storage for development
+        # In-memory storage backed by optional graph_repo / JSON file persistence
         self._snapshots: Dict[UUID, List[GraphSnapshot]] = {}
         self._changes: Dict[UUID, List[GraphChange]] = {}
 
@@ -126,10 +130,43 @@ class TemporalGraphService:
             metadata=metadata,
         )
 
-        # Store snapshot
+        # Store snapshot in memory
         if tenant_id not in self._snapshots:
             self._snapshots[tenant_id] = []
         self._snapshots[tenant_id].append(snapshot)
+
+        # Persist to graph_repo if available
+        if self.graph_repo is not None and hasattr(self.graph_repo, "save_snapshot"):
+            try:
+                await self.graph_repo.save_snapshot(
+                    tenant_id=tenant_id,
+                    timestamp=snapshot.timestamp,
+                    node_count=graph.node_count(),
+                    edge_count=graph.edge_count(),
+                    metadata=snapshot.metadata,
+                )
+            except Exception as e:
+                logger.warning("snapshot_repo_persist_warning", error=str(e))
+
+        # Persist summary to storage_path if configured
+        if self.storage_path:
+            try:
+                import json
+                with open(self.storage_path, "a", encoding="utf-8") as f:
+                    f.write(
+                        json.dumps(
+                            {
+                                "tenant_id": str(tenant_id),
+                                "timestamp": snapshot.timestamp.isoformat(),
+                                "nodes": graph.node_count(),
+                                "edges": graph.edge_count(),
+                                "metadata": snapshot.metadata,
+                            }
+                        )
+                        + "\n"
+                    )
+            except Exception as e:
+                logger.warning("snapshot_file_persist_warning", error=str(e))
 
         logger.info(
             "snapshot_created",
