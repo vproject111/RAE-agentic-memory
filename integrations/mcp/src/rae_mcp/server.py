@@ -365,6 +365,8 @@ class RAEMemoryClient:
                     )
                     response.raise_for_status()
                     result = response.json()
+                    if isinstance(result, dict) and "id" not in result:
+                        result["id"] = result.get("memory_id") or result.get("event_id") or "unknown"
 
                     logger.info(
                         "memory_stored_via_bridge",
@@ -976,7 +978,7 @@ async def handle_call_tool(
                 human_label=human_label,
             )
 
-            memory_id = result.get("memory_id", "unknown")
+            memory_id = result.get("memory_id") or result.get("id", "unknown")
 
             return [
                 types.TextContent(
