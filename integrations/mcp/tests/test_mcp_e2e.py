@@ -457,7 +457,7 @@ async def test_full_mcp_flow():
     """
     # Create real client
     client = RAEMemoryClient(
-        api_url="http://localhost:8000", api_key="test-api-key", tenant_id="test-tenant"
+        api_url="http://localhost:8000", api_key="test-api-key", tenant_id="default-tenant"
     )
 
     # 1. Store memory

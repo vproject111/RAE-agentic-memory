@@ -832,11 +832,58 @@ def sync_mesh_peers_task(self):
     return asyncio.run(main())
 
 
+@celery_app.task(bind=True, max_retries=3)
+def process_governance_outbox_task(self, batch_size: int = 50):
+    """
+    Processes pending records from rae_governance_outbox using FOR UPDATE SKIP LOCKED.
+    Ensures Transactional Outbox Pattern (ADR-002) eventual consistency.
+    """
+    async def main():
+        async with rae_context() as rae_service:
+            pool = getattr(rae_service, "postgres_pool", None)
+            if pool is None:
+                return {"processed": 0, "status": "no_pool"}
+            processed_ids = []
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    rows = await conn.fetch(
+                        """
+                        SELECT id, tenant_id, aggregate_id, event_type, payload
+                        FROM rae_governance_outbox
+                        WHERE status = 'pending'
+                        ORDER BY created_at ASC
+                        LIMIT $1
+                        FOR UPDATE SKIP LOCKED
+                        """,
+                        batch_size,
+                    )
+                    for row in rows:
+                        await conn.execute(
+                            """
+                            UPDATE rae_governance_outbox
+                            SET status = 'processed', processed_at = NOW()
+                            WHERE id = $1
+                            """,
+                            row["id"],
+                        )
+                        processed_ids.append(str(row["id"]))
+            logger.info("governance_outbox_processed", count=len(processed_ids))
+            return {"processed": len(processed_ids), "ids": processed_ids}
+
+    return asyncio.run(main())
+
+
 # --- Celery Beat Schedule ---
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     from celery.schedules import crontab
 
+    # Schedule governance outbox processing every 60 seconds (ADR-002)
+    sender.add_periodic_task(
+        60.0,
+        process_governance_outbox_task.s(),
+        name="process governance outbox every 60s",
+    )
     # Schedule reflection checks every 5 minutes
     sender.add_periodic_task(
         300.0, schedule_reflections.s(), name="check for reflections every 5 mins"
@@ -895,3 +942,4 @@ def setup_periodic_tasks(sender, **kwargs):
         sync_mesh_peers_task.s(),
         name="synchronize with mesh peers every 5 mins",
     )
+

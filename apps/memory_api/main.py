@@ -487,9 +487,37 @@ Enterprise-grade cognitive memory system for AI Agents.
     return app.openapi_schema
 
 
+@app.post("/v2/knowledge/resolve", tags=["Memories"])
+async def resolve_knowledge_bundle(payload: dict):
+    """Unified Knowledge Resolution Engine endpoint (ADR-002)."""
+    from fastapi import HTTPException
+    query = str(payload.get("query", "")).strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query cannot be empty")
+    tenant_id = str(payload.get("tenant_id", "default"))
+    request_id = str(payload.get("request_id", "api-req-1"))
+    scope = payload.get("scope") or []
+
+    from rae_core.governance.adapter_broker import AdapterBroker
+    from rae_core.governance.context import ResolutionContext
+    from rae_core.governance.engine import DefaultKnowledgeResolutionEngine
+
+    broker = AdapterBroker([])
+    engine = DefaultKnowledgeResolutionEngine(broker)
+    ctx = ResolutionContext(
+        tenant_id=tenant_id,
+        request_id=request_id,
+        policy_version="1.0.0",
+        scope=tuple(scope) if scope else (),
+    )
+    bundle = await engine.resolve(query, context=ctx)
+    return bundle.model_dump() if hasattr(bundle, "model_dump") else bundle.__dict__
+
+
 app.openapi = custom_openapi  # type: ignore[method-assign]
 
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)  # nosec
+
