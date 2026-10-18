@@ -194,11 +194,30 @@ class RAESuitePortal:
 
         # --- STYLES, FONTS & WCGA INLINE CONFIG ---
         ui.add_head_html(r"""
+        <link rel="manifest" href="/manifest.json">
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
         <script>
             (function() {
                 // Set HTML language tag (WCAG 3.1.1)
                 document.documentElement.lang = "pl";
+
+                // Register PWA Service Worker & IndexedDB telemetry cache
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', function() {
+                        navigator.serviceWorker.register('/sw.js').catch(function() {});
+                    });
+                }
+                if ('indexedDB' in window) {
+                    try {
+                        const dbReq = indexedDB.open('rae_portal_offline_cache', 1);
+                        dbReq.onupgradeneeded = function(e) {
+                            const db = e.target.result;
+                            if (!db.objectStoreNames.contains('telemetry_snapshots')) {
+                                db.createObjectStore('telemetry_snapshots', { keyPath: 'id' });
+                            }
+                        };
+                    } catch (e) {}
+                }
 
                 // Check if user has consented to cookies, fallback to sessionStorage if not
                 const accepted = document.cookie.split('; ').find(row => row.startsWith('cookieAccepted='));
@@ -864,6 +883,34 @@ def logout_endpoint(request: Request):
     return res
 
 
+@app.get("/manifest.json")
+def pwa_manifest():
+    return {
+        "name": "RAE Suite Command Center",
+        "short_name": "RAE Portal",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#1e293b",
+        "icons": [],
+    }
+
+
+@app.get("/sw.js")
+def pwa_service_worker():
+    from fastapi.responses import Response
+    sw_code = (
+        "const CACHE_NAME = 'rae-portal-v1';\n"
+        "self.addEventListener('install', (e) => { self.skipWaiting(); });\n"
+        "self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });\n"
+        "self.addEventListener('fetch', (e) => {\n"
+        "  if (e.request.method !== 'GET') return;\n"
+        "  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));\n"
+        "});\n"
+    )
+    return Response(content=sw_code, media_type="application/javascript")
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
@@ -876,6 +923,7 @@ async def auth_middleware(request: Request, call_next):
         or path.startswith("/static")
         or path.startswith("/favicon")
         or path.startswith("/health")
+        or path in {"/manifest.json", "/sw.js"}
     ):
         return await call_next(request)
 
