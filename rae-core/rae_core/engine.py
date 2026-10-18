@@ -632,11 +632,13 @@ class RAEEngine:
         # Stage 2 (L3): Propagate ContextEnvelope into chunk metadata if provided
         envelope = kwargs.get("envelope")
         if envelope:
-            envelope_dict = (
-                envelope.model_dump()
-                if hasattr(envelope, "model_dump")
-                else (envelope if isinstance(envelope, dict) else None)
-            )
+            if hasattr(envelope, "model_dump"):
+                try:
+                    envelope_dict = envelope.model_dump(mode="json")
+                except TypeError:
+                    envelope_dict = envelope.model_dump()
+            else:
+                envelope_dict = envelope if isinstance(envelope, dict) else None
             if envelope_dict:
                 if "metadata" not in kwargs or kwargs["metadata"] is None:
                     kwargs["metadata"] = {}

@@ -19,7 +19,7 @@ class GitRuntimeAdapter(IKnowledgeAdapter[None]):
     source_type = KnowledgeSourceType.GIT
 
     def __init__(self, repo_path: str) -> None:
-        self.repo = git.Repo(repo_path, search_parent_directories=False)
+        self.repo = git.Repo(repo_path, search_parent_directories=True)
 
     def _retrieve_sync(self, limit: int) -> list[RetrievedKnowledge]:
         try:

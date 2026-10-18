@@ -161,45 +161,74 @@ class ReflectionEngineV2:
             else:  # PARTIAL
                 llm_response = await self._generate_failure_reflection(context)
 
-            # Build ReflectionResult
-            result = ReflectionResult(
-                reflection_text=llm_response.reflection,
-                strategy_text=llm_response.strategy,
-                importance=llm_response.importance,
-                confidence=llm_response.confidence,
-                tags=llm_response.tags,
-                error_category=context.error.error_category if context.error else None,
-                source_event_ids=[event.event_id for event in context.events],
-                related_memory_ids=context.related_memory_ids or [],
-                metadata={
-                    "outcome": context.outcome.value,
-                    "task_description": context.task_description,
-                    "event_count": len(context.events),
-                    "session_id": (
-                        str(context.session_id) if context.session_id else None
-                    ),
-                },
-                generated_at=datetime.now(timezone.utc),
-            )
-
-            logger.info(
-                "reflection_generated",
-                tenant_id=context.tenant_id,
-                importance=result.importance,
-                confidence=result.confidence,
-                has_strategy=result.strategy_text is not None,
-            )
-
-            return result
-
         except Exception as e:
-            logger.error(
-                "reflection_generation_failed",
+            logger.warning(
+                "llm_reflection_failed_fallback_to_tier1_math",
                 tenant_id=context.tenant_id,
                 error=str(e),
-                exc_info=True,
             )
-            raise
+            from rae_core.reflection.deterministic import DeterministicReflectionEngine
+
+            det_engine = DeterministicReflectionEngine()
+            events_dict = [
+                {"event_type": str(getattr(ev, "event_type", "step")), "tags": getattr(ev, "tags", []) or []}
+                for ev in context.events
+            ]
+            err_dict = (
+                {
+                    "error_message": context.error.error_message,
+                    "error_category": getattr(context.error.error_category, "value", str(context.error.error_category)),
+                }
+                if context.error
+                else None
+            )
+
+            det_result = det_engine.generate_reflection_from_trace(
+                task_goal=context.task_goal or "general_task",
+                task_description=context.task_description or "execution_trace",
+                events=events_dict,
+                outcome=getattr(context.outcome, "value", str(context.outcome)),
+                error=err_dict,
+            )
+
+            llm_response = LLMReflectionResponse(
+                reflection=det_result["reflection"],
+                strategy=det_result["strategy"],
+                importance=det_result["importance"],
+                confidence=det_result["confidence"],
+                tags=det_result["tags"],
+            )
+
+        # Build ReflectionResult
+        result = ReflectionResult(
+            reflection_text=llm_response.reflection,
+            strategy_text=llm_response.strategy,
+            importance=llm_response.importance,
+            confidence=llm_response.confidence,
+            tags=llm_response.tags,
+            error_category=context.error.error_category if context.error else None,
+            source_event_ids=[event.event_id for event in context.events],
+            related_memory_ids=context.related_memory_ids or [],
+            metadata={
+                "outcome": getattr(context.outcome, "value", str(context.outcome)),
+                "task_description": context.task_description,
+                "event_count": len(context.events),
+                "session_id": (
+                    str(context.session_id) if context.session_id else None
+                ),
+            },
+            generated_at=datetime.now(timezone.utc),
+        )
+
+        logger.info(
+            "reflection_generated",
+            tenant_id=context.tenant_id,
+            importance=result.importance,
+            confidence=result.confidence,
+            has_strategy=result.strategy_text is not None,
+        )
+
+        return result
 
     async def _generate_failure_reflection(
         self, context: ReflectionContext

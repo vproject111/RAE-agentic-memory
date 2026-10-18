@@ -235,11 +235,14 @@ class QdrantVectorStore(IVectorStore):
                     await self.ensure_vector_config(self.vector_name, len(emb))
 
             # Prepare payload
-            payload = {
+            raw_payload = {
                 "memory_id": str(mem_id),
                 "tenant_id": str(tenant_id),
                 **(meta or {}),
             }
+            import json
+
+            payload = json.loads(json.dumps(raw_payload, default=str))
 
             # DEBUG: Inspect payload
             logger.info(

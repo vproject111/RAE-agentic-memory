@@ -8,6 +8,9 @@ This module exports all Pydantic models used across RAE-core:
 - Sync models: SyncChange, SyncOperation, SyncState, SyncConflict
 """
 
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+
 from .envelope import CodeAttribution, ContextEnvelope
 from .evidence import (
     ConflictSeverity,
